@@ -24,6 +24,39 @@ if (window.opera) {
 	window.console.dir = function(str) {};
 }
 
+// bstr must be a binary string
+function BinaryStringStream(bstr) {
+	if (typeof bstr != "string" || bstr.length < 1) {
+		throw "Attempted to create BinaryStringStream with a non-string";
+	}
+	this.str = bstr;
+	this.ptr = 0;
+	
+	// returns the next n bytes as an unsigned number (or -1 on error)
+	// and advances the stream pointer n bytes
+	this.readNumber = function( n ) {
+		var num = this.peekNumber( n );
+		this.ptr += n;
+		return num;
+	};
+	
+	// peeks at the next n bytes as a number but does not advance the pointer
+	this.peekNumber = function( n ) {
+		if (typeof n != "number" || n < 1) {
+			return -1;
+		}
+		var result = 0;
+		// read from last byte to first byte and roll them in
+		var curByte = this.ptr + n - 1;
+		while (curByte >= this.ptr) {
+			result <<= 8;
+			result |= this.str.charCodeAt(curByte);
+			--curByte;
+		}
+		return result;
+	};
+}
+
 // gets the element with the given id
 function getElem(id) {
 	if(document.documentElement.querySelector) {
@@ -41,9 +74,11 @@ function getFile(evt) {
 	if (filelist.length == 1) {
 		var reader = new FileReader();
 		reader.onloadend = function(e) {
-			// TODO: process e.target.result as a binary string
-			console.log("Done reading in file");
-			unzip(e.target.result);
+			// create a BinaryStringStream
+			var bstream = new BinaryStringStream(e.target.result);
+			// try to unzip it
+			// TODO: handle the error scenario here
+			unzip(bstream);
 		};
 		console.log("Reading in file '" + filelist[0].fileName + "'");
 		reader.readAsBinaryString(filelist[0]);

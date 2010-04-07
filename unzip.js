@@ -7,44 +7,42 @@
  *
  */
 
-/* Reference Documentation:
+/* 
+  Reference Documentation:
 
   * ZIP format: http://www.pkware.com/documents/casestudies/APPNOTE.TXT
+  * DEFLATE format: http://tools.ietf.org/html/rfc1951
 
 */
 
-var zFileHeaderSignature = 0x04034b50;
+var zLocalFileHeaderSignature = 0x04034b50;
+var zArchiveExtraDataSignature = 0x08064b50;
+var zCentralFileHeaderSignature = 0x02014b50;
 
-// bstr is a binary string
-// start is the first byte to consider (must be >= 0)
-// numBytes is the number of bytes to consider (must be >= 1)
-// on error, returns -1
-// otherwise, returns the bytes converted into an unsigned number
-function toNumber( bstr, startByte, numBytes ) {
-	if (typeof bstr != "string" || typeof startByte != "number" || typeof numBytes != "number" ||
-		startByte < 0 || numBytes < 1) 
-	{
-		return -1;
-	}
-	
-	var result = 0;
-	// read from last byte to first byte and roll them in
-	var curByte = startByte + numBytes - 1;
-	while (curByte >= startByte) {
-		result <<= 8;
-		result |= bstr.charCodeAt(curByte);
-		--curByte;
-	}
-	return result;
-}
-
-// Takes a binary string of a zip file in
+// Takes a BinaryStringStream of a zip file in
 // returns null on error
 // returns ??? on success
-function unzip(bstr) {
+function unzip(bstream) {
 	// detect local file header signature or return null
-	if (toNumber(bstr,0,4) == zFileHeaderSignature) {
+	if (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
 		console.log("Found a zip file!");
+		
+		// TODO: create object for LocalFile and read in header, data, data descriptor
+		// TODO: loop until we don't see any more local files
+		
+		var signature = bstream.readNumber(4),
+			version = bstream.readNumber(2),
+			generalPurpose = bstream.readNumber(2),
+			compressionMethod = bstream.readNumber(2),
+			lastModFileTime = bstream.readNumber(2),
+			lastModFileDate = bstream.readNumber(2),
+			crc32 = bstream.readNumber(4),
+			compressedSize = bstream.readNumber(4),
+			uncompressedSize = bstream.readNumber(4),
+			fileNameLength = bstream.readNumber(2),
+			extraFieldLength = bstream.readNumber(2);
+		console.log([version, generalPurpose, compressionMethod, lastModFileTime, lastModFileDate,
+					crc32, compressedSize, uncompressedSize, fileNameLength, extraFieldLength]);
 	}
 	else {
 		console.log("File was not a zip");
