@@ -1,3 +1,9 @@
 body {
 	background: #222;
 }
+
+div.foreground {
+	position: absolute;
+	top: 20px;
+	left: 20px;
+}
