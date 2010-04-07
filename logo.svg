@@ -8,6 +8,7 @@
    <stop offset="1" stop-color="#ffff00"/>
   </radialGradient>
  </defs>
+ <title>kthoom logo</title>
  <g>
   <title>Balloon</title>
   <path fill="url(#svg_8)" stroke="#000000" stroke-width="5" d="m75,86l106,44l49,-87l73,56l51,-88l66,59l91,-59l-5,102l78,25l-50,72l44,99l-89,-38l-21,78.5l-83,-44.5l-50,62l-70,-53l-58,66l-57,-62l-93,57l8,-101l-56,-57l65,-50l1,-81z" id="svg_1"/>

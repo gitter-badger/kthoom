@@ -9,7 +9,7 @@ This is an attempt to build a comic book archive [1] reader using only open web 
 Initial target is support for CBZ files, which means first step is implementing ZIP file [2]
 reading in the browser.
 
-Please contact me [2] directly if you wish to participate or start opening issues.
+Please contact me [3] if you wish to participate or just start opening issues.
 
 Regards,
 Jeff

@@ -24,6 +24,23 @@ if (window.opera) {
 	window.console.dir = function(str) {};
 }
 
+var BIT0 = 0x01,
+	BIT1 = 0x02,
+	BIT2 = 0x04,
+	BIT3 = 0x08,
+	BIT4 = 0x10,
+	BIT5 = 0x20,
+	BIT6 = 0x40,
+	BIT7 = 0x80,
+	BIT8 = 0x100,
+	BIT9 = 0x200,
+	BIT10 = 0x400,
+	BIT11 = 0x800,
+	BIT12 = 0x1000,
+	BIT13 = 0x2000,
+	BIT14 = 0x4000,
+	BIT15 = 0x8000;
+
 // bstr must be a binary string
 function BinaryStringStream(bstr) {
 	if (typeof bstr != "string" || bstr.length < 1) {
@@ -54,6 +71,22 @@ function BinaryStringStream(bstr) {
 			--curByte;
 		}
 		return result;
+	};
+
+	// returns the next n bytes as a string (or -1 on error)
+	// and advances the stream pointer n bytes
+	this.readString = function( n ) {
+		var str = this.peekString( n );
+		this.ptr += n;
+		return str;
+	};
+	
+	// peeks at the next n bytes as a number but does not advance the pointer
+	this.peekString = function( n ) {
+		if (typeof n != "number" || n < 1) {
+			return -1;
+		}
+		return this.str.substring(this.ptr, this.ptr+n);
 	};
 }
 
