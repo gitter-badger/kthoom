@@ -43,6 +43,7 @@ function getFile(evt) {
 		reader.onloadend = function(e) {
 			// TODO: process e.target.result as a binary string
 			console.log("Done reading in file");
+			unzip(e.target.result);
 		};
 		console.log("Reading in file '" + filelist[0].fileName + "'");
 		reader.readAsBinaryString(filelist[0]);
