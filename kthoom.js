@@ -124,9 +124,13 @@ function getFile(evt) {
 				var imageFiles = [];
 				for (f in zipFiles) {
 					var zip = zipFiles[f];
-					imageFiles.push(new ImageFile(zip.filename, zip.fileData));
+					if (zip.isValid)
+						imageFiles.push(new ImageFile(zip.filename, zip.fileData));
 				}
 				if (imageFiles.length > 0) {
+					// hide logo
+					getElem("logo").setAttribute("display", "none");
+					// display first page
 					getElem("mainImage").setAttribute("src", imageFiles[0].dataURI);
 				}
 			}

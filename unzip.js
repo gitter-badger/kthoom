@@ -70,10 +70,13 @@ function ZipLocalFile(bstream) {
 	// Zip Version 1.0, no compression (store only)
 	if (this.version == 10 && this.compressionMethod == 0) {
 		console.log("ZIP v1.0, store only: " + this.filename + " (" + this.compressedSize + " bytes)");
+		this.isValid = true;
 	}
 	// TODO: version == 20, compression method == 8
 	else {
 		console.log("UNSUPPORTED VERSION/FORMAT: ZIP v" + this.version + ", compression method=" + this.compressionMethod + ": " + this.filename + " (" + this.compressedSize + " bytes)");
+		this.isValid = false;
+		this.fileData = null;
 	}
 }
 
