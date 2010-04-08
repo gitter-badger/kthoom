@@ -25,7 +25,7 @@ if (window.opera) {
 
 // key codes
 // TODO: is this reliable?
-var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40 };
+var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, L: 76, R: 82 };
 
 // global variables
 // TODO: stop polluting the window namespace and stuff into a kthoom object
@@ -123,6 +123,37 @@ function showNextPage() {
 	getElem("next").focus();
 }
 
+// TODO: fix it. not quite working yet
+function rotateLeft() {
+	var c = getElem("canvas"),
+		ctx = c.getContext("2d"),
+		img = getElem("mainImage");
+	
+	// reset image to default raster resolution
+	img.setAttribute("width", "");
+	
+	// get max dimension and size the canvas accordingly
+	var max = Math.max(img.width, img.height);
+	c.setAttribute("width", max);
+	c.setAttribute("height", max);
+
+	ctx.translate(max/2,max/2);
+	ctx.rotate(-90*Math.PI/180);
+	ctx.translate(-max/2,-max/2);
+	
+	ctx.drawImage(img, 0, 0);
+
+	img.setAttribute("width", "100%");
+	img.setAttribute("src", c.toDataURL());
+	
+	console.log(currentImage);
+}
+
+// TODO: implement
+function rotateRight() {
+	var c = getElem("canvas");
+}
+
 function closeBook() {
 	currentImage = 0;
 	imageFiles = [];
@@ -148,6 +179,12 @@ function keyUp(evt) {
 			break;
 		case Key.RIGHT:
 			showNextPage();
+			break;
+		case Key.L:
+			rotateLeft();
+			break;
+		case Key.R:
+			rotateRight();
 			break;
 		default:
 			console.log("KeyCode = " + code);

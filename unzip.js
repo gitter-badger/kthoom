@@ -7,15 +7,42 @@
  *
  */
 
-// bit fields
+// mask for getting the Nth bit (zero-based)
 var BIT = [	0x01, 0x02, 0x04, 0x08, 
 			0x10, 0x20, 0x40, 0x80,
 			0x100, 0x200, 0x400, 0x800, 
 			0x1000, 0x2000, 0x4000, 0x8000];
 
+// mask for getting N number of bits (0-8)
+var BITMASK = [ 0, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF ];
+
+
+// This object allows you to peek and consume bits out of a binary stream.
+//
 // bstr must be a binary string
-// This object allows you to read numbers and strings
-// out of the stream in byte-increments.
+function BitStream(bstr) {
+	if (typeof bstr != "string" || bstr.length < 1) {
+		alert("Error! Attempted to create a BitStream object with a non-string");
+	}
+	this.str = bstr;
+	this.bytePtr = 0; // tracks which byte we are on
+	this.bitPtr = 0; // contains values 0 through 7
+	
+	// peeks at the next n bits as an unsigned number but does not advance the pointer
+	this.peekBits = function( n ) {
+		if (typeof n != "number" || n < 1) {
+			return -1;
+		}
+	}
+}
+
+// This object allows you to peek and consume bytes as numbers and strings
+// out of a binary stream.
+//
+// This object is much easier to write than the above BitStream since everything
+// is byte-aligned.
+//
+// bstr must be a binary string
 function ByteStream(bstr) {
 	if (typeof bstr != "string" || bstr.length < 1) {
 		alert("Error! Attempted to create a ByteStream with a non-string");
@@ -23,16 +50,9 @@ function ByteStream(bstr) {
 	this.str = bstr;
 	this.ptr = 0;
 	
-	// returns the next n bytes as an unsigned number (or -1 on error)
-	// and advances the stream pointer n bytes
-	this.readNumber = function( n ) {
-		var num = this.peekNumber( n );
-		this.ptr += n;
-		return num;
-	};
-	
-	// peeks at the next n bytes as a number but does not advance the pointer
+	// peeks at the next n bytes as an unsigned number but does not advance the pointer
 	this.peekNumber = function( n ) {
+		// TODO: return error if n would go past the end of the stream?
 		if (typeof n != "number" || n < 1) {
 			return -1;
 		}
@@ -47,6 +67,22 @@ function ByteStream(bstr) {
 		return result;
 	};
 
+	// returns the next n bytes as an unsigned number (or -1 on error)
+	// and advances the stream pointer n bytes
+	this.readNumber = function( n ) {
+		var num = this.peekNumber( n );
+		this.ptr += n;
+		return num;
+	};
+	
+	// peeks at the next n bytes as a string but does not advance the pointer
+	this.peekString = function( n ) {
+		if (typeof n != "number" || n < 1) {
+			return -1;
+		}
+		return this.str.substring(this.ptr, this.ptr+n);
+	};
+
 	// returns the next n bytes as a string (or -1 on error)
 	// and advances the stream pointer n bytes
 	this.readString = function( n ) {
@@ -54,24 +90,6 @@ function ByteStream(bstr) {
 		this.ptr += n;
 		return str;
 	};
-	
-	// peeks at the next n bytes as a number but does not advance the pointer
-	this.peekString = function( n ) {
-		if (typeof n != "number" || n < 1) {
-			return -1;
-		}
-		return this.str.substring(this.ptr, this.ptr+n);
-	};
-}
-
-// bstr must be a binary string
-// this allows you to peek and consume bits out of a binary stream
-function BitStream(bstr) {
-	if (typeof bstr != "string" || bstr.length < 1) {
-		alert("Error! Attempted to create a BitStream object with a non-string");
-	}
-	this.str = bstr;
-	this.ptr = 0;
 }
 
 /* 
