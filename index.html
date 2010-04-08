@@ -13,12 +13,15 @@
 </div>
 <div class="foreground">
 	
-	<input id="filechooser" type="file"/>
+	<form id="uploader">
+		<input id="filechooser" type="file"/>
+	</form>
 	
 	<div id="nav" class="hide">
-		<button id="prev" type="button" onclick="showPrevPage()">&lt;&lt;</button>
+		<button id="prev" title="Previous Page (Left Arrow)" type="button" onclick="showPrevPage()">&lt;&lt;</button>
 		<span id="pageCounter">Page X/Y</span>
-		<button id="next" type="button" onclick="showNextPage()">&gt;&gt;</button>
+		<button id="next" title="Next Page (Right Arrow)" type="button" onclick="showNextPage()">&gt;&gt;</button>
+		<img id="close" title="Close Book (X)" onclick="closeBook()" src="images/cancel.png" tabIndex="3"></img>
 	</div>
 	
 	<!-- eventually will replace this with a canvas element -->

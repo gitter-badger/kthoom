@@ -18,7 +18,6 @@ if (!window.console) {
 	window.console.log = function(str) {};
 	window.console.dir = function(str) {};
 }
-
 if (window.opera) {
 	window.console.log = function(str) {opera.postError(str);};
 	window.console.dir = function(str) {};
@@ -28,65 +27,10 @@ if (window.opera) {
 // TODO: is this reliable?
 var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40 };
 
-// bit fields
-var BIT = [	0x01, 0x02, 0x04, 0x08, 
-			0x10, 0x20, 0x40, 0x80,
-			0x100, 0x200, 0x400, 0x800, 
-			0x1000, 0x2000, 0x4000, 0x8000];
-
 // global variables
 // TODO: stop polluting the window namespace and stuff into a kthoom object
 var currentImage = 0,
 	imageFiles = [];
-
-// bstr must be a binary string
-function BinaryStringStream(bstr) {
-	if (typeof bstr != "string" || bstr.length < 1) {
-		throw "Attempted to create BinaryStringStream with a non-string";
-	}
-	this.str = bstr;
-	this.ptr = 0;
-	
-	// returns the next n bytes as an unsigned number (or -1 on error)
-	// and advances the stream pointer n bytes
-	this.readNumber = function( n ) {
-		var num = this.peekNumber( n );
-		this.ptr += n;
-		return num;
-	};
-	
-	// peeks at the next n bytes as a number but does not advance the pointer
-	this.peekNumber = function( n ) {
-		if (typeof n != "number" || n < 1) {
-			return -1;
-		}
-		var result = 0;
-		// read from last byte to first byte and roll them in
-		var curByte = this.ptr + n - 1;
-		while (curByte >= this.ptr) {
-			result <<= 8;
-			result |= this.str.charCodeAt(curByte);
-			--curByte;
-		}
-		return result;
-	};
-
-	// returns the next n bytes as a string (or -1 on error)
-	// and advances the stream pointer n bytes
-	this.readString = function( n ) {
-		var str = this.peekString( n );
-		this.ptr += n;
-		return str;
-	};
-	
-	// peeks at the next n bytes as a number but does not advance the pointer
-	this.peekString = function( n ) {
-		if (typeof n != "number" || n < 1) {
-			return -1;
-		}
-		return this.str.substring(this.ptr, this.ptr+n);
-	};
-}
 
 // stores an image filename and its data: URI
 // TODO: investigate if we really need to store as base64 (leave off ;base64 and just
@@ -107,6 +51,11 @@ function getElem(id) {
 	return document.getElementById(id);
 }
 
+function resetFileUploader() {
+	getElem("uploader").innerHTML = '<input id="filechooser" type="file"/>';
+	getElem("filechooser").addEventListener("change", getFile, false);
+}
+
 // attempts to read the file that the user has chosen
 function getFile(evt) {
 	var inp = evt.target;
@@ -114,10 +63,8 @@ function getFile(evt) {
 	if (filelist.length == 1) {
 		var reader = new FileReader();
 		reader.onloadend = function(e) {
-			// create a BinaryStringStream
-			var bstream = new BinaryStringStream(e.target.result);
 			// try to unzip it
-			var zipFiles = unzip(bstream);
+			var zipFiles = unzip(e.target.result);
 			if (zipFiles && zipFiles.length > 0) {
 				// clear out old images
 				currentImage = 0;
@@ -176,6 +123,23 @@ function showNextPage() {
 	getElem("next").focus();
 }
 
+function closeBook() {
+	currentImage = 0;
+	imageFiles = [];
+
+	// clear img
+	getElem("mainImage").setAttribute("src", null);
+	
+	// clear file upload
+	resetFileUploader();
+	
+	// display logo
+	getElem("logo").setAttribute("style", "display:block");
+	
+	// hide nav
+	getElem("nav").className = "hide";
+}
+
 function keyUp(evt) {
 	var code = evt.keyCode;
 	switch(code) {
@@ -184,6 +148,9 @@ function keyUp(evt) {
 			break;
 		case Key.RIGHT:
 			showNextPage();
+			break;
+		default:
+			console.log("KeyCode = " + code);
 			break;
 	}
 }
@@ -194,10 +161,9 @@ function init() {
 		alert("Sorry, kthoom will not work with your browser because it does not support the File API.  Please try kthoom with Firefox 3.6+.");
 	}
 	else {
-		var inp = getElem("filechooser");
-		inp.addEventListener("change", getFile, false);
+		resetFileUploader();
 		
-		// key handler
+		// add key handler
 		document.addEventListener("keyup", keyUp, false);
 	}
 }

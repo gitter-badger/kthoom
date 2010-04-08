@@ -7,6 +7,73 @@
  *
  */
 
+// bit fields
+var BIT = [	0x01, 0x02, 0x04, 0x08, 
+			0x10, 0x20, 0x40, 0x80,
+			0x100, 0x200, 0x400, 0x800, 
+			0x1000, 0x2000, 0x4000, 0x8000];
+
+// bstr must be a binary string
+// This object allows you to read numbers and strings
+// out of the stream in byte-increments.
+function ByteStream(bstr) {
+	if (typeof bstr != "string" || bstr.length < 1) {
+		alert("Error! Attempted to create a ByteStream with a non-string");
+	}
+	this.str = bstr;
+	this.ptr = 0;
+	
+	// returns the next n bytes as an unsigned number (or -1 on error)
+	// and advances the stream pointer n bytes
+	this.readNumber = function( n ) {
+		var num = this.peekNumber( n );
+		this.ptr += n;
+		return num;
+	};
+	
+	// peeks at the next n bytes as a number but does not advance the pointer
+	this.peekNumber = function( n ) {
+		if (typeof n != "number" || n < 1) {
+			return -1;
+		}
+		var result = 0;
+		// read from last byte to first byte and roll them in
+		var curByte = this.ptr + n - 1;
+		while (curByte >= this.ptr) {
+			result <<= 8;
+			result |= this.str.charCodeAt(curByte);
+			--curByte;
+		}
+		return result;
+	};
+
+	// returns the next n bytes as a string (or -1 on error)
+	// and advances the stream pointer n bytes
+	this.readString = function( n ) {
+		var str = this.peekString( n );
+		this.ptr += n;
+		return str;
+	};
+	
+	// peeks at the next n bytes as a number but does not advance the pointer
+	this.peekString = function( n ) {
+		if (typeof n != "number" || n < 1) {
+			return -1;
+		}
+		return this.str.substring(this.ptr, this.ptr+n);
+	};
+}
+
+// bstr must be a binary string
+// this allows you to peek and consume bits out of a binary stream
+function BitStream(bstr) {
+	if (typeof bstr != "string" || bstr.length < 1) {
+		alert("Error! Attempted to create a BitStream object with a non-string");
+	}
+	this.str = bstr;
+	this.ptr = 0;
+}
+
 /* 
   Reference Documentation:
 
@@ -21,7 +88,7 @@ var zDigitalSignatureSignature = 0x05054b50;
 var zEndOfCentralDirSignature = 0x06064b50;
 var zEndOfCentralDirLocatorSignature = 0x07064b50;
 
-// takes a BinaryStringString and parses out the local file information
+// takes a ByteStream and parses out the local file information
 function ZipLocalFile(bstream) {
 	if (typeof bstream != "object" || !bstream.readNumber || typeof bstream.readNumber != "function") {
 		return null;
@@ -80,10 +147,11 @@ function ZipLocalFile(bstream) {
 	}
 }
 
-// Takes a BinaryStringStream of a zip file in
+// Takes a binary string of a zip file in
 // returns null on error
 // returns an array of ZipLocalFile objects on success
-function unzip(bstream) {
+function unzip(bstr) {
+	var bstream = new ByteStream(bstr);
 	// detect local file header signature or return null
 	if (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
 		var localFiles = [];
