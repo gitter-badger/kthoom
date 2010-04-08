@@ -1,5 +1,5 @@
 <?xml version='1.0'?>
-<svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
  <!-- Created with SVG-edit - http://svg-edit.googlecode.com/ -->
  <defs>
   <radialGradient id="svg_8" cx="0.5" cy="0.5" r="0.83143">
@@ -9,6 +9,7 @@
   </radialGradient>
  </defs>
  <title>kthoom logo</title>
+<a xlink:href="http://kthoom.googlecode.com/" xlink:title="Go to project page" target="_blank">
  <g>
   <title>Balloon</title>
   <path fill="url(#svg_8)" stroke="#000000" stroke-width="5" d="m75,86l106,44l49,-87l73,56l51,-88l66,59l91,-59l-5,102l78,25l-50,72l44,99l-89,-38l-21,78.5l-83,-44.5l-50,62l-70,-53l-58,66l-57,-62l-93,57l8,-101l-56,-57l65,-50l1,-81z" id="svg_1"/>
@@ -22,4 +23,5 @@
   <path id="o2" fill-rule="evenodd" d="m358.854156,194.132721c0,-34.608002 14.443146,-63.026489 41.367767,-63.523438c26.924622,-0.496948 48.104248,28.915436 48.104248,63.523438c0,34.606995 -20.02002,62.639008 -44.736023,62.639008c-24.715973,0 -44.735992,-28.032013 -44.735992,-62.639008zm41.796478,-31.069046c25.023987,-1.301361 31.423676,62.948822 4.39563,61.671097c-27.028137,-1.277725 -29.419647,-60.369751 -4.39563,-61.671097z" transform="rotate(6.34018, 403.592, 193.688)" stroke-width="5" stroke="#000000" fill="#FF0000"/>
   <path fill="#FF0000" stroke="#000000" stroke-width="5" d="m450.5,241.5l-24.5,-101.279663l14,-15.328796l22,33.942352l-8,-54.745766l15,-24.088127l52.5,122.630493l-22.5,25.73053l-21,-60.767822l2.5,34.763565l-5.5,6.022034l-15.5,-24.361862l13.5,40.511856l-22.5,16.971191z" id="m"/>
  </g>
+</a>
 </svg>
