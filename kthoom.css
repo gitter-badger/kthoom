@@ -1,9 +1,21 @@
 body {
 	background: #222;
+	color: white;
 }
 
 div.foreground {
 	position: absolute;
 	top: 20px;
 	left: 20px;
+	right: 20px;
+}
+
+div#nav {
+	display: inline;
+	position: absolute;
+	right: 20px;
+}
+
+div#nav.hide {
+	display: none;
 }

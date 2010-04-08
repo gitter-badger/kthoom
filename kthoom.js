@@ -24,22 +24,20 @@ if (window.opera) {
 	window.console.dir = function(str) {};
 }
 
-var BIT0 = 0x01,
-	BIT1 = 0x02,
-	BIT2 = 0x04,
-	BIT3 = 0x08,
-	BIT4 = 0x10,
-	BIT5 = 0x20,
-	BIT6 = 0x40,
-	BIT7 = 0x80,
-	BIT8 = 0x100,
-	BIT9 = 0x200,
-	BIT10 = 0x400,
-	BIT11 = 0x800,
-	BIT12 = 0x1000,
-	BIT13 = 0x2000,
-	BIT14 = 0x4000,
-	BIT15 = 0x8000;
+// key codes
+// TODO: is this reliable?
+var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40 };
+
+// bit fields
+var BIT = [	0x01, 0x02, 0x04, 0x08, 
+			0x10, 0x20, 0x40, 0x80,
+			0x100, 0x200, 0x400, 0x800, 
+			0x1000, 0x2000, 0x4000, 0x8000];
+
+// global variables
+// TODO: stop polluting the window namespace and stuff into a kthoom object
+var currentImage = 0,
+	imageFiles = [];
 
 // bstr must be a binary string
 function BinaryStringStream(bstr) {
@@ -93,6 +91,7 @@ function BinaryStringStream(bstr) {
 // stores an image filename and its data: URI
 // TODO: investigate if we really need to store as base64 (leave off ;base64 and just
 //       non-safe URL characters are encoded as %xx ?)
+//       This would save 25% on memory since base64-encoded strings are 4/3 the size of the binary
 function ImageFile(filename, bytes) {
 	this.filename = filename;
 	this.dataURI = "data:image/jpeg;base64," + Utils.encode64(bytes);
@@ -119,27 +118,73 @@ function getFile(evt) {
 			var bstream = new BinaryStringStream(e.target.result);
 			// try to unzip it
 			var zipFiles = unzip(bstream);
-			if (zipFiles) {
+			if (zipFiles && zipFiles.length > 0) {
+				// clear out old images
+				currentImage = 0;
+				imageFiles = [];
 				// convert ZipLocalFiles into a bunch of ImageFiles
-				var imageFiles = [];
 				for (f in zipFiles) {
 					var zip = zipFiles[f];
 					if (zip.isValid)
 						imageFiles.push(new ImageFile(zip.filename, zip.fileData));
 				}
-				if (imageFiles.length > 0) {
-					// hide logo
-					getElem("logo").setAttribute("display", "none");
-					// display first page
-					getElem("mainImage").setAttribute("src", imageFiles[0].dataURI);
-				}
+				
+				// hide logo
+				getElem("logo").setAttribute("style", "display:none");
+				
+				// display nav
+				getElem("nav").className = "";
+				
+				// display first page
+				showPage(0);
 			}
 			else {
+				getElem("logo").setAttribute("style", "display:block");
 				alert("Could not read file '" + filelist[0].filename + "'");
 			}
 		};
 		console.log("Reading in file '" + filelist[0].fileName + "'");
 		reader.readAsBinaryString(filelist[0]);
+	}
+}
+
+function showPage(n) {
+	if (typeof n != "number" || n < 0 || n >= imageFiles.length) {
+		return;
+	}
+	
+	var counter = getElem("pageCounter");
+	var img = getElem("mainImage");
+	
+	counter.removeChild(counter.firstChild);
+	counter.appendChild(document.createTextNode("Page " + (n+1) + "/" + imageFiles.length));
+
+	img.setAttribute("src", imageFiles[n].dataURI);
+}
+
+function showPrevPage() {
+	currentImage--;
+	if (currentImage <= 0) currentImage = imageFiles.length - 1;
+	showPage(currentImage);
+	getElem("prev").focus();
+}
+
+function showNextPage() {
+	currentImage++;
+	if (currentImage >= imageFiles.length) currentImage = 0;
+	showPage(currentImage);
+	getElem("next").focus();
+}
+
+function keyUp(evt) {
+	var code = evt.keyCode;
+	switch(code) {
+		case Key.LEFT:
+			showPrevPage();
+			break;
+		case Key.RIGHT:
+			showNextPage();
+			break;
 	}
 }
 
@@ -151,6 +196,9 @@ function init() {
 	else {
 		var inp = getElem("filechooser");
 		inp.addEventListener("change", getFile, false);
+		
+		// key handler
+		document.addEventListener("keyup", keyUp, false);
 	}
 }
 

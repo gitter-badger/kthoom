@@ -58,7 +58,7 @@ function ZipLocalFile(bstream) {
 	// "This descriptor exists only if bit 3 of the general purpose bit flag is set"
 	// But how do you figure out how big the file data is if you don't know the compressedSize
 	// from the header?!?
-	if ((this.generalPurpose & BIT3) != 0) {
+	if ((this.generalPurpose & BIT[3]) != 0) {
 		console.log("dd");
 		this.crc32 = bstream.readNumber(4);
 		this.compressedSize = bstream.readNumber(4);
