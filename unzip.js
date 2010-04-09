@@ -182,35 +182,33 @@ function ZipLocalFile(bstream) {
 	if (typeof bstream != typeof {} || !bstream.readNumber || typeof bstream.readNumber != typeof function(){}) {
 		return null;
 	}
-	var readNumber = bstream.readNumber,
-		readString = bstream.readString;
 	
-	readNumber(4); // swallow signature
-	this.version = readNumber(2);
-	this.generalPurpose = readNumber(2);
-	this.compressionMethod = readNumber(2);
-	this.lastModFileTime = readNumber(2);
-	this.lastModFileDate = readNumber(2);
-	this.crc32 = readNumber(4);
-	this.compressedSize = readNumber(4);
-	this.uncompressedSize = readNumber(4);
-	this.fileNameLength = readNumber(2);
-	this.extraFieldLength = readNumber(2);
+	bstream.readNumber(4); // swallow signature
+	this.version = bstream.readNumber(2);
+	this.generalPurpose = bstream.readNumber(2);
+	this.compressionMethod = bstream.readNumber(2);
+	this.lastModFileTime = bstream.readNumber(2);
+	this.lastModFileDate = bstream.readNumber(2);
+	this.crc32 = bstream.readNumber(4);
+	this.compressedSize = bstream.readNumber(4);
+	this.uncompressedSize = bstream.readNumber(4);
+	this.fileNameLength = bstream.readNumber(2);
+	this.extraFieldLength = bstream.readNumber(2);
 	
 	this.filename = null;
 	if (this.fileNameLength > 0) {
-		this.filename = readString(this.fileNameLength);
+		this.filename = bstream.readString(this.fileNameLength);
 	}
 	
 	this.extraField = null;
 	if (this.extraFieldLength > 0) {
-		this.extraField = readString(this.extraFieldLength);
+		this.extraField = bstream.readString(this.extraFieldLength);
 	}
 	
 	// read in the compressed data
 	this.fileData = null;
 	if (this.compressedSize > 0) {
-		this.fileData = readString(this.compressedSize);
+		this.fileData = bstream.readString(this.compressedSize);
 	}
 	
 	// TODO: deal with data descriptor if present (we currently assume no data descriptor!)
@@ -218,10 +216,9 @@ function ZipLocalFile(bstream) {
 	// But how do you figure out how big the file data is if you don't know the compressedSize
 	// from the header?!?
 	if ((this.generalPurpose & BIT[3]) != 0) {
-		console.log("dd");
-		this.crc32 = readNumber(4);
-		this.compressedSize = readNumber(4);
-		this.uncompressedSize = readNumber(4);
+		this.crc32 = bstream.readNumber(4);
+		this.compressedSize = bstream.readNumber(4);
+		this.uncompressedSize = bstream.readNumber(4);
 	}
 	
 	// now determine what kind of compressed data we have and decompress
@@ -314,17 +311,15 @@ function getHuffmanCodes(bitLengths) {
 // returns null on error
 // returns an array of ZipLocalFile objects on success
 function unzip(bstr) {
-	var bstream = new ByteStream(bstr),
-		readNumber = bstream.readNumber,
-		peekNumber = bstream.peekNumber,
-		readString = bstream.readString;
+	var bstream = new ByteStream(bstr);
 	
+	alert(bstream.peekNumber(4));
 	// detect local file header signature or return null
-	if (peekNumber(4) == zLocalFileHeaderSignature) {
+	if (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
 		var localFiles = [];
 		
 		// loop until we don't see any more local files
-		while (peekNumber(4) == zLocalFileHeaderSignature) {
+		while (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
 			var oneLocalFile = new ZipLocalFile(bstream);
 			// this should strip out directories/folders
 			if (oneLocalFile && oneLocalFile.uncompressedSize > 0) {
@@ -333,47 +328,47 @@ function unzip(bstr) {
 		}
 		
 		// archive extra data record
-		if (peekNumber(4) == zArchiveExtraDataSignature) {
+		if (bstream.peekNumber(4) == zArchiveExtraDataSignature) {
 			// skipping this record for now
-			readNumber(4);
-			var archiveExtraFieldLength = readNumber(4);
-			readString(archiveExtraFieldLength);
+			bstream.readNumber(4);
+			var archiveExtraFieldLength = bstream.readNumber(4);
+			bstream.readString(archiveExtraFieldLength);
 		}
 		
 		// central directory structure
 		// TODO: handle the rest of the structures (Zip64 stuff)
-		if (peekNumber(4) == zCentralFileHeaderSignature) {
+		if (bstream.peekNumber(4) == zCentralFileHeaderSignature) {
 			// read all file headers
-			while (peekNumber(4) == zCentralFileHeaderSignature) {
-				readNumber(4); // signature
-				readNumber(2); // version made by
-				readNumber(2); // version needed to extract
-				readNumber(2); // general purpose bit flag
-				readNumber(2); // compression method
-				readNumber(2); // last mod file time
-				readNumber(2); // last mod file date
-				readNumber(4); // crc32
-				readNumber(4); // compressed size
-				readNumber(4); // uncompressed size
-				var fileNameLength = readNumber(2); // file name length
-				var extraFieldLength = readNumber(2); // extra field length
-				var fileCommentLength = readNumber(2); // file comment length
-				readNumber(2); // disk number start
-				readNumber(2); // internal file attributes
-				readNumber(4); // external file attributes
-				readNumber(4); // relative offset of local header
+			while (bstream.peekNumber(4) == zCentralFileHeaderSignature) {
+				bstream.readNumber(4); // signature
+				bstream.readNumber(2); // version made by
+				bstream.readNumber(2); // version needed to extract
+				bstream.readNumber(2); // general purpose bit flag
+				bstream.readNumber(2); // compression method
+				bstream.readNumber(2); // last mod file time
+				bstream.readNumber(2); // last mod file date
+				bstream.readNumber(4); // crc32
+				bstream.readNumber(4); // compressed size
+				bstream.readNumber(4); // uncompressed size
+				var fileNameLength = bstream.readNumber(2); // file name length
+				var extraFieldLength = bstream.readNumber(2); // extra field length
+				var fileCommentLength = bstream.readNumber(2); // file comment length
+				bstream.readNumber(2); // disk number start
+				bstream.readNumber(2); // internal file attributes
+				bstream.readNumber(4); // external file attributes
+				bstream.readNumber(4); // relative offset of local header
 				
-				readString(fileNameLength); // file name
-				readString(extraFieldLength); // extra field
-				readString(fileCommentLength); // file comment				
+				bstream.readString(fileNameLength); // file name
+				bstream.readString(extraFieldLength); // extra field
+				bstream.readString(fileCommentLength); // file comment				
 			}
 		}
 		
 		// digital signature
-		if (peekNumber(4) == zDigitalSignatureSignature) {
-			readNumber(4);
-			var sizeOfSignature = readNumber(2);
-			readString(sizeOfSignature); // digital signature data
+		if (bstream.peekNumber(4) == zDigitalSignatureSignature) {
+			bstream.readNumber(4);
+			var sizeOfSignature = bstream.readNumber(2);
+			bstream.readString(sizeOfSignature); // digital signature data
 		}
 		
 		// TODO: process the image data in each local file...
@@ -389,32 +384,74 @@ function unzip(bstr) {
 	return null;
 }
 
+/*
+         The Huffman codes for the two alphabets are fixed, and are not
+         represented explicitly in the data.  The Huffman code lengths
+         for the literal/length alphabet are:
+
+                   Lit Value    Bits        Codes
+                   ---------    ----        -----
+                     0 - 143     8          00110000 through
+                                            10111111
+                   144 - 255     9          110010000 through
+                                            111111111
+                   256 - 279     7          0000000 through
+                                            0010111
+                   280 - 287     8          11000000 through
+                                            11000111
+
+*/
+// fixed Huffman codes go from 7-9 bits, so we need an array whose index can hold up to 9 bits
+var fixedHCtoLiteral = new Array(512);
+function getFixedHuffmanCodeTable() {
+	// create once
+	if (fixedHCtoLiteral[0] != 256) {
+		var bitlengths = new Array(288);
+		for (var i = 0; i <= 143; ++i) bitlengths[i] = 8;
+		for (i = 144; i <= 255; ++i) bitlengths[i] = 9;
+		for (i = 256; i <= 279; ++i) bitlengths[i] = 7;
+		for (i = 280; i <= 287; ++i) bitlengths[i] = 8;
+		
+		// get huffman codes
+		var hcodes = getHuffmanCodes(bitlengths);
+		// now use them as indices in our fixedHCtoLiteral map
+		for (i = 0; i < fixedHCtoLiteral.length; ++i)
+			fixedHCtoLiteral[i] = 0;
+		
+		for (i = 0; i < hcodes.length; ++i) {
+			fixedHCtoLiteral[hcodes[i]] = i;
+		}
+	}
+	return fixedHCtoLiteral;
+}
+
 // compression method 8
 // deflate: http://tools.ietf.org/html/rfc1951
 function inflate(compressedData) {
 	var data = "";
 	
-	var bstream = new BitStream(compressedData),
-		readBits = bstream.readBits,
-		readBytes = bstream.readBytes;
+	var bstream = new BitStream(compressedData);
+
+	createFixedHuffmanCodes();
 	
 	// block format: http://tools.ietf.org/html/rfc1951#page-9
-	
 	do {
-		var bFinal = readBits(1),
-			bType = readBits(2);
+		var bFinal = bstream.readBits(1),
+			bType = bstream.readBits(2);
 		
 		// no compression
 		if (bType == 0) {
 			// skip remaining bits in this byte
-			readBits(5);
-			var len = readBits(16),
-				nlen = readBits(16);
+			bstream.readBits(5);
+			var len = bstream.readBits(16),
+				nlen = bstream.readBits(16);
 			// TODO: check if nlen is the ones-complement of len?
-			data += readBytes(len);
+			data += bstream.readBytes(len);
 		}
 		// fixed Huffman codes
 		else if(bType == 1) {
+			// construct fixed huffman codes
+			
 		}
 		// dynamic Huffman codes
 		else if(bType == 2) {

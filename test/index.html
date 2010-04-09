@@ -77,6 +77,55 @@
 		equal(hcodes[6], 14);
 		equal(hcodes[7], 15);
 	});
+
+/*
+         The Huffman codes for the two alphabets are fixed, and are not
+         represented explicitly in the data.  The Huffman code lengths
+         for the literal/length alphabet are:
+
+                   Lit Value    Bits        Codes
+                   ---------    ----        -----
+                     0 - 143     8          00110000 through
+                                            10111111
+                   144 - 255     9          110010000 through
+                                            111111111
+                   256 - 279     7          0000000 through
+                                            0010111
+                   280 - 287     8          11000000 through
+                                            11000111
+
+*/	
+	test("Test Fixed Huffman Code Table", function() {
+		expect(17);
+		var codeTable = getFixedHuffmanCodeTable();
+		equal(typeof codeTable, typeof []);
+		
+		// look up some random values (index is Huffman Code, value is the symbol)
+		
+		// 7-bit codes (256-279)
+		equal(codeTable[0], 256);
+		equal(codeTable[1], 257);
+		equal(codeTable[22], 278);
+		equal(codeTable[23], 279);
+		
+		// 8-bit codes (0-143)
+		equal(codeTable[48], 0);
+		equal(codeTable[49], 1);
+		equal(codeTable[190], 142);
+		equal(codeTable[191], 143);
+		
+		// 8-bit codes (280-287)
+		equal(codeTable[192], 280);
+		equal(codeTable[193], 281);
+		equal(codeTable[198], 286);
+		equal(codeTable[199], 287);
+		
+		// 9-bit codes (144-255)
+		equal(codeTable[400], 144);
+		equal(codeTable[401], 145);
+		equal(codeTable[510], 254);
+		equal(codeTable[511], 255);
+	});
 	
   }); 
   </script>  
