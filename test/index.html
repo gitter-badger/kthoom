@@ -14,15 +14,53 @@
 		}
 	};
 	
-	// TODO: make a function that will create a binary stream out of an array of numbers
-	
-	module("Test Module");
+	module("Binary Stream");
 
-	test("Sample test", function() {
-		expect(1);
-		equal(1, 1);
+	test("Test createBinaryString", function() {
+		expect(7);
+		equal(typeof createBinaryString([65,66,67]), typeof "");
+		equal(createBinaryString([65,66,67]).length, 3);
+		equal(createBinaryString([65,66,67]), "ABC");
+		equal(createBinaryString([97,98,99]), "abc");
+		equal(createBinaryString([0,1,2]), "\u0000\u0001\u0002");
+		equal(createBinaryString([126,127,128,129]), "\u007e\u007f\u0080\u0081");
+		equal(createBinaryString([253,254,255]), "\u00fd\u00fe\u00ff");
 	});
+	
+	test("Test ByteStream", function() {
+		expect(9);
+		var bstream = new ByteStream(createBinaryString([65,66,67,68,69,70]));
+		equal(typeof bstream, typeof {});
 		
+		// test peek number, checking endianness
+		equal(bstream.peekNumber(1), 65);
+		equal(bstream.peekNumber(2), (66<<8)|65);
+		equal(bstream.peekNumber(4), (68<<24)|(67<<16)|(66<<8)|65);
+		
+		// test readNumber
+		equal(bstream.readNumber(1), 65);
+		equal(bstream.readNumber(1), 66);
+		equal(bstream.readNumber(2), (68<<8)|67);
+		
+		// test peekString
+		equal(bstream.peekString(2), "EF");
+		equal(bstream.readString(2), "EF");
+	});
+	
+	test("Test BitStream", function() {
+		expect(4);
+		
+		var bstream = new BitStream(createBinaryString([0x2D, 0x6E]));
+		
+		// test peek and read bits
+		equal(bstream.peekBits(3), 5);
+		equal(bstream.readBits(3), 5);
+		
+		// test proper peeking and reading of bits over byte boundary
+		equal(bstream.peekBits(7), 69);
+		equal(bstream.readBits(7), 69);
+	});
+	
   }); 
   </script>  
 </head>  
@@ -32,6 +70,5 @@
   <h2 id="qunit-userAgent"></h2>
   <ol id="qunit-tests">
   </ol>
-  <div id="svgcanvas" style="visibility:hidden"></div>
 </body>  
 </html>

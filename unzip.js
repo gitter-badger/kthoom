@@ -21,18 +21,89 @@ var BITMASK = [ 0, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF ];
 //
 // bstr must be a binary string
 function BitStream(bstr) {
-	if (typeof bstr != "string" || bstr.length < 1) {
+	if (typeof bstr != typeof "" || bstr.length < 1) {
 		alert("Error! Attempted to create a BitStream object with a non-string");
 	}
 	this.str = bstr;
 	this.bytePtr = 0; // tracks which byte we are on
 	this.bitPtr = 0; // contains values 0 through 7
 	
-	// peeks at the next n bits as an unsigned number but does not advance the pointer
-	this.peekBits = function( n ) {
-		if (typeof n != "number" || n < 1) {
+	// returns the next n bits as an unsigned number, advancing the pointer if movePointers is true
+	this.peekBits = function( n, movePointers ) {
+		if (typeof n != typeof 1 || n < 1) {
 			return -1;
 		}
+		
+		var movePointers = movePointers || false;
+		var bytePtr = this.bytePtr,
+			bitPtr = this.bitPtr,
+			result = 0;
+		
+		// keep going until we have no more bits left to peek at
+		var bitsIn = 0;
+		while (n > 0) {
+			var numBitsLeftInThisByte = (8 - bitPtr);
+			if (n >= numBitsLeftInThisByte) {
+				var mask = (BITMASK[numBitsLeftInThisByte] << bitPtr);
+				result |= (((this.str.charCodeAt(bytePtr) & mask) >> bitPtr) << bitsIn);
+				
+				bytePtr++;
+				bitPtr = 0;
+				bitsIn += numBitsLeftInThisByte;
+				n -= numBitsLeftInThisByte;
+			}
+			else {
+				var mask = (BITMASK[n] << bitPtr);
+				result |= (((this.str.charCodeAt(bytePtr) & mask) >> bitPtr) << bitsIn);
+				
+				bitPtr += n;
+				bitsIn += n;
+				n = 0;
+			}
+		}
+		
+		if (movePointers) {
+			this.bitPtr = bitPtr;
+			this.bytePtr = bytePtr;
+		}
+		
+		return result;
+	};
+	
+	this.readBits = function( n ) {
+		return this.peekBits(n, true);
+	};
+	
+	// this returns n bytes as a binary string, advancing the pointer if movePointers is true
+	this.peekBytes = function( n, movePointers ) {
+		if (typeof n != typeof 1 || n < 1) {
+			return -1;
+		}
+		
+		var movePointers = movePointers || false;
+		var bytePtr = this.bytePtr,
+			bitPtr = this.bitPtr,
+			result = "";
+			
+		// special-case if we are byte-aligned
+		if (bitPtr == 0) {
+			result = this.str.substring(bytePtr, bytePtr+n);
+		}
+		// else, use peekBits()
+		else {
+			// TODO: implement
+			alert("Error! peekBytes() called and not byte-aligned");
+		}
+
+		if (movePointers) {
+			this.bytePtr += n;
+		}
+		
+		return result;
+	};
+	
+	this.readBytes = function( n ) {
+		return this.peekBytes(n, true);
 	}
 }
 
@@ -44,7 +115,7 @@ function BitStream(bstr) {
 //
 // bstr must be a binary string
 function ByteStream(bstr) {
-	if (typeof bstr != "string" || bstr.length < 1) {
+	if (typeof bstr != typeof "" || bstr.length < 1) {
 		alert("Error! Attempted to create a ByteStream with a non-string");
 	}
 	this.str = bstr;
@@ -53,7 +124,7 @@ function ByteStream(bstr) {
 	// peeks at the next n bytes as an unsigned number but does not advance the pointer
 	this.peekNumber = function( n ) {
 		// TODO: return error if n would go past the end of the stream?
-		if (typeof n != "number" || n < 1) {
+		if (typeof n != typeof 1 || n < 1) {
 			return -1;
 		}
 		var result = 0;
@@ -77,7 +148,7 @@ function ByteStream(bstr) {
 	
 	// peeks at the next n bytes as a string but does not advance the pointer
 	this.peekString = function( n ) {
-		if (typeof n != "number" || n < 1) {
+		if (typeof n != typeof 1 || n < 1) {
 			return -1;
 		}
 		return this.str.substring(this.ptr, this.ptr+n);
@@ -108,7 +179,7 @@ var zEndOfCentralDirLocatorSignature = 0x07064b50;
 
 // takes a ByteStream and parses out the local file information
 function ZipLocalFile(bstream) {
-	if (typeof bstream != "object" || !bstream.readNumber || typeof bstream.readNumber != "function") {
+	if (typeof bstream != typeof {} || !bstream.readNumber || typeof bstream.readNumber != typeof function(){}) {
 		return null;
 	}
 	bstream.readNumber(4); // swallow signature
@@ -157,12 +228,56 @@ function ZipLocalFile(bstream) {
 		console.log("ZIP v1.0, store only: " + this.filename + " (" + this.compressedSize + " bytes)");
 		this.isValid = true;
 	}
-	// TODO: version == 20, compression method == 8
+	// TODO: version == 20, compression method == 8 (DEFLATE)
+	else if (this.version == 20 && this.compressionMethod == 8) {
+		console.log("ZIP v2.0, DEFLATE: " + this.filename + " (" + this.compressedSize + " bytes)");
+		
+		this.fileData = inflate(this.fileData);
+		this.isValid = true;
+	}
 	else {
 		console.log("UNSUPPORTED VERSION/FORMAT: ZIP v" + this.version + ", compression method=" + this.compressionMethod + ": " + this.filename + " (" + this.compressedSize + " bytes)");
 		this.isValid = false;
 		this.fileData = null;
 	}
+}
+
+// helper function that will create a binary stream out of an array of numbers
+// bytes must be an array and contain numbers, each varying from 0-255
+var createBinaryString = function(bytes) {
+	if (typeof bytes != typeof []) {
+		return null;
+	}
+	var bstr = new Array(bytes.length);
+	for (var i = 0; i < bytes.length; ++i) {
+		bstr[i] = String.fromCharCode(bytes[i]);
+	}
+	return bstr.join('');
+};
+
+// returns an array of Huffman codes based on an array of code lengths
+function getHuffmanCodes(bitLengths) {
+	// ensure bitLengths is an array containing at least one element
+	if (typeof bitLengths != typeof [] || bitLengths.length < 1) {
+		alert("Error! getHuffmanCodes() called with an invalid array");
+		return null;
+	}
+	
+	// Reference: http://tools.ietf.org/html/rfc1951#page-8
+	var codes = [];
+	var bl_count = [];
+	
+	// count up how many codes of each length we have
+	for (var i = 0; i < bitLengths.length; ++i) {
+		var length = bitLengths[i];
+		// test to ensure each bit length is a positive, non-zero number
+		if (typeof length != typeof 1 || length < 1) {
+			alert("bitLengths contained an invalid number in getHuffmanCodes()");
+			return null;
+		}
+	}
+	
+	return codes;
 }
 
 // Takes a binary string of a zip file in
@@ -238,4 +353,45 @@ function unzip(bstr) {
 		console.log("File was not a zip");
 	}
 	return null;
+}
+
+// compression method 8
+// deflate: http://tools.ietf.org/html/rfc1951
+function inflate(compressedData) {
+	var data = "";
+	
+	var bstream = new BitStream(compressedData),
+		readBits = bstream.readBits,
+		readBytes = bstream.readBytes;
+	
+	// block format: http://tools.ietf.org/html/rfc1951#page-9
+	
+	do {
+		var bFinal = readBits(1),
+			bType = readBits(2);
+		
+		// no compression
+		if (bType == 0) {
+			// skip remaining bits in this byte
+			readBits(5);
+			var len = readBits(16),
+				nlen = readBits(16);
+			// TODO: check if nlen is the ones-complement of len?
+			data += readBytes(len);
+		}
+		// fixed Huffman codes
+		else if(bType == 1) {
+		}
+		// dynamic Huffman codes
+		else if(bType == 2) {
+		}
+		// error
+		else {
+			alert("Error! Encountered deflate block of type 3");
+			return null;
+		}
+	} while (bFinal != 1);
+	// we are done reading blocks if the bFinal bit was set for this block
+
+	return data;
 }

@@ -96,7 +96,7 @@ function getFile(evt) {
 }
 
 function showPage(n) {
-	if (typeof n != "number" || n < 0 || n >= imageFiles.length) {
+	if (typeof n != typeof 1 || n < 0 || n >= imageFiles.length) {
 		return;
 	}
 	
