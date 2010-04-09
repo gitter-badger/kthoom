@@ -264,20 +264,47 @@ function getHuffmanCodes(bitLengths) {
 	}
 	
 	// Reference: http://tools.ietf.org/html/rfc1951#page-8
-	var codes = [];
-	var bl_count = [];
+	var numLengths = bitLengths.length,
+		hCodes = new Array(numLengths),
+		bl_count = [],
+		MAX_BITS = 1;
 	
-	// count up how many codes of each length we have
-	for (var i = 0; i < bitLengths.length; ++i) {
+	// Step 1: count up how many codes of each length we have
+	for (var i = 0; i < numLengths; ++i) {
 		var length = bitLengths[i];
 		// test to ensure each bit length is a positive, non-zero number
 		if (typeof length != typeof 1 || length < 1) {
 			alert("bitLengths contained an invalid number in getHuffmanCodes()");
 			return null;
 		}
+		// increment the appropriate bitlength count
+		if (bl_count[length] == undefined) bl_count[length] = 0;
+		bl_count[length]++;
+		
+		if (length > MAX_BITS) MAX_BITS = length;
 	}
 	
-	return codes;
+	// Step 2: Find the numerical value of the smallest code for each code length
+	var next_code = [],
+		code = 0;
+	for (var bits = 1; bits <= MAX_BITS; ++bits) {
+		var length = bits-1;
+		// ensure undefined lengths are zero
+		if (bl_count[length] == undefined) bl_count[length] = 0;
+		code = (code + bl_count[bits-1]) << 1;
+		next_code[bits] = code;
+	}
+	
+	// Step 3: Assign numerical values to all codes
+	for (var n = 0; n < numLengths; ++n) {
+		var len = bitLengths[n];
+		if (len != 0) {
+			hCodes[n] = next_code[len];
+			next_code[len]++;
+		}
+	}
+	
+	return hCodes;
 }
 
 // Takes a binary string of a zip file in
