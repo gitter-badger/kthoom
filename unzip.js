@@ -182,32 +182,35 @@ function ZipLocalFile(bstream) {
 	if (typeof bstream != typeof {} || !bstream.readNumber || typeof bstream.readNumber != typeof function(){}) {
 		return null;
 	}
-	bstream.readNumber(4); // swallow signature
-	this.version = bstream.readNumber(2);
-	this.generalPurpose = bstream.readNumber(2);
-	this.compressionMethod = bstream.readNumber(2);
-	this.lastModFileTime = bstream.readNumber(2);
-	this.lastModFileDate = bstream.readNumber(2);
-	this.crc32 = bstream.readNumber(4);
-	this.compressedSize = bstream.readNumber(4);
-	this.uncompressedSize = bstream.readNumber(4);
-	this.fileNameLength = bstream.readNumber(2);
-	this.extraFieldLength = bstream.readNumber(2);
+	var readNumber = bstream.readNumber,
+		readString = bstream.readString;
+	
+	readNumber(4); // swallow signature
+	this.version = readNumber(2);
+	this.generalPurpose = readNumber(2);
+	this.compressionMethod = readNumber(2);
+	this.lastModFileTime = readNumber(2);
+	this.lastModFileDate = readNumber(2);
+	this.crc32 = readNumber(4);
+	this.compressedSize = readNumber(4);
+	this.uncompressedSize = readNumber(4);
+	this.fileNameLength = readNumber(2);
+	this.extraFieldLength = readNumber(2);
 	
 	this.filename = null;
 	if (this.fileNameLength > 0) {
-		this.filename = bstream.readString(this.fileNameLength);
+		this.filename = readString(this.fileNameLength);
 	}
 	
 	this.extraField = null;
 	if (this.extraFieldLength > 0) {
-		this.extraField = bstream.readString(this.extraFieldLength);
+		this.extraField = readString(this.extraFieldLength);
 	}
 	
 	// read in the compressed data
 	this.fileData = null;
 	if (this.compressedSize > 0) {
-		this.fileData = bstream.readString(this.compressedSize);
+		this.fileData = readString(this.compressedSize);
 	}
 	
 	// TODO: deal with data descriptor if present (we currently assume no data descriptor!)
@@ -216,9 +219,9 @@ function ZipLocalFile(bstream) {
 	// from the header?!?
 	if ((this.generalPurpose & BIT[3]) != 0) {
 		console.log("dd");
-		this.crc32 = bstream.readNumber(4);
-		this.compressedSize = bstream.readNumber(4);
-		this.uncompressedSize = bstream.readNumber(4);
+		this.crc32 = readNumber(4);
+		this.compressedSize = readNumber(4);
+		this.uncompressedSize = readNumber(4);
 	}
 	
 	// now determine what kind of compressed data we have and decompress
@@ -311,13 +314,17 @@ function getHuffmanCodes(bitLengths) {
 // returns null on error
 // returns an array of ZipLocalFile objects on success
 function unzip(bstr) {
-	var bstream = new ByteStream(bstr);
+	var bstream = new ByteStream(bstr),
+		readNumber = bstream.readNumber,
+		peekNumber = bstream.peekNumber,
+		readString = bstream.readString;
+	
 	// detect local file header signature or return null
-	if (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
+	if (peekNumber(4) == zLocalFileHeaderSignature) {
 		var localFiles = [];
 		
 		// loop until we don't see any more local files
-		while (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
+		while (peekNumber(4) == zLocalFileHeaderSignature) {
 			var oneLocalFile = new ZipLocalFile(bstream);
 			// this should strip out directories/folders
 			if (oneLocalFile && oneLocalFile.uncompressedSize > 0) {
@@ -326,47 +333,47 @@ function unzip(bstr) {
 		}
 		
 		// archive extra data record
-		if (bstream.peekNumber(4) == zArchiveExtraDataSignature) {
+		if (peekNumber(4) == zArchiveExtraDataSignature) {
 			// skipping this record for now
-			bstream.readNumber(4);
-			var archiveExtraFieldLength = bstream.readNumber(4);
-			bstream.readString(archiveExtraFieldLength);
+			readNumber(4);
+			var archiveExtraFieldLength = readNumber(4);
+			readString(archiveExtraFieldLength);
 		}
 		
 		// central directory structure
 		// TODO: handle the rest of the structures (Zip64 stuff)
-		if (bstream.peekNumber(4) == zCentralFileHeaderSignature) {
+		if (peekNumber(4) == zCentralFileHeaderSignature) {
 			// read all file headers
-			while (bstream.peekNumber(4) == zCentralFileHeaderSignature) {
-				bstream.readNumber(4); // signature
-				bstream.readNumber(2); // version made by
-				bstream.readNumber(2); // version needed to extract
-				bstream.readNumber(2); // general purpose bit flag
-				bstream.readNumber(2); // compression method
-				bstream.readNumber(2); // last mod file time
-				bstream.readNumber(2); // last mod file date
-				bstream.readNumber(4); // crc32
-				bstream.readNumber(4); // compressed size
-				bstream.readNumber(4); // uncompressed size
-				var fileNameLength = bstream.readNumber(2); // file name length
-				var extraFieldLength = bstream.readNumber(2); // extra field length
-				var fileCommentLength = bstream.readNumber(2); // file comment length
-				bstream.readNumber(2); // disk number start
-				bstream.readNumber(2); // internal file attributes
-				bstream.readNumber(4); // external file attributes
-				bstream.readNumber(4); // relative offset of local header
+			while (peekNumber(4) == zCentralFileHeaderSignature) {
+				readNumber(4); // signature
+				readNumber(2); // version made by
+				readNumber(2); // version needed to extract
+				readNumber(2); // general purpose bit flag
+				readNumber(2); // compression method
+				readNumber(2); // last mod file time
+				readNumber(2); // last mod file date
+				readNumber(4); // crc32
+				readNumber(4); // compressed size
+				readNumber(4); // uncompressed size
+				var fileNameLength = readNumber(2); // file name length
+				var extraFieldLength = readNumber(2); // extra field length
+				var fileCommentLength = readNumber(2); // file comment length
+				readNumber(2); // disk number start
+				readNumber(2); // internal file attributes
+				readNumber(4); // external file attributes
+				readNumber(4); // relative offset of local header
 				
-				bstream.readString(fileNameLength); // file name
-				bstream.readString(extraFieldLength); // extra field
-				bstream.readString(fileCommentLength); // file comment				
+				readString(fileNameLength); // file name
+				readString(extraFieldLength); // extra field
+				readString(fileCommentLength); // file comment				
 			}
 		}
 		
 		// digital signature
-		if (bstream.peekNumber(4) == zDigitalSignatureSignature) {
-			bstream.readNumber(4);
-			var sizeOfSignature = bstream.readNumber(2);
-			bstream.readString(sizeOfSignature); // digital signature data
+		if (peekNumber(4) == zDigitalSignatureSignature) {
+			readNumber(4);
+			var sizeOfSignature = readNumber(2);
+			readString(sizeOfSignature); // digital signature data
 		}
 		
 		// TODO: process the image data in each local file...

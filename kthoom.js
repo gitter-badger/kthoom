@@ -23,12 +23,13 @@ if (window.opera) {
 	window.console.dir = function(str) {};
 }
 
+// TODO: stop polluting the window namespace and stuff into a kthoom object
+
 // key codes
 // TODO: is this reliable?
 var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, L: 76, R: 82 };
 
 // global variables
-// TODO: stop polluting the window namespace and stuff into a kthoom object
 var currentImage = 0,
 	imageFiles = [];
 
