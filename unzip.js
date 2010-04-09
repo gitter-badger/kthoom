@@ -255,57 +255,26 @@ var createBinaryString = function(bytes) {
 	return bstr.join('');
 };
 
-// returns an array of Huffman codes based on an array of code lengths
-function getHuffmanCodes(bitLengths) {
-	// ensure bitLengths is an array containing at least one element
-	if (typeof bitLengths != typeof [] || bitLengths.length < 1) {
-		alert("Error! getHuffmanCodes() called with an invalid array");
+// shows a number as its binary representation (8 => "1000")
+var binaryValueToString = function(num, len) {
+	if (typeof num != typeof 1) {
+		alert("Error! Non-number sent to binaryValueToString: " + num);
 		return null;
 	}
+	var len = len || 0;
+	var str = "";
+	do {
+		// get least-significant bit
+		var bit = (num & 0x1);
+		// insert it left into the string
+		str = (bit ? "1" : "0") + str;
+		// shift it one bit right
+		num >>= 1;
+		--len;
+	} while (num != 0 || len > 0);
 	
-	// Reference: http://tools.ietf.org/html/rfc1951#page-8
-	var numLengths = bitLengths.length,
-		hCodes = new Array(numLengths),
-		bl_count = [],
-		MAX_BITS = 1;
-	
-	// Step 1: count up how many codes of each length we have
-	for (var i = 0; i < numLengths; ++i) {
-		var length = bitLengths[i];
-		// test to ensure each bit length is a positive, non-zero number
-		if (typeof length != typeof 1 || length < 1) {
-			alert("bitLengths contained an invalid number in getHuffmanCodes()");
-			return null;
-		}
-		// increment the appropriate bitlength count
-		if (bl_count[length] == undefined) bl_count[length] = 0;
-		bl_count[length]++;
-		
-		if (length > MAX_BITS) MAX_BITS = length;
-	}
-	
-	// Step 2: Find the numerical value of the smallest code for each code length
-	var next_code = [],
-		code = 0;
-	for (var bits = 1; bits <= MAX_BITS; ++bits) {
-		var length = bits-1;
-		// ensure undefined lengths are zero
-		if (bl_count[length] == undefined) bl_count[length] = 0;
-		code = (code + bl_count[bits-1]) << 1;
-		next_code[bits] = code;
-	}
-	
-	// Step 3: Assign numerical values to all codes
-	for (var n = 0; n < numLengths; ++n) {
-		var len = bitLengths[n];
-		if (len != 0) {
-			hCodes[n] = next_code[len];
-			next_code[len]++;
-		}
-	}
-	
-	return hCodes;
-}
+	return str;
+};
 
 // Takes a binary string of a zip file in
 // returns null on error
@@ -313,7 +282,6 @@ function getHuffmanCodes(bitLengths) {
 function unzip(bstr) {
 	var bstream = new ByteStream(bstr);
 	
-	alert(bstream.peekNumber(4));
 	// detect local file header signature or return null
 	if (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
 		var localFiles = [];
@@ -384,6 +352,68 @@ function unzip(bstr) {
 	return null;
 }
 
+// returns an array of Huffman codes based on an array of code lengths
+function getHuffmanCodes(bitLengths) {
+	// ensure bitLengths is an array containing at least one element
+	if (typeof bitLengths != typeof [] || bitLengths.length < 1) {
+		alert("Error! getHuffmanCodes() called with an invalid array");
+		return null;
+	}
+	
+	// Reference: http://tools.ietf.org/html/rfc1951#page-8
+	var numLengths = bitLengths.length,
+		hCodes = new Array(numLengths),
+		bl_count = [],
+		MAX_BITS = 1;
+	
+	// Step 1: count up how many codes of each length we have
+	for (var i = 0; i < numLengths; ++i) {
+		var length = bitLengths[i];
+		// test to ensure each bit length is a positive, non-zero number
+		if (typeof length != typeof 1 || length < 0) {
+			alert("bitLengths contained an invalid number in getHuffmanCodes()");
+			return null;
+		}
+		// increment the appropriate bitlength count
+		if (bl_count[length] == undefined) bl_count[length] = 0;
+		// a length of zero means this symbol is not participating in the huffman coding
+		if (length > 0) bl_count[length]++;
+		
+		if (length > MAX_BITS) MAX_BITS = length;
+	}
+	
+	// Step 2: Find the numerical value of the smallest code for each code length
+	var next_code = [],
+		code = 0;
+	for (var bits = 1; bits <= MAX_BITS; ++bits) {
+		var length = bits-1;
+		// ensure undefined lengths are zero
+		if (bl_count[length] == undefined) bl_count[length] = 0;
+		code = (code + bl_count[bits-1]) << 1;
+		next_code[bits] = code;
+	}
+	
+	// Step 3: Assign numerical values to all codes
+	for (var n = 0; n < numLengths; ++n) {
+		var len = bitLengths[n];
+		if (len != 0) {
+			hCodes[n] = next_code[len];
+			next_code[len]++;
+		}
+	}
+	
+	return hCodes;
+}
+
+function getHuffmanCodeTable(hcodes) {
+	var table = {};
+	// now use them as indices in our map
+	for (var i = 0; i < hcodes.length; ++i) {
+		table[hcodes[i]] = i;
+	}
+	return table;
+}
+
 /*
          The Huffman codes for the two alphabets are fixed, and are not
          represented explicitly in the data.  The Huffman code lengths
@@ -402,28 +432,44 @@ function unzip(bstr) {
 
 */
 // fixed Huffman codes go from 7-9 bits, so we need an array whose index can hold up to 9 bits
-var fixedHCtoLiteral = new Array(512);
+var fixedHCtoLiteral = null;
 function getFixedHuffmanCodeTable() {
 	// create once
-	if (fixedHCtoLiteral[0] != 256) {
+	if (!fixedHCtoLiteral) {
 		var bitlengths = new Array(288);
 		for (var i = 0; i <= 143; ++i) bitlengths[i] = 8;
 		for (i = 144; i <= 255; ++i) bitlengths[i] = 9;
 		for (i = 256; i <= 279; ++i) bitlengths[i] = 7;
 		for (i = 280; i <= 287; ++i) bitlengths[i] = 8;
 		
-		// get huffman codes
-		var hcodes = getHuffmanCodes(bitlengths);
-		// now use them as indices in our fixedHCtoLiteral map
-		for (i = 0; i < fixedHCtoLiteral.length; ++i)
-			fixedHCtoLiteral[i] = 0;
-		
-		for (i = 0; i < hcodes.length; ++i) {
-			fixedHCtoLiteral[hcodes[i]] = i;
-		}
+		// get huffman code table
+		fixedHCtoLiteral = getHuffmanCodeTable( getHuffmanCodes(bitlengths) );
 	}
 	return fixedHCtoLiteral;
 }
+
+// extract one bit at a time until we find a matching Huffman Code
+// then return that symbol
+function decodeSymbol(bstream, hcTable, debug) {
+	var code = 0, len = 0;
+	var match = false;
+	
+	// loop until we match
+	for (;;) {
+		// read in next bit
+		code = (code<<1) | bstream.readBits(1);
+		++len;
+		
+		// check against Huffman Code table and break if found
+		if (hcTable.hasOwnProperty(code)) {
+			if(debug) console.log("  found code=" + code + " (" + binaryValueToString(code,len) + ")");
+			break;
+		}
+	}
+	return hcTable[code];
+}
+
+var CodeLengthCodeOrder = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
 
 // compression method 8
 // deflate: http://tools.ietf.org/html/rfc1951
@@ -431,8 +477,6 @@ function inflate(compressedData) {
 	var data = "";
 	
 	var bstream = new BitStream(compressedData);
-
-	createFixedHuffmanCodes();
 	
 	// block format: http://tools.ietf.org/html/rfc1951#page-9
 	do {
@@ -451,10 +495,74 @@ function inflate(compressedData) {
 		// fixed Huffman codes
 		else if(bType == 1) {
 			// construct fixed huffman codes
-			
 		}
 		// dynamic Huffman codes
 		else if(bType == 2) {
+			var numLiteralLengthCodes = bstream.readBits(5) + 257,
+				numDistanceCodes = bstream.readBits(5) + 1,
+				numCodeLengthCodes = bstream.readBits(4) + 4;
+			console.log([numLiteralLengthCodes, numDistanceCodes]);
+			// populate the array of code length codes (first de-compaction)		
+			var codeLengthsCodeLengths = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+			for (var i = 0; i < numCodeLengthCodes; ++i) {
+				codeLengthsCodeLengths[ CodeLengthCodeOrder[i] ] = bstream.readBits(3);
+			}
+			
+			// get the Huffman Codes for the code lengths
+			var codeLengthsCodes = getHuffmanCodeTable(getHuffmanCodes(codeLengthsCodeLengths));
+			
+			// now follow this mapping 
+			/*
+               0 - 15: Represent code lengths of 0 - 15
+                   16: Copy the previous code length 3 - 6 times.
+                       The next 2 bits indicate repeat length
+                             (0 = 3, ... , 3 = 6)
+                          Example:  Codes 8, 16 (+2 bits 11),
+                                    16 (+2 bits 10) will expand to
+                                    12 code lengths of 8 (1 + 6 + 5)
+                   17: Repeat a code length of 0 for 3 - 10 times.
+                       (3 bits of length)
+                   18: Repeat a code length of 0 for 11 - 138 times
+                       (7 bits of length)
+			*/
+			// to generate the true code lengths of the Huffman Codes for the literal
+			// and distance tables together
+			var literalCodeLengths = [];
+			var prevCodeLength = 0;
+			while (literalCodeLengths.length < numLiteralLengthCodes + numDistanceCodes) {
+				var symbol = decodeSymbol(bstream, codeLengthsCodes);
+				if (symbol <= 15) {
+					literalCodeLengths.push(symbol);
+					prevCodeLength = symbol;
+				}
+				else if (symbol == 16) {
+					var repeat = bstream.readBits(2) + 3;
+					while (repeat--) {
+						literalCodeLengths.push(prevCodeLength);
+					}
+				}
+				else if (symbol == 17) {
+					var repeat = bstream.readBits(3) + 3;
+					while (repeat--) {
+						literalCodeLengths.push(prevCodeLength);
+					}
+				}
+				else if (symbol == 18) {
+					var repeat = bstream.readBits(7) + 11;
+					while (repeat--) {
+						literalCodeLengths.push(prevCodeLength);
+					}
+				}
+			}
+			
+			// now split the distance code lengths out of the literal code array
+			var distanceCodeLengths = literalCodeLengths.splice(numLiteralLengthCodes, numDistanceCodes);
+			
+			// now generate the true Huffman Code tables using these code lengths
+			var hcLiteralTable = getHuffmanCodeTable(getHuffmanCodes(literalCodeLengths)),
+				hcDistanceTable = getHuffmanCodeTable(getHuffmanCodes(distanceCodeLengths));
+
+			// now extract the binary data using these HC tables and... ?
 		}
 		// error
 		else {
