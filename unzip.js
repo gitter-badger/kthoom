@@ -7,7 +7,7 @@
  *
  */
 
-console = {log:dump};
+console = {log:postMessage};
 
 // TODO: put the unzip into its own Web Worker and report progress
 
@@ -87,20 +87,19 @@ function BitStream(bstr) {
 			return -1;
 		}
 		
+		// from http://tools.ietf.org/html/rfc1951#page-11
+		// "Any bits of input up to the next byte boundary are ignored."
+		while (this.bitPtr != 0) {
+			this.readBits(1);
+			postMessage("Skipped a bit");
+		}
+
 		var movePointers = movePointers || false;
 		var bytePtr = this.bytePtr,
 			bitPtr = this.bitPtr,
 			result = "";
-			
-		// special-case if we are byte-aligned
-		if (bitPtr == 0) {
-			result = this.str.substring(bytePtr, bytePtr+n);
-		}
-		// else, use peekBits()
-		else {
-			// TODO: implement
-			throw "Error! peekBytes() called and not byte-aligned";
-		}
+		
+		result = this.str.substring(bytePtr, bytePtr+n);
 
 		if (movePointers) {
 			this.bytePtr += n;
@@ -207,24 +206,23 @@ function ZipLocalFile(bstream) {
 		this.filename = bstream.readString(this.fileNameLength);
 	}
 	
-	console.log("Zip Local File Header:");
-	console.log(" version=" + this.version);
-	console.log(" general purpose=" + this.generalPurpose);
-	console.log(" compression method=" + this.compressionMethod);
-	console.log(" last mod file time=" + this.lastModFileTime);
-	console.log(" last mod file date=" + this.lastModFileDate);
-	console.log(" crc32=" + this.crc32);
-	console.log(" compressed size=" + this.compressedSize);
-	console.log(" uncompressed size=" + this.uncompressedSize);
-	console.log(" file name length=" + this.fileNameLength);
-	console.log(" extra field length=" + this.extraFieldLength);
-	console.log(" filename = '" + this.filename + "'");
+	postMessage("Zip Local File Header:");
+	postMessage(" version=" + this.version);
+	postMessage(" general purpose=" + this.generalPurpose);
+	postMessage(" compression method=" + this.compressionMethod);
+	postMessage(" last mod file time=" + this.lastModFileTime);
+	postMessage(" last mod file date=" + this.lastModFileDate);
+	postMessage(" crc32=" + this.crc32);
+	postMessage(" compressed size=" + this.compressedSize);
+	postMessage(" uncompressed size=" + this.uncompressedSize);
+	postMessage(" file name length=" + this.fileNameLength);
+	postMessage(" extra field length=" + this.extraFieldLength);
+	postMessage(" filename = '" + this.filename + "'");
 	
 	this.extraField = null;
 	if (this.extraFieldLength > 0) {
 		this.extraField = bstream.readString(this.extraFieldLength);
 	}
-	console.log(" extra field = '" + this.extraField + "'");
 	
 	// read in the compressed data
 	var startByte = bstream.ptr;
@@ -247,18 +245,18 @@ function ZipLocalFile(bstream) {
 	
 	// Zip Version 1.0, no compression (store only)
 	if (this.version == 10 && this.compressionMethod == 0) {
-		console.log("ZIP v1.0, store only: " + this.filename + " (" + this.compressedSize + " bytes)");
+		postMessage("ZIP v1.0, store only: " + this.filename + " (" + this.compressedSize + " bytes)");
 		this.isValid = true;
 	}
 	// TODO: version == 20, compression method == 8 (DEFLATE)
 	else if (this.version == 20 && this.compressionMethod == 8) {
-		console.log("ZIP v2.0, DEFLATE: " + this.filename + " (" + this.compressedSize + " bytes)");
-		console.log("  starting at byte #" + startByte);
+		postMessage("ZIP v2.0, DEFLATE: " + this.filename + " (" + this.compressedSize + " bytes)");
+		postMessage("  starting at byte #" + startByte);
 		this.fileData = inflate(this.fileData);
 		this.isValid = true;
 	}
 	else {
-		console.log("UNSUPPORTED VERSION/FORMAT: ZIP v" + this.version + ", compression method=" + this.compressionMethod + ": " + this.filename + " (" + this.compressedSize + " bytes)");
+		postMessage("UNSUPPORTED VERSION/FORMAT: ZIP v" + this.version + ", compression method=" + this.compressionMethod + ": " + this.filename + " (" + this.compressedSize + " bytes)");
 		this.isValid = false;
 		this.fileData = null;
 	}
@@ -329,7 +327,7 @@ function unzip(bstr) {
 		
 		// archive extra data record
 		if (bstream.peekNumber(4) == zArchiveExtraDataSignature) {
-			console.log(" Found an Archive Extra Data Signature");
+			postMessage(" Found an Archive Extra Data Signature");
 			// skipping this record for now
 			bstream.readNumber(4);
 			var archiveExtraFieldLength = bstream.readNumber(4);
@@ -339,7 +337,7 @@ function unzip(bstr) {
 		// central directory structure
 		// TODO: handle the rest of the structures (Zip64 stuff)
 		if (bstream.peekNumber(4) == zCentralFileHeaderSignature) {
-			console.log(" Found a Central File Header");
+			postMessage(" Found a Central File Header");
 			// read all file headers
 			while (bstream.peekNumber(4) == zCentralFileHeaderSignature) {
 				bstream.readNumber(4); // signature
@@ -368,7 +366,7 @@ function unzip(bstr) {
 		
 		// digital signature
 		if (bstream.peekNumber(4) == zDigitalSignatureSignature) {
-			console.log(" Found a Digital Signature");
+			postMessage(" Found a Digital Signature");
 			bstream.readNumber(4);
 			var sizeOfSignature = bstream.readNumber(2);
 			bstream.readString(sizeOfSignature); // digital signature data
@@ -376,13 +374,13 @@ function unzip(bstr) {
 		
 		// TODO: process the image data in each local file...
 		if (localFiles.length > 0) {
-			console.log("Found " + localFiles.length + " files");
+			postMessage("Found " + localFiles.length + " files");
 		}
 		
 		return localFiles;
 	}
 	else {
-		console.log("File was not a zip");
+		postMessage("File was not a zip");
 	}
 	return null;
 }
@@ -505,7 +503,7 @@ function getFixedDistanceTable() {
 
 // extract one bit at a time until we find a matching Huffman Code
 // then return that symbol
-function decodeSymbol(bstream, hcTable, debug) {
+function decodeSymbol(bstream, hcTable) {
 	var code = 0, len = 0;
 	var match = false;
 	
@@ -520,7 +518,6 @@ function decodeSymbol(bstream, hcTable, debug) {
 		// same with code = 1 and Huffman Code 00001
 		// then we fail to read in all those bits
 		if (hcTable.hasOwnProperty(code) && hcTable[code].length == len) {
-			if(debug) console.log("  found code=" + code + " (" + binaryValueToString(code,len) + ")");
 			break;
 		}
 		if (len > hcTable.maxLength) {
@@ -685,7 +682,7 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 // deflate: http://tools.ietf.org/html/rfc1951
 function inflate(compressedData) {
 	var data = "";
-	console.log("inflating " + compressedData.length + " bytes");
+	postMessage("inflating " + compressedData.length + " bytes");
 	var bstream = new BitStream(compressedData);
 	var numBlocks = 0;
 	// block format: http://tools.ietf.org/html/rfc1951#page-9
@@ -693,9 +690,9 @@ function inflate(compressedData) {
 		var bFinal = bstream.readBits(1),
 			bType = bstream.readBits(2);
 		++numBlocks;
-		console.log("Starting block #" + numBlocks + (bFinal ? " (this is the last block)" : ""));
+		postMessage("Starting block #" + numBlocks + (bFinal ? " (this is the last block)" : ""));
 		// no compression
-		console.log(" type=" + bType);
+		postMessage(" type=" + bType);
 		if (bType == 0) {
 			// skip remaining bits in this byte
 			bstream.readBits(5);
@@ -802,7 +799,7 @@ function inflate(compressedData) {
 }
 
 onmessage = function(event) {
-	console.log("Inside worker's onmessage(), got the binary string");
+	postMessage("Inside worker's onmessage(), got the binary string");
 	postMessage( unzip(event.data) );
 };
 
