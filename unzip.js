@@ -296,6 +296,12 @@ var binaryValueToString = function(num, len) {
 	return str;
 };
 
+// shows a byte value as its hex representation
+var nibble = "0123456789ABCDEF";
+var byteValueToHexString = function(num) {
+	return nibble[num>>4] + nibble[num&0xF];
+}
+
 // Takes a binary string of a zip file in
 // returns null on error
 // returns an array of ZipLocalFile objects on success
@@ -523,7 +529,6 @@ function decodeSymbol(bstream, hcTable, debug) {
 }
 
 var CodeLengthCodeOrder = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
-
 function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 	/*
 		  loop (until end of block code recognized)
@@ -546,14 +551,14 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 		++numSymbols;
 //		console.log("    Doing symbol #" + numSymbols + ", symbol=" + symbol + ", byte ptr=" + bstream.bytePtr + ", bit ptr=" + bstream.bitPtr);
 		if (symbol < 256) {
-//			console.log("      is a literal byte " + symbol);
+//			console.log("      is a literal byte " + byteValueToHexString(symbol));
 			// copy literal byte to output
 			output += String.fromCharCode(symbol);
 		}
 		else {
 			// end of block reached
 			if (symbol == 256) {
-//				console.log("Found an end-block symbol");
+				console.log("Found an end-block symbol");
 				break;
 			}
 			else {
@@ -574,7 +579,7 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 				 265   1  11,12      275   3   51-58     285   0    258
 				 266   1  13,14      276   3   59-66
 				*/
-				var length = 285;
+				var length = 258; // symbol 285
 				if (symbol <= 264) {
 					length = (symbol-257)+3;
 				}
@@ -593,7 +598,7 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 				else if (symbol <= 284) {
 					length = (symbol-281)*32 + 131 + bstream.readBits(5);
 				}
-//				console.log("      symbol became length " + length);
+//				console.log("      symbol (" + symbol + ") became length " + length);
 				
 				// get distance as per
 				/*
@@ -657,7 +662,7 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 					distance = (distSymbol-28)*8192 + 16385 + bstream.readBits(13);
 				}
 
-//				console.log("      distSymbol=" + distSymbol + ", distance = " + distance + ", output length is currently " + output.length + " bytes");
+//				console.log("      distSymbol=" + distSymbol + ", distance = " + distance + " (byte #" + (output.length-distance) + ")");
 				
 				// now apply length and distance appropriately and copy to output
 
@@ -674,8 +679,9 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 				while (length--) {
 					output += output[ch++];
 				}
-			}
-		}
+			} // length-distance pair
+		} // length-distance pair or end-of-block
+//		console.log("******* OUTPUT LENGTH IS " + output.length + " **********");
 	} // loop until we reach end of block
 	return output;
 }
@@ -790,6 +796,19 @@ function inflate(compressedData) {
 		}
 	} while (bFinal != 1);
 	// we are done reading blocks if the bFinal bit was set for this block
-	console.log("data size=" + data.length);
+//	console.log("data size=" + data.length + ", first byte =" + data.charCodeAt(0));
+//	console.log("Dumping");
+//	var LINE_LENGTH = 40;
+//	var i = 0;
+//	var one_line = "";
+//	while (i < data.length) {
+//		one_line += byteValueToHexString(data.charCodeAt(i++)) + " ";
+//		if ((i % 40) == 0) {
+//			console.log(one_line);
+//			one_line = "";
+//		}
+//	}
+//	console.log(one_line);
+	
 	return data;
 }
