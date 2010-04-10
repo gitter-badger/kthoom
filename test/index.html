@@ -88,19 +88,45 @@
 	module("Huffman Coding");
 	
 	// see http://tools.ietf.org/html/rfc1951#page-9
+	/*
+            Symbol Length   Code
+            ------ ------   ----
+            A       3        010
+            B       3        011
+            C       3        100
+            D       3        101
+            E       3        110
+            F       2         00
+            G       4       1110
+            H       4       1111	
+	*/
 	test("Test getHuffmanCodes()", function() {
-		expect(10);
+		expect(19);
 		var hcodes = getHuffmanCodes([3, 3, 3, 3, 3, 2, 4, 4]);
 		equal(typeof hcodes, typeof[]);
 		equal(hcodes.length, 8);
-		equal(hcodes[0], 2);
-		equal(hcodes[1], 3);
-		equal(hcodes[2], 4);
-		equal(hcodes[3], 5);
-		equal(hcodes[4], 6);
-		equal(hcodes[5], 0);
-		equal(hcodes[6], 14);
-		equal(hcodes[7], 15);
+		
+		equal(typeof hcodes[0], typeof {});
+		
+		// test codes
+		equal(hcodes[0].code, 2);
+		equal(hcodes[1].code, 3);
+		equal(hcodes[2].code, 4);
+		equal(hcodes[3].code, 5);
+		equal(hcodes[4].code, 6);
+		equal(hcodes[5].code, 0);
+		equal(hcodes[6].code, 14);
+		equal(hcodes[7].code, 15);
+		
+		// test lengths
+		equal(hcodes[0].length, 3);
+		equal(hcodes[1].length, 3);
+		equal(hcodes[2].length, 3);
+		equal(hcodes[3].length, 3);
+		equal(hcodes[4].length, 3);
+		equal(hcodes[5].length, 2);
+		equal(hcodes[6].length, 4);
+		equal(hcodes[7].length, 4);		
 	});
 
 /*
@@ -122,34 +148,34 @@
 */	
 	test("Test Fixed Huffman Code Table", function() {
 		expect(17);
-		var codeTable = getFixedHuffmanCodeTable();
+		var codeTable = getFixedLiteralTable();
 		equal(typeof codeTable, typeof []);
 		
 		// look up some random values (index is Huffman Code, value is the symbol)
 		
 		// 7-bit codes (256-279)
-		equal(codeTable[0], 256);
-		equal(codeTable[1], 257);
-		equal(codeTable[22], 278);
-		equal(codeTable[23], 279);
+		equal(codeTable[0].symbol, 256);
+		equal(codeTable[1].symbol, 257);
+		equal(codeTable[22].symbol, 278);
+		equal(codeTable[23].symbol, 279);
 		
 		// 8-bit codes (0-143)
-		equal(codeTable[48], 0);
-		equal(codeTable[49], 1);
-		equal(codeTable[190], 142);
-		equal(codeTable[191], 143);
+		equal(codeTable[48].symbol, 0);
+		equal(codeTable[49].symbol, 1);
+		equal(codeTable[190].symbol, 142);
+		equal(codeTable[191].symbol, 143);
 		
 		// 8-bit codes (280-287)
-		equal(codeTable[192], 280);
-		equal(codeTable[193], 281);
-		equal(codeTable[198], 286);
-		equal(codeTable[199], 287);
+		equal(codeTable[192].symbol, 280);
+		equal(codeTable[193].symbol, 281);
+		equal(codeTable[198].symbol, 286);
+		equal(codeTable[199].symbol, 287);
 		
 		// 9-bit codes (144-255)
-		equal(codeTable[400], 144);
-		equal(codeTable[401], 145);
-		equal(codeTable[510], 254);
-		equal(codeTable[511], 255);
+		equal(codeTable[400].symbol, 144);
+		equal(codeTable[401].symbol, 145);
+		equal(codeTable[510].symbol, 254);
+		equal(codeTable[511].symbol, 255);
 	});
 	
   }); 
