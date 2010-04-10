@@ -7,6 +7,8 @@
  *
  */
 
+console = {log:dump};
+
 // TODO: put the unzip into its own Web Worker and report progress
 
 // mask for getting the Nth bit (zero-based)
@@ -308,6 +310,8 @@ var byteValueToHexString = function(num) {
 function unzip(bstr) {
 	var bstream = new ByteStream(bstr);
 	
+	postMessage("Worker thread started on unzipping");
+	
 	// detect local file header signature or return null
 	if (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
 		var localFiles = [];
@@ -318,6 +322,8 @@ function unzip(bstr) {
 			// this should strip out directories/folders
 			if (oneLocalFile && oneLocalFile.uncompressedSize > 0) {
 				localFiles.push(oneLocalFile);
+				postMessage("Done decompressing file '" + oneLocalFile.filename + "' of size + " +
+							oneLocalFile.uncompressedSize);
 			}
 		}
 		
@@ -508,9 +514,6 @@ function decodeSymbol(bstream, hcTable, debug) {
 		// read in next bit
 		code = (code<<1) | bstream.readBits(1);
 		++len;
-		if (debug) {
-			console.log(" code=" + binaryValueToString(code,len));
-		}
 		
 		// check against Huffman Code table and break if found
 		// this is not going to work: if code = 0 and we happen to have a Huffman Code like 000
@@ -549,20 +552,16 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 	for (;;) {
 		var symbol = decodeSymbol(bstream, hcLiteralTable); //, true);
 		++numSymbols;
-//		console.log("    Doing symbol #" + numSymbols + ", symbol=" + symbol + ", byte ptr=" + bstream.bytePtr + ", bit ptr=" + bstream.bitPtr);
 		if (symbol < 256) {
-//			console.log("      is a literal byte " + byteValueToHexString(symbol));
 			// copy literal byte to output
 			output += String.fromCharCode(symbol);
 		}
 		else {
 			// end of block reached
 			if (symbol == 256) {
-				console.log("Found an end-block symbol");
 				break;
 			}
 			else {
-//				console.log("      is a length-distance pair");
 				// get length as per
 				/*
 					 Extra               Extra               Extra
@@ -598,7 +597,6 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 				else if (symbol <= 284) {
 					length = (symbol-281)*32 + 131 + bstream.readBits(5);
 				}
-//				console.log("      symbol (" + symbol + ") became length " + length);
 				
 				// get distance as per
 				/*
@@ -661,8 +659,6 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 				else if (distSymbol <= 29) {
 					distance = (distSymbol-28)*8192 + 16385 + bstream.readBits(13);
 				}
-
-//				console.log("      distSymbol=" + distSymbol + ", distance = " + distance + " (byte #" + (output.length-distance) + ")");
 				
 				// now apply length and distance appropriately and copy to output
 
@@ -681,7 +677,6 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 				}
 			} // length-distance pair
 		} // length-distance pair or end-of-block
-//		console.log("******* OUTPUT LENGTH IS " + output.length + " **********");
 	} // loop until we reach end of block
 	return output;
 }
@@ -691,7 +686,6 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 function inflate(compressedData) {
 	var data = "";
 	console.log("inflating " + compressedData.length + " bytes");
-//	console.dir(compressedData);
 	var bstream = new BitStream(compressedData);
 	var numBlocks = 0;
 	// block format: http://tools.ietf.org/html/rfc1951#page-9
@@ -718,12 +712,9 @@ function inflate(compressedData) {
 		else if(bType == 2) {
 			// TODO: I think something's wrong with the way I'm decoding bit lengths somehow
 			var numLiteralLengthCodes = bstream.readBits(5) + 257;
-//			console.log("raw byte = " + binaryValueToString(bstream.peekBytes(1).charCodeAt(0),8));
 			var numDistanceCodes = bstream.readBits(5) + 1,
 				numCodeLengthCodes = bstream.readBits(4) + 4;
 				
-//			console.log("# literal length codes = " + numLiteralLengthCodes + ", # distance codes = " + numDistanceCodes + ", # code length codes = " + numCodeLengthCodes);
-			
 			// populate the array of code length codes (first de-compaction)		
 			var codeLengthsCodeLengths = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 			for (var i = 0; i < numCodeLengthCodes; ++i) {
@@ -753,7 +744,6 @@ function inflate(compressedData) {
 			var prevCodeLength = 0;
 			while (literalCodeLengths.length < numLiteralLengthCodes + numDistanceCodes) {
 				var symbol = decodeSymbol(bstream, codeLengthsCodes);
-//				console.log("decoding symbol, length=" + literalCodeLengths.length + ", symbol=" + symbol + " (type=" + (typeof symbol) + ")");
 				if (symbol <= 15) {
 					literalCodeLengths.push(symbol);
 					prevCodeLength = symbol;
@@ -777,7 +767,6 @@ function inflate(compressedData) {
 					}
 				}
 			}
-//			console.log(" done code lengths");
 			
 			// now split the distance code lengths out of the literal code array
 			var distanceCodeLengths = literalCodeLengths.splice(numLiteralLengthCodes, numDistanceCodes);
@@ -786,17 +775,16 @@ function inflate(compressedData) {
 			var hcLiteralTable = getHuffmanCodeTable(getHuffmanCodes(literalCodeLengths)),
 				hcDistanceTable = getHuffmanCodeTable(getHuffmanCodes(distanceCodeLengths));
 			data = inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, data);
-
-//			console.log(" block #" + numBlocks + " had " + numSymbols + " in it");
 		}
 		// error
 		else {
 			throw "Error! Encountered deflate block of type 3";
 			return null;
 		}
+		postMessage( "Done block #" + numBlocks );
 	} while (bFinal != 1);
 	// we are done reading blocks if the bFinal bit was set for this block
-//	console.log("data size=" + data.length + ", first byte =" + data.charCodeAt(0));
+
 //	console.log("Dumping");
 //	var LINE_LENGTH = 40;
 //	var i = 0;
@@ -812,3 +800,9 @@ function inflate(compressedData) {
 	
 	return data;
 }
+
+onmessage = function(event) {
+	console.log("Inside worker's onmessage(), got the binary string");
+	postMessage( unzip(event.data) );
+};
+

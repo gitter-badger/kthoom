@@ -10,6 +10,8 @@
 /* Reference Documentation:
 
   * File API (FileReader): http://www.w3.org/TR/FileAPI/
+  * Web Workers: http://www.whatwg.org/specs/web-workers/current-work/
+  * Web Workers in Mozilla: https://developer.mozilla.org/En/Using_web_workers
 
 */
 
@@ -64,32 +66,52 @@ function getFile(evt) {
 	if (filelist.length == 1) {
 		var reader = new FileReader();
 		reader.onloadend = function(e) {
-			// try to unzip it
-			var zipFiles = unzip(e.target.result);
-			if (zipFiles && zipFiles.length > 0) {
-				// clear out old images
-				currentImage = 0;
-				imageFiles = [];
-				// convert ZipLocalFiles into a bunch of ImageFiles
-				for (f in zipFiles) {
-					var zip = zipFiles[f];
-					if (zip.isValid)
-						imageFiles.push(new ImageFile(zip.filename, zip.fileData));
+		
+			// try to unzip it in a worker thread
+			var worker = new Worker("unzip.js");
+
+			// this is the function that the worker thread uses to post progress/status
+			worker.onmessage = function(event) {
+				var zipFiles = event.data;
+				if (typeof event.data == typeof {}) {
+					if (zipFiles && zipFiles.length > 0) {
+						// clear out old images
+						currentImage = 0;
+						imageFiles = [];
+						// convert ZipLocalFiles into a bunch of ImageFiles
+						for (f in zipFiles) {
+							var zip = zipFiles[f];
+							if (zip.isValid)
+								imageFiles.push(new ImageFile(zip.filename, zip.fileData));
+						}
+						
+						// hide logo
+						getElem("logo").setAttribute("style", "display:none");
+						
+						// display nav
+						getElem("nav").className = "";
+						
+						// display first page
+						showPage(0);
+					}
+					else {
+						getElem("logo").setAttribute("style", "display:block");
+						alert("Could not read file '" + filelist[0].filename + "'");
+					}
+				}
+				// progress
+				else if (typeof event.data == typeof "") {
+					console.log( event.data );
 				}
 				
-				// hide logo
-				getElem("logo").setAttribute("style", "display:none");
-				
-				// display nav
-				getElem("nav").className = "";
-				
-				// display first page
-				showPage(0);
-			}
-			else {
-				getElem("logo").setAttribute("style", "display:block");
-				alert("Could not read file '" + filelist[0].filename + "'");
-			}
+			};
+			// error handler for worker thread
+			worker.onerror = function(error) {
+				console.log("Worker error: " + error.message);
+				throw error;
+			};
+			// send the binary string to the worker for unzipping
+			worker.postMessage(e.target.result);
 		};
 		console.log("Reading in file '" + filelist[0].fileName + "'");
 		reader.readAsBinaryString(filelist[0]);
