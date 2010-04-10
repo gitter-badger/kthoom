@@ -18,7 +18,6 @@ var BIT = [	0x01, 0x02, 0x04, 0x08,
 // mask for getting N number of bits (0-8)
 var BITMASK = [ 0, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF ];
 
-
 // This object allows you to peek and consume bits out of a binary stream.
 //
 // bstr must be a binary string
@@ -543,22 +542,22 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 	*/
 	var numSymbols = 0;
 	for (;;) {
-		var symbol = decodeSymbol(bstream, hcLiteralTable, true);
+		var symbol = decodeSymbol(bstream, hcLiteralTable); //, true);
 		++numSymbols;
-		console.log("    Doing symbol #" + numSymbols + ", symbol=" + symbol + ", byte ptr=" + bstream.bytePtr + ", bit ptr=" + bstream.bitPtr);
+//		console.log("    Doing symbol #" + numSymbols + ", symbol=" + symbol + ", byte ptr=" + bstream.bytePtr + ", bit ptr=" + bstream.bitPtr);
 		if (symbol < 256) {
-			console.log("      is a literal byte " + symbol);
+//			console.log("      is a literal byte " + symbol);
 			// copy literal byte to output
 			output += String.fromCharCode(symbol);
 		}
 		else {
 			// end of block reached
 			if (symbol == 256) {
-				console.log("Found an end-block symbol");
+//				console.log("Found an end-block symbol");
 				break;
 			}
 			else {
-				console.log("      is a length-distance pair");
+//				console.log("      is a length-distance pair");
 				// get length as per
 				/*
 					 Extra               Extra               Extra
@@ -594,7 +593,7 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 				else if (symbol <= 284) {
 					length = (symbol-281)*32 + 131 + bstream.readBits(5);
 				}
-				console.log("      symbol became length " + length);
+//				console.log("      symbol became length " + length);
 				
 				// get distance as per
 				/*
@@ -612,7 +611,7 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 				   8   3  17-24   18   8    513-768   28   13 16385-24576
 				   9   3  25-32   19   8   769-1024   29   13 24577-32768
 				*/
-				var distSymbol = decodeSymbol(bstream, hcDistanceTable, true);
+				var distSymbol = decodeSymbol(bstream, hcDistanceTable);
 				var distance = 0;
 				// TODO: simplify this!
 				if (distSymbol <= 3) {
@@ -658,7 +657,7 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 					distance = (distSymbol-28)*8192 + 16385 + bstream.readBits(13);
 				}
 
-				console.log("      distSymbol=" + distSymbol + ", distance = " + distance + ", output length is currently " + output.length + " bytes");
+//				console.log("      distSymbol=" + distSymbol + ", distance = " + distance + ", output length is currently " + output.length + " bytes");
 				
 				// now apply length and distance appropriately and copy to output
 
@@ -678,6 +677,7 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 			}
 		}
 	} // loop until we reach end of block
+	return output;
 }
 
 // compression method 8
@@ -693,7 +693,7 @@ function inflate(compressedData) {
 		var bFinal = bstream.readBits(1),
 			bType = bstream.readBits(2);
 		++numBlocks;
-		console.log("Starting block #" + numBlocks);
+		console.log("Starting block #" + numBlocks + (bFinal ? " (this is the last block)" : ""));
 		// no compression
 		console.log(" type=" + bType);
 		if (bType == 0) {
@@ -706,7 +706,7 @@ function inflate(compressedData) {
 		}
 		// fixed Huffman codes
 		else if(bType == 1) {
-			inflateBlockData(bstream, getFixedLiteralTable(), getFixedDistanceTable(), data);
+			data = inflateBlockData(bstream, getFixedLiteralTable(), getFixedDistanceTable(), data);
 		}
 		// dynamic Huffman codes
 		else if(bType == 2) {
@@ -716,7 +716,7 @@ function inflate(compressedData) {
 			var numDistanceCodes = bstream.readBits(5) + 1,
 				numCodeLengthCodes = bstream.readBits(4) + 4;
 				
-			console.log("# literal length codes = " + numLiteralLengthCodes + ", # distance codes = " + numDistanceCodes + ", # code length codes = " + numCodeLengthCodes);
+//			console.log("# literal length codes = " + numLiteralLengthCodes + ", # distance codes = " + numDistanceCodes + ", # code length codes = " + numCodeLengthCodes);
 			
 			// populate the array of code length codes (first de-compaction)		
 			var codeLengthsCodeLengths = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
@@ -747,7 +747,7 @@ function inflate(compressedData) {
 			var prevCodeLength = 0;
 			while (literalCodeLengths.length < numLiteralLengthCodes + numDistanceCodes) {
 				var symbol = decodeSymbol(bstream, codeLengthsCodes);
-				console.log("decoding symbol, length=" + literalCodeLengths.length + ", symbol=" + symbol + " (type=" + (typeof symbol) + ")");
+//				console.log("decoding symbol, length=" + literalCodeLengths.length + ", symbol=" + symbol + " (type=" + (typeof symbol) + ")");
 				if (symbol <= 15) {
 					literalCodeLengths.push(symbol);
 					prevCodeLength = symbol;
@@ -761,17 +761,17 @@ function inflate(compressedData) {
 				else if (symbol == 17) {
 					var repeat = bstream.readBits(3) + 3;
 					while (repeat--) {
-						literalCodeLengths.push(prevCodeLength);
+						literalCodeLengths.push(0);
 					}
 				}
 				else if (symbol == 18) {
 					var repeat = bstream.readBits(7) + 11;
 					while (repeat--) {
-						literalCodeLengths.push(prevCodeLength);
+						literalCodeLengths.push(0);
 					}
 				}
 			}
-			console.log(" done code lengths");
+//			console.log(" done code lengths");
 			
 			// now split the distance code lengths out of the literal code array
 			var distanceCodeLengths = literalCodeLengths.splice(numLiteralLengthCodes, numDistanceCodes);
@@ -779,13 +779,9 @@ function inflate(compressedData) {
 			// now generate the true Huffman Code tables using these code lengths
 			var hcLiteralTable = getHuffmanCodeTable(getHuffmanCodes(literalCodeLengths)),
 				hcDistanceTable = getHuffmanCodeTable(getHuffmanCodes(distanceCodeLengths));
-			console.dir(literalCodeLengths);
-			console.dir(distanceCodeLengths);
-			console.dir(hcLiteralTable);
-			console.dir(hcDistanceTable);
-			inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, data);
+			data = inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, data);
 
-			console.log(" block #" + numBlocks + " had " + numSymbols + " in it");
+//			console.log(" block #" + numBlocks + " had " + numSymbols + " in it");
 		}
 		// error
 		else {
@@ -794,6 +790,6 @@ function inflate(compressedData) {
 		}
 	} while (bFinal != 1);
 	// we are done reading blocks if the bFinal bit was set for this block
-
+	console.log("data size=" + data.length);
 	return data;
 }
