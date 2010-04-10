@@ -32,8 +32,9 @@ if (window.opera) {
 var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, L: 76, R: 82 };
 
 // global variables
-var currentImage = 0,
-	imageFiles = [];
+var currentImage = -1,
+	imageFiles = [],
+	imageFilenames = [];
 
 // stores an image filename and its data: URI
 // TODO: investigate if we really need to store as base64 (leave off ;base64 and just
@@ -73,16 +74,17 @@ function getFile(evt) {
 			// this is the function that the worker thread uses to post progress/status
 			worker.onmessage = function(event) {
 				var zipFiles = event.data;
+				// if thread returned an array of ZipLocalFiles, then time to update
 				if (typeof event.data == typeof {}) {
 					if (zipFiles && zipFiles.length > 0) {
-						// clear out old images
-						currentImage = 0;
-						imageFiles = [];
 						// convert ZipLocalFiles into a bunch of ImageFiles
 						for (f in zipFiles) {
 							var zip = zipFiles[f];
-							if (zip.isValid)
+							// add any new pages based on the filename
+							if (zip.isValid && imageFilenames.indexOf(zip.filename) == -1) {
+								imageFilenames.push(zip.filename);
 								imageFiles.push(new ImageFile(zip.filename, zip.fileData));
+							}
 						}
 						
 						// hide logo
@@ -91,8 +93,15 @@ function getFile(evt) {
 						// display nav
 						getElem("nav").className = "";
 						
-						// display first page
-						showPage(0);
+						// display first page if we haven't yet
+						if (currentImage == -1) {
+							currentImage = 0;
+							updatePage();
+						}
+
+						var counter = getElem("pageCounter");
+						counter.removeChild(counter.firstChild);
+						counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
 					}
 					else {
 						getElem("logo").setAttribute("style", "display:block");
@@ -110,6 +119,11 @@ function getFile(evt) {
 				console.log("Worker error: " + error.message);
 				throw error;
 			};
+			
+			currentImage = -1;
+			imageFiles = [];
+			imageFileNames = [];
+			
 			// send the binary string to the worker for unzipping
 			worker.postMessage(e.target.result);
 		};
@@ -118,31 +132,25 @@ function getFile(evt) {
 	}
 }
 
-function showPage(n) {
-	if (typeof n != typeof 1 || n < 0 || n >= imageFiles.length) {
-		return;
-	}
-	
+function updatePage() {
 	var counter = getElem("pageCounter");
-	var img = getElem("mainImage");
-	
 	counter.removeChild(counter.firstChild);
-	counter.appendChild(document.createTextNode("Page " + (n+1) + "/" + imageFiles.length));
-
-	img.setAttribute("src", imageFiles[n].dataURI);
+	counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
+	
+	getElem("mainImage").setAttribute("src", imageFiles[currentImage].dataURI);
 }
 
 function showPrevPage() {
 	currentImage--;
-	if (currentImage <= 0) currentImage = imageFiles.length - 1;
-	showPage(currentImage);
+	if (currentImage < 0) currentImage = imageFiles.length - 1;
+	updatePage();
 	getElem("prev").focus();
 }
 
 function showNextPage() {
 	currentImage++;
 	if (currentImage >= imageFiles.length) currentImage = 0;
-	showPage(currentImage);
+	updatePage();
 	getElem("next").focus();
 }
 
@@ -168,8 +176,6 @@ function rotateLeft() {
 
 	img.setAttribute("width", "100%");
 	img.setAttribute("src", c.toDataURL());
-	
-	console.log(currentImage);
 }
 
 // TODO: implement
@@ -178,8 +184,9 @@ function rotateRight() {
 }
 
 function closeBook() {
-	currentImage = 0;
+	currentImage = -1;
 	imageFiles = [];
+	imageFileNames = [];
 
 	// clear img
 	getElem("mainImage").setAttribute("src", null);

@@ -82,6 +82,7 @@ function BitStream(bstr) {
 	};
 	
 	// this returns n bytes as a binary string, advancing the pointer if movePointers is true
+	// only use this for uncompressed blocks as this throws away remaining bits in the current byte
 	this.peekBytes = function( n, movePointers ) {
 		if (typeof n != typeof 1 || n < 1) {
 			return -1;
@@ -91,7 +92,6 @@ function BitStream(bstr) {
 		// "Any bits of input up to the next byte boundary are ignored."
 		while (this.bitPtr != 0) {
 			this.readBits(1);
-			postMessage("Skipped a bit");
 		}
 
 		var movePointers = movePointers || false;
@@ -322,6 +322,8 @@ function unzip(bstr) {
 				localFiles.push(oneLocalFile);
 				postMessage("Done decompressing file '" + oneLocalFile.filename + "' of size + " +
 							oneLocalFile.uncompressedSize);
+				// return the latest unzipped pages so that user can read immediately
+				postMessage(localFiles);
 			}
 		}
 		
@@ -521,7 +523,8 @@ function decodeSymbol(bstream, hcTable) {
 			break;
 		}
 		if (len > hcTable.maxLength) {
-			throw "Bit stream out of sync, didn't find a Huffman Code";
+			throw ("Bit stream out of sync, didn't find a Huffman Code, length was " + len + 
+					" and table only max code length of " + hcTable.maxLength);
 			break;
 		}
 	}
