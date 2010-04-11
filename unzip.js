@@ -252,7 +252,7 @@ function ZipLocalFile(bstream) {
 	else if (this.version == 20 && this.compressionMethod == 8) {
 		postMessage("ZIP v2.0, DEFLATE: " + this.filename + " (" + this.compressedSize + " bytes)");
 		postMessage("  starting at byte #" + startByte);
-		this.fileData = inflate(this.fileData);
+		this.fileData = inflate(this.fileData, this.uncompressedSize);
 		this.isValid = true;
 	}
 	else {
@@ -531,8 +531,28 @@ function decodeSymbol(bstream, hcTable) {
 	return hcTable[code].symbol;
 }
 
+function Buffer(numBytes) {
+	if (typeof numBytes != typeof 1 || numBytes <= 0) {
+		throw "Error! Buffer initialized with '" + numBytes + "'";
+	}
+	this.data = new Array(numBytes);
+	this.ptr = 0;
+	
+	this.insertByte = function(b) {
+		// TODO: throw if byte is invalid?
+		this.data[this.ptr++] = b;
+	};
+	
+	this.insertBytes = function(bytes) {
+		// TODO: throw if bytes is invalid?
+		for (var i = 0; i < bytes.length; ++i) {
+			this.data[this.ptr++] = bytes[i];
+		}
+	};
+}
+
 var CodeLengthCodeOrder = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
-function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
+function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer) {
 	/*
 		  loop (until end of block code recognized)
 			 decode literal/length value from input stream
@@ -554,7 +574,7 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 		++numSymbols;
 		if (symbol < 256) {
 			// copy literal byte to output
-			output += String.fromCharCode(symbol);
+			buffer.insertByte(String.fromCharCode(symbol));
 		}
 		else {
 			// end of block reached
@@ -671,20 +691,20 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, output) {
 				//  adds X,Y,X,Y,X to the output stream."
 				// 
 				// loop for each character
-				var ch = output.length - distance;
+				var ch = buffer.ptr - distance;
+				var data = buffer.data;
 				while (length--) {
-					output += output[ch++];
+					buffer.insertByte(data[ch++]);
 				}
 			} // length-distance pair
 		} // length-distance pair or end-of-block
 	} // loop until we reach end of block
-	return output;
 }
 
 // compression method 8
 // deflate: http://tools.ietf.org/html/rfc1951
-function inflate(compressedData) {
-	var data = "";
+function inflate(compressedData, numDecompressedBytes) {
+	var buffer = new Buffer(numDecompressedBytes);
 	postMessage("inflating " + compressedData.length + " bytes");
 	var bstream = new BitStream(compressedData);
 	var numBlocks = 0;
@@ -698,15 +718,15 @@ function inflate(compressedData) {
 		postMessage(" type=" + bType);
 		if (bType == 0) {
 			// skip remaining bits in this byte
-			bstream.readBits(5);
+			while (bstream.bitPtr != 0) bstream.readBits(1);
 			var len = bstream.readBits(16),
 				nlen = bstream.readBits(16);
 			// TODO: check if nlen is the ones-complement of len?
-			data += bstream.readBytes(len);
+			buffer.insertBytes(bstream.readBytes(len));
 		}
 		// fixed Huffman codes
 		else if(bType == 1) {
-			data = inflateBlockData(bstream, getFixedLiteralTable(), getFixedDistanceTable(), data);
+			inflateBlockData(bstream, getFixedLiteralTable(), getFixedDistanceTable(), buffer);
 		}
 		// dynamic Huffman codes
 		else if(bType == 2) {
@@ -774,31 +794,19 @@ function inflate(compressedData) {
 			// now generate the true Huffman Code tables using these code lengths
 			var hcLiteralTable = getHuffmanCodeTable(getHuffmanCodes(literalCodeLengths)),
 				hcDistanceTable = getHuffmanCodeTable(getHuffmanCodes(distanceCodeLengths));
-			data = inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, data);
+			inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer);
 		}
 		// error
 		else {
 			throw "Error! Encountered deflate block of type 3";
 			return null;
 		}
-		postMessage( "Done block #" + numBlocks );
+//		postMessage( "Done block #" + numBlocks + ", data[8454] = " + byteValueToHexString(data.charCodeAt(8454)));
 	} while (bFinal != 1);
 	// we are done reading blocks if the bFinal bit was set for this block
-
-//	console.log("Dumping");
-//	var LINE_LENGTH = 40;
-//	var i = 0;
-//	var one_line = "";
-//	while (i < data.length) {
-//		one_line += byteValueToHexString(data.charCodeAt(i++)) + " ";
-//		if ((i % 40) == 0) {
-//			console.log(one_line);
-//			one_line = "";
-//		}
-//	}
-//	console.log(one_line);
 	
-	return data;
+	// return the buffer data joined together as a binary string
+	return buffer.data.join("");
 }
 
 onmessage = function(event) {
