@@ -349,7 +349,22 @@ function unzip(bstr, bDebug) {
 		}
 		progress.totalNumFilesInZip = localFiles.length;
 		
-		// got all local files
+		// got all local files, now sort them
+		localFiles.sort(function(a,b) {
+			// extract the number at the end of both filenames
+			// stripping off the .jpg extension
+			var aname = a.filename.substr(0,a.filename.length-4),
+				bname = b.filename.substr(0,b.filename.length-4);
+			
+			var aindex = aname.length, bindex = bname.length;
+			while (aname[aindex-1] >= '0' && aname[aindex-1] <= '9') --aindex;
+			while (bname[bindex-1] >= '0' && bname[bindex-1] <= '9') --bindex;
+			
+			// parse them into numbers and return comparison
+			var anum = new Number(aname.substr(aindex)),
+				bnum = new Number(bname.substr(bindex));
+			return anum > bnum;
+		});
 		
 		// archive extra data record
 		if (bstream.peekNumber(4) == zArchiveExtraDataSignature) {
@@ -403,7 +418,7 @@ function unzip(bstr, bDebug) {
 			postMessage(progress);
 		}
 		
-		// TODO: now do the unzipping of each file
+		// now do the unzipping of each file
 		for (var i = 0; i < localFiles.length; ++i) {
 			var localfile = localFiles[i];
 			
