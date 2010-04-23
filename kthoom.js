@@ -130,6 +130,8 @@ function setProgressMeter(pct) {
 	var title = getElem("progress_title");
 	while (title.firstChild) title.removeChild(title.firstChild);
 	title.appendChild(document.createTextNode(parseInt(pct)+"%"));
+	// fade it out as it approaches finish
+	title.setAttribute("fill-opacity", (pct > 80) ? ((100-pct)*5)/100 : 1);
 }
 
 // attempts to read the file that the user has chosen
@@ -141,6 +143,7 @@ function getFile(evt) {
 		reader.onloadend = function(e) {
 		
 			// try to unzip it in a worker thread
+			var start = (new Date).getTime();
 			var worker = new Worker("unzip.js");
 
 			// this is the function that the worker thread uses to post progress/status
@@ -176,6 +179,11 @@ function getFile(evt) {
 						var counter = getElem("pageCounter");
 						counter.removeChild(counter.firstChild);
 						counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
+						
+						if (progress.isDone) {
+							var diff = ((new Date).getTime() - start)/1000;
+							console.log("Unzipping done in " + diff + "s");
+						}
 					}
 					else {
 						getElem("logo").setAttribute("style", "display:block");
@@ -200,7 +208,6 @@ function getFile(evt) {
 			// send the binary string to the worker for unzipping
 			worker.postMessage(e.target.result);
 		};
-//		console.log("Reading in file '" + filelist[0].fileName + "'");
 		reader.readAsBinaryString(filelist[0]);
 	}
 }
