@@ -4,7 +4,7 @@
 	<title>kthoom Comic Reader</title>
 	<link rel="stylesheet" href="kthoom.css" type="text/css"/>
 	<link rel="icon" type="image/png" href="images/logo.png"/>
-	<script type="application/javascript;version=1.8" src="kthoom.js"></script>
+	<script type="application/javascript" src="kthoom.js"></script>
 </head>
 <body onload="init()">
 <div class="background">
@@ -22,13 +22,13 @@
 		<button id="prev" title="Previous Page (Left Arrow)" type="button" onclick="showPrevPage()">&lt;&lt;</button>
 		<span id="pageCounter">Page X/Y</span>
 		<button id="next" title="Next Page (Right Arrow)" type="button" onclick="showNextPage()">&gt;&gt;</button>
-		<img id="close" title="Close Book (X)" onclick="closeBook()" src="images/cancel.png" tabIndex="3"></img>
+		<img id="close" title="Close Book (X)" onclick="closeBook()" src="images/cancel.png" tabIndex="3"/>
 	</div>
 	
 	<!-- eventually will replace this with a canvas element -->
 	<img id="mainImage" width="100%"/>
 	
-	<canvas id="canvas"/>
+	<canvas id="canvas"></canvas>
 	
 </div>
 </body>
