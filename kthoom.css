@@ -33,3 +33,11 @@ div#nav.hide {
 canvas#canvas {
 	display: none;
 }
+
+div#progress {
+	position: absolute;
+	display: inline;
+	left: 250px;
+	right: 200px;
+	text-align:right;
+}

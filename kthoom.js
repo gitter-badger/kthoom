@@ -60,6 +60,78 @@ function resetFileUploader() {
 	getElem("filechooser").addEventListener("change", getFile, false);
 }
 
+function initProgressMeter() {
+	var svgns = "http://www.w3.org/2000/svg";
+	var pdiv = document.getElementById("progress");
+	var svg = document.createElementNS(svgns, "svg");
+	
+	var defs = document.createElementNS(svgns, "defs");
+
+	var patt = document.createElementNS(svgns, "pattern");
+	patt.id = "progress_pattern";
+	patt.setAttribute("width", "30");
+	patt.setAttribute("height", "20");
+	patt.setAttribute("patternUnits", "userSpaceOnUse");
+
+	var rect = document.createElementNS(svgns, "rect");
+	rect.setAttribute("width", "100%");
+	rect.setAttribute("height", "100%");
+	rect.setAttribute("fill", "red");
+	
+	var poly = document.createElementNS(svgns, "polygon");
+	poly.setAttribute("fill", "yellow");
+	poly.setAttribute("points", "15,0 30,0 15,20 0,20");
+
+	patt.appendChild(rect);
+	patt.appendChild(poly);
+	defs.appendChild(patt);
+	
+	svg.appendChild(defs);
+	
+	var g = document.createElementNS(svgns, "g");
+	
+	var outline = document.createElementNS(svgns, "rect");
+	outline.setAttribute("y", "1");
+	outline.setAttribute("width", "100%");
+	outline.setAttribute("height", "13");
+	outline.setAttribute("fill", "#777");
+	outline.setAttribute("stroke", "white");
+	outline.setAttribute("rx", "5");
+	outline.setAttribute("ry", "5");
+	g.appendChild(outline);
+
+	var title = document.createElementNS(svgns, "text");
+	title.id = "progress_title";
+	title.appendChild(document.createTextNode("0%"));
+	title.setAttribute("y", "11.5");
+	title.setAttribute("x", "99%");
+	title.setAttribute("fill", "white");
+	title.setAttribute("font-size", "14px");
+	title.setAttribute("text-anchor", "end");
+	g.appendChild(title);
+	
+	var meter = document.createElementNS(svgns, "rect");
+	meter.id = "meter";
+	meter.setAttribute("width", "0%");
+	meter.setAttribute("height", "16");
+	meter.setAttribute("fill", "url(#progress_pattern)");
+	meter.setAttribute("rx", "5");
+	meter.setAttribute("ry", "5");
+	
+	g.appendChild(meter);
+	svg.appendChild(g);
+	pdiv.appendChild(svg);
+}
+
+function setProgressMeter(pct) {
+	var pct = (pct*100);
+	var pctStr = pct + "%";
+	getElem("meter").setAttribute("width", pctStr);
+	var title = getElem("progress_title");
+	while (title.firstChild) title.removeChild(title.firstChild);
+	title.appendChild(document.createTextNode(parseInt(pct)+"%"));
+}
+
 // attempts to read the file that the user has chosen
 function getFile(evt) {
 	var inp = evt.target;
@@ -73,9 +145,11 @@ function getFile(evt) {
 
 			// this is the function that the worker thread uses to post progress/status
 			worker.onmessage = function(event) {
-				var zipFiles = event.data;
-				// if thread returned an array of ZipLocalFiles, then time to update
+				// if thread returned a Progress Report, then time to update
 				if (typeof event.data == typeof {}) {
+					var progress = event.data;
+					var zipFiles = progress.zipLocalFiles;
+					setProgressMeter(progress.totalBytesUnzipped / progress.totalSizeInBytes);
 					if (zipFiles && zipFiles.length > 0) {
 						// convert ZipLocalFiles into a bunch of ImageFiles
 						for (f in zipFiles) {
@@ -105,10 +179,9 @@ function getFile(evt) {
 					}
 					else {
 						getElem("logo").setAttribute("style", "display:block");
-						alert("Could not read file '" + filelist[0].filename + "'");
 					}
 				}
-				// progress
+				// A string was returned from the thread, just log it
 				else if (typeof event.data == typeof "") {
 					console.log( event.data );
 				}
@@ -127,7 +200,7 @@ function getFile(evt) {
 			// send the binary string to the worker for unzipping
 			worker.postMessage(e.target.result);
 		};
-		console.log("Reading in file '" + filelist[0].fileName + "'");
+//		console.log("Reading in file '" + filelist[0].fileName + "'");
 		reader.readAsBinaryString(filelist[0]);
 	}
 }
@@ -217,7 +290,7 @@ function keyUp(evt) {
 			rotateRight();
 			break;
 		default:
-			console.log("KeyCode = " + code);
+//			console.log("KeyCode = " + code);
 			break;
 	}
 }
@@ -228,6 +301,8 @@ function init() {
 		alert("Sorry, kthoom will not work with your browser because it does not support the File API.  Please try kthoom with Firefox 3.6+.");
 	}
 	else {
+		initProgressMeter();
+		
 		resetFileUploader();
 		
 		// add key handler

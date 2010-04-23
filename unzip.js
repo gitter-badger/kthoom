@@ -7,8 +7,6 @@
  *
  */
 
-console = {log:postMessage};
-
 // TODO: put the unzip into its own Web Worker and report progress
 
 // mask for getting the Nth bit (zero-based)
@@ -183,8 +181,24 @@ var zDigitalSignatureSignature = 0x05054b50;
 var zEndOfCentralDirSignature = 0x06064b50;
 var zEndOfCentralDirLocatorSignature = 0x07064b50;
 
+function ProgressReport() {
+	this.isDone = false;
+	this.isValid = false;
+	
+	this.totalNumFilesInZip = 0;
+	this.totalSizeInBytes = 0;
+	
+	this.currentFilename = "";
+	this.currentFileBytesUnzipped = 0;
+	this.totalBytesUnzipped = 0;
+	this.message = "";
+	
+	this.zipLocalFiles = [];
+}
+var progress = new ProgressReport();
+
 // takes a ByteStream and parses out the local file information
-function ZipLocalFile(bstream) {
+function ZipLocalFile(bstream, bDebug) {
 	if (typeof bstream != typeof {} || !bstream.readNumber || typeof bstream.readNumber != typeof function(){}) {
 		return null;
 	}
@@ -206,18 +220,20 @@ function ZipLocalFile(bstream) {
 		this.filename = bstream.readString(this.fileNameLength);
 	}
 	
-	postMessage("Zip Local File Header:");
-	postMessage(" version=" + this.version);
-	postMessage(" general purpose=" + this.generalPurpose);
-	postMessage(" compression method=" + this.compressionMethod);
-	postMessage(" last mod file time=" + this.lastModFileTime);
-	postMessage(" last mod file date=" + this.lastModFileDate);
-	postMessage(" crc32=" + this.crc32);
-	postMessage(" compressed size=" + this.compressedSize);
-	postMessage(" uncompressed size=" + this.uncompressedSize);
-	postMessage(" file name length=" + this.fileNameLength);
-	postMessage(" extra field length=" + this.extraFieldLength);
-	postMessage(" filename = '" + this.filename + "'");
+	if (bDebug) {
+		postMessage("Zip Local File Header:");
+		postMessage(" version=" + this.version);
+		postMessage(" general purpose=" + this.generalPurpose);
+		postMessage(" compression method=" + this.compressionMethod);
+		postMessage(" last mod file time=" + this.lastModFileTime);
+		postMessage(" last mod file date=" + this.lastModFileDate);
+		postMessage(" crc32=" + this.crc32);
+		postMessage(" compressed size=" + this.compressedSize);
+		postMessage(" uncompressed size=" + this.uncompressedSize);
+		postMessage(" file name length=" + this.fileNameLength);
+		postMessage(" extra field length=" + this.extraFieldLength);
+		postMessage(" filename = '" + this.filename + "'");
+	}
 	
 	this.extraField = null;
 	if (this.extraFieldLength > 0) {
@@ -241,25 +257,29 @@ function ZipLocalFile(bstream) {
 		this.uncompressedSize = bstream.readNumber(4);
 	}
 	
-	// now determine what kind of compressed data we have and decompress
-	
-	// Zip Version 1.0, no compression (store only)
-	if (this.version == 10 && this.compressionMethod == 0) {
-		postMessage("ZIP v1.0, store only: " + this.filename + " (" + this.compressedSize + " bytes)");
-		this.isValid = true;
-	}
-	// TODO: version == 20, compression method == 8 (DEFLATE)
-	else if (this.version == 20 && this.compressionMethod == 8) {
-		postMessage("ZIP v2.0, DEFLATE: " + this.filename + " (" + this.compressedSize + " bytes)");
-		postMessage("  starting at byte #" + startByte);
-		this.fileData = inflate(this.fileData, this.uncompressedSize);
-		this.isValid = true;
-	}
-	else {
-		postMessage("UNSUPPORTED VERSION/FORMAT: ZIP v" + this.version + ", compression method=" + this.compressionMethod + ": " + this.filename + " (" + this.compressedSize + " bytes)");
-		this.isValid = false;
-		this.fileData = null;
-	}
+	// determine what kind of compressed data we have and decompress
+	this.unzip = function() {
+		// Zip Version 1.0, no compression (store only)
+		if (this.version == 10 && this.compressionMethod == 0) {
+			if (bDebug)
+				postMessage("ZIP v1.0, store only: " + this.filename + " (" + this.compressedSize + " bytes)");
+			progress.currentFileBytesUnzipped = this.compressedSize;
+			progress.totalBytesUnzipped += this.compressedSize;
+			this.isValid = true;
+		}
+		// TODO: version == 20, compression method == 8 (DEFLATE)
+		else if (this.version == 20 && this.compressionMethod == 8) {
+			if (bDebug) 
+				postMessage("ZIP v2.0, DEFLATE: " + this.filename + " (" + this.compressedSize + " bytes)");
+			this.fileData = inflate(this.fileData, this.uncompressedSize);
+			this.isValid = true;
+		}
+		else {
+			postMessage("UNSUPPORTED VERSION/FORMAT: ZIP v" + this.version + ", compression method=" + this.compressionMethod + ": " + this.filename + " (" + this.compressedSize + " bytes)");
+			this.isValid = false;
+			this.fileData = null;
+		}
+	};
 }
 
 // helper function that will create a binary stream out of an array of numbers
@@ -305,27 +325,25 @@ var byteValueToHexString = function(num) {
 // Takes a binary string of a zip file in
 // returns null on error
 // returns an array of ZipLocalFile objects on success
-function unzip(bstr) {
+function unzip(bstr, bDebug) {
 	var bstream = new ByteStream(bstr);
-	
-	postMessage("Worker thread started on unzipping");
 	
 	// detect local file header signature or return null
 	if (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
 		var localFiles = [];
-		
 		// loop until we don't see any more local files
 		while (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
-			var oneLocalFile = new ZipLocalFile(bstream);
+			var oneLocalFile = new ZipLocalFile(bstream, bDebug);
 			// this should strip out directories/folders
 			if (oneLocalFile && oneLocalFile.uncompressedSize > 0) {
 				localFiles.push(oneLocalFile);
-				postMessage("Done decompressing file '" + oneLocalFile.filename + "' of size + " +
-							oneLocalFile.uncompressedSize);
-				// return the latest unzipped pages so that user can read immediately
-				postMessage(localFiles);
+				progress.totalNumFilesInZip++;
+				progress.totalSizeInBytes += oneLocalFile.uncompressedSize;
 			}
 		}
+		progress.totalNumFilesInZip = localFiles.length;
+		
+		// got all local files
 		
 		// archive extra data record
 		if (bstream.peekNumber(4) == zArchiveExtraDataSignature) {
@@ -374,12 +392,28 @@ function unzip(bstr) {
 			bstream.readString(sizeOfSignature); // digital signature data
 		}
 		
-		// TODO: process the image data in each local file...
+		// report # files and total length
 		if (localFiles.length > 0) {
-			postMessage("Found " + localFiles.length + " files");
+			postMessage(progress);
 		}
 		
-		return localFiles;
+		// TODO: now do the unzipping of each file
+		for (var i = 0; i < localFiles.length; ++i) {
+			var localfile = localFiles[i];
+			
+			// update progress 
+			progress.currentFilename = localfile.filename;
+			progress.currentFileBytesUnzipped = 0;
+			
+			// actually do the unzipping
+			localfile.unzip();
+			
+			if (localfile.isValid) {
+				progress.zipLocalFiles.push(localfile);
+			}
+		}
+		
+		return progress;
 	}
 	else {
 		postMessage("File was not a zip");
@@ -453,7 +487,6 @@ function getHuffmanCodeTable(hcodes) {
 		if (hcodes[i].length > table.maxLength) 
 			table.maxLength = hcodes[i].length;
 	}
-//	console.dir(hcodes);
 	return table;
 }
 
@@ -474,7 +507,6 @@ function getHuffmanCodeTable(hcodes) {
 										11000111
 */
 // fixed Huffman codes go from 7-9 bits, so we need an array whose index can hold up to 9 bits
-// TODO: add fixed distance code table generation here (0-31, 5-bits)
 var fixedHCtoLiteral = null;
 var fixedHCtoDistance = null;
 function getFixedLiteralTable() {
@@ -516,9 +548,6 @@ function decodeSymbol(bstream, hcTable) {
 		++len;
 		
 		// check against Huffman Code table and break if found
-		// this is not going to work: if code = 0 and we happen to have a Huffman Code like 000
-		// same with code = 1 and Huffman Code 00001
-		// then we fail to read in all those bits
 		if (hcTable.hasOwnProperty(code) && hcTable[code].length == len) {
 			break;
 		}
@@ -568,13 +597,14 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer) {
 				   stream, and copy length bytes from this
 				   position to the output stream.
 	*/
-	var numSymbols = 0;
+	var numSymbols = 0, blockSize = 0;
 	for (;;) {
 		var symbol = decodeSymbol(bstream, hcLiteralTable); //, true);
 		++numSymbols;
 		if (symbol < 256) {
 			// copy literal byte to output
 			buffer.insertByte(String.fromCharCode(symbol));
+			blockSize++;
 		}
 		else {
 			// end of block reached
@@ -693,29 +723,29 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer) {
 				// loop for each character
 				var ch = buffer.ptr - distance;
 				var data = buffer.data;
+				blockSize += length;
 				while (length--) {
 					buffer.insertByte(data[ch++]);
 				}
 			} // length-distance pair
 		} // length-distance pair or end-of-block
 	} // loop until we reach end of block
+	return blockSize;
 }
 
 // compression method 8
 // deflate: http://tools.ietf.org/html/rfc1951
 function inflate(compressedData, numDecompressedBytes) {
 	var buffer = new Buffer(numDecompressedBytes);
-	postMessage("inflating " + compressedData.length + " bytes");
 	var bstream = new BitStream(compressedData);
-	var numBlocks = 0;
+	var numBlocks = 0, blockSize = 0;
 	// block format: http://tools.ietf.org/html/rfc1951#page-9
 	do {
 		var bFinal = bstream.readBits(1),
 			bType = bstream.readBits(2);
+		blockSize = 0;
 		++numBlocks;
-		postMessage("Starting block #" + numBlocks + (bFinal ? " (this is the last block)" : ""));
 		// no compression
-		postMessage(" type=" + bType);
 		if (bType == 0) {
 			// skip remaining bits in this byte
 			while (bstream.bitPtr != 0) bstream.readBits(1);
@@ -723,10 +753,11 @@ function inflate(compressedData, numDecompressedBytes) {
 				nlen = bstream.readBits(16);
 			// TODO: check if nlen is the ones-complement of len?
 			buffer.insertBytes(bstream.readBytes(len));
+			blockSize = len;
 		}
 		// fixed Huffman codes
 		else if(bType == 1) {
-			inflateBlockData(bstream, getFixedLiteralTable(), getFixedDistanceTable(), buffer);
+			blockSize = inflateBlockData(bstream, getFixedLiteralTable(), getFixedDistanceTable(), buffer);
 		}
 		// dynamic Huffman codes
 		else if(bType == 2) {
@@ -794,14 +825,19 @@ function inflate(compressedData, numDecompressedBytes) {
 			// now generate the true Huffman Code tables using these code lengths
 			var hcLiteralTable = getHuffmanCodeTable(getHuffmanCodes(literalCodeLengths)),
 				hcDistanceTable = getHuffmanCodeTable(getHuffmanCodes(distanceCodeLengths));
-			inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer);
+			blockSize = inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer);
 		}
 		// error
 		else {
 			throw "Error! Encountered deflate block of type 3";
 			return null;
 		}
-//		postMessage( "Done block #" + numBlocks + ", data[8454] = " + byteValueToHexString(data.charCodeAt(8454)));
+
+		// update progress
+		progress.currentFileBytesUnzipped += blockSize;
+		progress.totalBytesUnzipped += blockSize;
+		postMessage(progress);
+
 	} while (bFinal != 1);
 	// we are done reading blocks if the bFinal bit was set for this block
 	
@@ -810,7 +846,6 @@ function inflate(compressedData, numDecompressedBytes) {
 }
 
 onmessage = function(event) {
-	postMessage("Inside worker's onmessage(), got the binary string");
 	postMessage( unzip(event.data) );
 };
 
