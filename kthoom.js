@@ -151,42 +151,44 @@ function getFile(evt) {
 				// if thread returned a Progress Report, then time to update
 				if (typeof event.data == typeof {}) {
 					var progress = event.data;
-					var zipFiles = progress.zipLocalFiles;
-					setProgressMeter(progress.totalBytesUnzipped / progress.totalSizeInBytes);
-					if (zipFiles && zipFiles.length > 0) {
-						// convert ZipLocalFiles into a bunch of ImageFiles
-						for (f in zipFiles) {
-							var zip = zipFiles[f];
-							// add any new pages based on the filename
-							if (zip.isValid && imageFilenames.indexOf(zip.filename) == -1) {
-								imageFilenames.push(zip.filename);
-								imageFiles.push(new ImageFile(zip.filename, zip.fileData));
+					if (progress.isValid) {
+						var zipFiles = progress.zipLocalFiles;
+						setProgressMeter(progress.totalBytesUnzipped / progress.totalSizeInBytes);
+						if (zipFiles && zipFiles.length > 0) {
+							// convert ZipLocalFiles into a bunch of ImageFiles
+							for (f in zipFiles) {
+								var zip = zipFiles[f];
+								// add any new pages based on the filename
+								if (zip.isValid && imageFilenames.indexOf(zip.filename) == -1) {
+									imageFilenames.push(zip.filename);
+									imageFiles.push(new ImageFile(zip.filename, zip.fileData));
+								}
+							}
+							
+							// hide logo
+							getElem("logo").setAttribute("style", "display:none");
+							
+							// display nav
+							getElem("nav").className = "";
+							
+							// display first page if we haven't yet
+							if (currentImage == -1) {
+								currentImage = 0;
+								updatePage();
+							}
+	
+							var counter = getElem("pageCounter");
+							counter.removeChild(counter.firstChild);
+							counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
+							
+							if (progress.isDone) {
+								var diff = ((new Date).getTime() - start)/1000;
+								console.log("Unzipping done in " + diff + "s");
 							}
 						}
-						
-						// hide logo
-						getElem("logo").setAttribute("style", "display:none");
-						
-						// display nav
-						getElem("nav").className = "";
-						
-						// display first page if we haven't yet
-						if (currentImage == -1) {
-							currentImage = 0;
-							updatePage();
+						else {
+							getElem("logo").setAttribute("style", "display:block");
 						}
-
-						var counter = getElem("pageCounter");
-						counter.removeChild(counter.firstChild);
-						counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
-						
-						if (progress.isDone) {
-							var diff = ((new Date).getTime() - start)/1000;
-							console.log("Unzipping done in " + diff + "s");
-						}
-					}
-					else {
-						getElem("logo").setAttribute("style", "display:block");
 					}
 				}
 				// A string was returned from the thread, just log it
