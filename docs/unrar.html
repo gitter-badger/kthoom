@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Documentation of the RAR format</title>
+	<style type="text/css">
+	body {
+		font-size: 14pt;
+		font-family: monospace; 
+	}
+	pre {
+		margin-left: 2em;
+	}
+	</style>
+</head>
+<body>
+<h1>The RAR Format</h1>
+
+<h2 id="intro"><a href="#intro">1 Introduction</a></h2>
+
+<p>This document will describe the RAR format, since it is currently an undocumented format. It seeks to serve a similar role as the <a href="http://www.pkware.com/documents/casestudies/APPNOTE.TXT">ZIP App Note</a>. This document is very much a work-in-progress and is far from complete.</p>
+
+<p><strong>NOTE 1:</strong> This documentation <em>cannot</em> be used to create RAR-compatible archive programs like <a href="http://www.rarlab.com/">WinRAR</a>. This documentation is only for the purposes of writing decompression software (i.e. unrar) in various languages and was reverse-engineered from the UnRAR source located at <a href="http://www.rarlab.com/rar_add.htm">this page</a>.</p>
+
+<p><strong>NOTE 2:</strong> This documentation will initially focus on what I believe is Version 3 of the RAR format.</p>
+
+<h2 id="format"><a href="#format">2 General Format of a .RAR File</a></h2>
+
+<p>Overall .RAR file format:</p>
+
+<pre>
+[header]
+...
+</pre>
+
+<h3 id="header-format"><a href="#header-format">2.1 Header Format</a></h3>
+
+<pre>
+header signature    7 bytes    (0x52 0x61 0x72 0x21 0x1A 0x07 0x00)
+...
+</pre>
+
+<h2 id="credits"><a href="#credits">3 Credits</a></h2>
+
+<ul>
+<li>Eugene Roshal - creator and owner of the RAR format</li>
+<li>Jeff Schiller - creator of this document as part of the <a href="http://kthoom.googlecode.com/">kthoom</a> project</li>
+</ul>
+
+</body>
+</html>
