@@ -278,50 +278,6 @@ function unzip(bstr, bDebug) {
 	return progress;
 }
 
-/*
-NOTES on the RAR format:
-(obtained by reading the source of unrar)
-=========================================
-
-RAR signature
--------------
-- see extinfo.cpp, Archive::IsSignature()
-- old format is 4 bytes: 0x52 0x45 0x7e 0x5e
-- new format is 7 bytes: 0x52 0x61 0x72 0x21 0x1a 0x07 0x00
-
-*/
-
-function unrar(bstr, bDebug) {
-	var bstream = new ByteStream(bstr);
-	
-	var b0 = bstream.readNumber(1),
-		b1 = bstream.readNumber(1),
-		b2 = bstream.readNumber(1),
-		b3 = bstream.readNumber(1);
-		
-	if (b0 == 0x52 && b1 == 0x45 && b2 == 0x7e && b3 == 0x5e) {
-		postMessage("Old RAR signature");
-	}
-	else if (b0 == 0x52 && b1 == 0x61 && b2 == 0x72 && b3 == 0x21) {
-		var b4 = bstream.readNumber(1),
-			b5 = bstream.readNumber(1),
-			b6 = bstream.readNumber(1);
-		if (b4 == 0x1A && b5 == 0x07 && b6 == 0x00) {
-			postMessage("New RAR signature");
-		}
-	}
-	else {
-		postMessage("Unknown file!");
-	}
-}
-
-function unrarOld(bstream) {
-	// TODO: implement
-}
-
-function unrarNew(bstream) {
-}
-
 // returns a table of Huffman codes 
 // each entry's index is its code and its value is a JavaScript object 
 // containing {length: 6, symbol: X}
@@ -697,6 +653,48 @@ function inflate(compressedData, numDecompressedBytes) {
 	
 	// return the buffer data joined together as a binary string
 	return buffer.data.join("");
+}
+
+/*
+NOTES on the RAR format:
+(obtained by reading the source of unrar)
+=========================================
+
+RAR signature
+-------------
+- see extinfo.cpp, Archive::IsSignature()
+- old format is 4 bytes: 0x52 0x45 0x7e 0x5e
+- new format is 7 bytes: 0x52 0x61 0x72 0x21 0x1a 0x07 0x00
+
+*/
+
+function RarVolumeHeader(bstream) {
+	this.crc = bstream.readNumber(2);
+	this.headType = bstream.readNumber(1);
+	this.flags = bstream.readNumber(2);
+	this.headSize = bstream.readNumber(2);
+}
+
+function unrar(bstr, bDebug) {
+	var bstream = new ByteStream(bstr);
+
+	var header = new RarVolumeHeader(bstream);
+	if (header.crc == 0x6152 && 
+		header.headType == 0x72 && 
+		header.flags == 0x1A21 &&
+		header.headSize == 7) 
+	{
+	}
+	else {
+		postMessage("Unknown file!");
+	}
+}
+
+function unrarOld(bstream) {
+	// TODO: implement
+}
+
+function unrarNew(bstream) {
 }
 
 onmessage = function(event) {
