@@ -10,6 +10,22 @@
 	pre {
 		margin-left: 2em;
 	}
+	table, th, td {
+		border-width: 1px;
+		border-style: solid;
+		border-color: grey;
+	}
+	table {
+		margin-left: 2em;
+		padding: 2px;
+	}
+	th, td {
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+	th {
+		background-color: lightgrey;
+	}
 	</style>
 </head>
 <body>
@@ -28,17 +44,43 @@
 <p>Overall .RAR file format:</p>
 
 <pre>
-[header]
+signature               7 bytes    (0x52 0x61 0x72 0x21 0x1A 0x07 0x00)
+[1st <a href="#volume-header-format">volume header</a>]     7 bytes
+...
+[2nd volume header]     7 bytes
+...
+...
+[nth volume header]     7 bytes
 ...
 </pre>
 
-<h3 id="header-format"><a href="#header-format">2.1 Header Format</a></h3>
+<h3 id="volume-header-format"><a href="#volume-header-format">2.1 Volume Header Format</a></h3>
 
 <pre>
-header signature    7 bytes    (0x52 0x61 0x72 0x21 0x1A 0x07 0x00)
-...
+crc                     2 bytes
+<a href="#volume-header-type">header type</a>             1 byte
+flags                   2 bytes
+header size             2 bytes
 </pre>
 
+<h4 id="volume-header-type"><a href="#volume-header-type">2.1.1 Header Type</a></h3>
+
+<p>The header type is 16 bits (2 bytes) and can have the following values:</p>
+
+<table>
+	<tr><th>Value</th><th>Type</th></tr>
+	<tr><td>0x72</td><td>MARK_HEAD</td></tr>
+	<tr><td>0x73</td><td>MAIN_HEAD</td></tr>
+	<tr><td>0x74</td><td>FILE_HEAD</td></tr>
+	<tr><td>0x75</td><td>COMM_HEAD</td></tr>
+	<tr><td>0x76</td><td>AV_HEAD</td></tr>
+	<tr><td>0x77</td><td>SUB_HEAD</td></tr>
+	<tr><td>0x78</td><td>PROTECT_HEAD</td></tr>
+	<tr><td>0x79</td><td>SIGN_HEAD</td></tr>
+	<tr><td>0x7a</td><td>NEWSUB_HEAD</td></tr>
+	<tr><td>0x7b</td><td>ENDARC_HEAD</td></tr>
+</table>
+  
 <h2 id="credits"><a href="#credits">3 Credits</a></h2>
 
 <ul>
