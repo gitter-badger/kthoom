@@ -138,6 +138,7 @@ var createBinaryString = function(bytes) {
 };
 
 // shows a number as its binary representation (8 => "1000")
+// len is the number of bits, if num=8 and len=6, this function would return "001000"
 var binaryValueToString = function(num, len) {
 	if (typeof num != typeof 1) {
 		throw ("Error! Non-number sent to binaryValueToString: " + num);
@@ -162,6 +163,9 @@ var binaryValueToString = function(num, len) {
 var nibble = "0123456789ABCDEF";
 var byteValueToHexString = function(num) {
 	return nibble[num>>4] + nibble[num&0xF];
+}
+var twoByteValueToHexString = function(num) {
+	return nibble[(num>>12)&0xF] + nibble[(num>>8)&0xF] + nibble[(num>>4)&0xF] + nibble[num&0xF];
 }
 
 // Takes a binary string of a zip file in
@@ -655,35 +659,58 @@ function inflate(compressedData, numDecompressedBytes) {
 	return buffer.data.join("");
 }
 
-/*
-NOTES on the RAR format:
-(obtained by reading the source of unrar)
-=========================================
+// =======================
+// NOTES on the RAR format
+// http://kthoom.googlecode.com/hg/docs/unrar.html
 
-RAR signature
--------------
-- see extinfo.cpp, Archive::IsSignature()
-- old format is 4 bytes: 0x52 0x45 0x7e 0x5e
-- new format is 7 bytes: 0x52 0x61 0x72 0x21 0x1a 0x07 0x00
-
-*/
+var MHD_VOLUME			= 0x0001;
+var MHD_COMMENT			= 0x0002;
+var MHD_LOCK			= 0x0004;
+var MHD_SOLID			= 0x0008;
+var MHD_PACK_COMMENT	= 0x0010;
+var MHD_NEWNUMBERING	= 0x0010;
+var MHD_AV				= 0x0020;
+var MHD_PROTECT			= 0x0040;
+var MHD_PASSWORD		= 0x0080;
+var MHD_FIRSTVOLUME		= 0x0100;
+var MHD_ENCRYPTVER		= 0x0200;
 
 function RarVolumeHeader(bstream) {
-	this.crc = bstream.readNumber(2);
-	this.headType = bstream.readNumber(1);
-	this.flags = bstream.readNumber(2);
-	this.headSize = bstream.readNumber(2);
+	this.crc = bstream.readBits(16);
+	this.headType = bstream.readBits(8);
+	
+	this.flags = {};
+	this.flags.value = bstream.peekBits(16);
+	this.flags.MHD_VOLUME = !!bstream.readBits(1);
+	this.flags.MHD_COMMENT = !!bstream.readBits(1);
+	this.flags.MHD_LOCK = !!bstream.readBits(1);
+	this.flags.MHD_SOLID = !!bstream.readBits(1);
+	this.flags.MHD_PACK_COMMENT = !!bstream.readBits(1);
+	this.flags.MHD_NEWNUMBERING = this.flags.MHD_PACK_COMMENT;
+	this.flags.MHD_AV = !!bstream.readBits(1);
+	this.flags.MHD_PROTECT = !!bstream.readBits(1);
+	this.flags.MHD_PASSWORD = !!bstream.readBits(1);
+	this.flags.MHD_FIRSTVOLUME = !!bstream.readBits(1);
+	this.flags.MHD_ENCRYPTVER = !!bstream.readBits(1);
+	bstream.readBits(6); // unused
+	
+	postMessage("FIRSTVOLUME: " + this.flags.MHD_FIRSTVOLUME);
+
+	this.headSize = bstream.readBits(16);
+	postMessage("Read in a RAR volume header. CRC=" + this.crc + ", headType=" + byteValueToHexString(this.headType) + ", flags="
+	  + twoByteValueToHexString(this.flags.value) + ", headSize=" + this.headSize);
 }
 
 function unrar(bstr, bDebug) {
-	var bstream = new ByteStream(bstr);
+	var bstream = new BitStream(bstr);
 
 	var header = new RarVolumeHeader(bstream);
 	if (header.crc == 0x6152 && 
 		header.headType == 0x72 && 
-		header.flags == 0x1A21 &&
+		header.flags.value == 0x1A21 &&
 		header.headSize == 7) 
 	{
+		var vhead = new RarVolumeHeader(bstream);
 	}
 	else {
 		postMessage("Unknown file!");

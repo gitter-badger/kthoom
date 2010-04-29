@@ -57,14 +57,14 @@ signature               7 bytes    (0x52 0x61 0x72 0x21 0x1A 0x07 0x00)
 <h3 id="volume-header-format"><a href="#volume-header-format">2.1 Volume Header Format</a></h3>
 
 <pre>
-crc                     2 bytes
+header crc              2 bytes
 <a href="#volume-header-type">header type</a>             1 byte
-flags                   2 bytes
+<a href="#volume-header-flags">header flags</a>            2 bytes
 header size             2 bytes
 ...
 </pre>
 
-<h4 id="volume-header-type"><a href="#volume-header-type">2.1.1 Header Type</a></h3>
+<h4 id="volume-header-type"><a href="#volume-header-type">2.1.1 Header Type</a></h4>
 
 <p>The header type is 8 bits (1 byte) and can have the following values:</p>
 
@@ -81,7 +81,26 @@ header size             2 bytes
 	<tr><td>0x7a</td><td>NEWSUB_HEAD</td></tr>
 	<tr><td>0x7b</td><td>ENDARC_HEAD</td></tr>
 </table>
-  
+
+<h4 id="volume-header-flags"><a href="#volume-header-flags">2.1.2 Header Flags</a></h4>
+
+<p>The header flags are 16 bits (2 bytes).  The flags are:</p>
+
+<table>
+	<tr><th>Value</th><th>Flag</th></tr>
+	<tr><td>0x0001</td><td>MHD_VOLUME</td></tr>
+	<tr><td>0x0002</td><td>MHD_COMMENT</td></tr>
+	<tr><td>0x0004</td><td>MHD_LOCK</td></tr>
+	<tr><td>0x0008</td><td>MHD_SOLID</td></tr>
+	<tr><td>0x0010</td><td>MHD_PACK_COMMENT or MHD_NEWNUMBERING</td></tr>
+	<tr><td>0x0020</td><td>MHD_AV</td></tr>
+	<tr><td>0x0040</td><td>MHD_PROTECT</td></tr>
+	<tr><td>0x0080</td><td>MHD_PASSWORD</td></tr>
+	<tr><td>0x0100</td><td>MHD_FIRSTVOLUME</td></tr>
+	<tr><td>0x0200</td><td>MHD_ENCRYPTVER</td></tr>
+</table>
+
+
 <h2 id="credits"><a href="#credits">3 Credits</a></h2>
 
 <ul>
