@@ -57,11 +57,11 @@ signature               7 bytes    (0x52 0x61 0x72 0x21 0x1A 0x07 0x00)
 <h3 id="volume-header-format"><a href="#volume-header-format">2.1 Volume Header Format</a></h3>
 
 <pre>
-header crc              2 bytes
-<a href="#volume-header-type">header type</a>             1 byte
-<a href="#volume-header-flags">header flags</a>            2 bytes
-header size             2 bytes
-...
+header_crc              2 bytes
+<a href="#volume-header-type">header_type</a>             1 byte
+<a href="#volume-header-flags">header_flags</a>            2 bytes
+header_size             2 bytes
+unused_bytes            (header_size - 7) bytes
 </pre>
 
 <h4 id="volume-header-type"><a href="#volume-header-type">2.1.1 Header Type</a></h4>

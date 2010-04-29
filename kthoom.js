@@ -219,7 +219,8 @@ function updatePage() {
 	counter.removeChild(counter.firstChild);
 	counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
 	
-	getElem("mainImage").setAttribute("src", imageFiles[currentImage].dataURI);
+	if (imageFiles[currentImage])
+		getElem("mainImage").setAttribute("src", imageFiles[currentImage].dataURI);
 }
 
 function showPrevPage() {

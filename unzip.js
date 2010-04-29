@@ -25,6 +25,7 @@ var zEndOfCentralDirLocatorSignature = 0x07064b50;
 
 function ProgressReport() {
 	this.isDone = false;
+	postMessage("initialized to false");
 	this.isValid = false;
 	
 	this.totalNumFilesInZip = 0;
@@ -46,6 +47,7 @@ function ZipLocalFile(bstream, bDebug) {
 	}
 	
 	bstream.readNumber(4); // swallow signature
+	this.isValid = false;
 	this.version = bstream.readNumber(2);
 	this.generalPurpose = bstream.readNumber(2);
 	this.compressionMethod = bstream.readNumber(2);
@@ -103,21 +105,24 @@ function ZipLocalFile(bstream, bDebug) {
 	this.unzip = function() {
 		// Zip Version 1.0, no compression (store only)
 		if (this.version == 10 && this.compressionMethod == 0) {
-			if (bDebug)
+			if (bDebug || true)
 				postMessage("ZIP v1.0, store only: " + this.filename + " (" + this.compressedSize + " bytes)");
 			progress.currentFileBytesUnzipped = this.compressedSize;
 			progress.totalBytesUnzipped += this.compressedSize;
+			postMessage("set to true");
 			this.isValid = true;
 		}
 		// version == 20, compression method == 8 (DEFLATE)
 		else if (this.version == 20 && this.compressionMethod == 8) {
-			if (bDebug) 
+			if (bDebug || true)
 				postMessage("ZIP v2.0, DEFLATE: " + this.filename + " (" + this.compressedSize + " bytes)");
 			this.fileData = inflate(this.fileData, this.uncompressedSize);
+			postMessage("set to true");
 			this.isValid = true;
 		}
 		else {
 			postMessage("UNSUPPORTED VERSION/FORMAT: ZIP v" + this.version + ", compression method=" + this.compressionMethod + ": " + this.filename + " (" + this.compressedSize + " bytes)");
+			postMessage("set to false");
 			this.isValid = false;
 			this.fileData = null;
 		}
@@ -253,6 +258,8 @@ function unzip(bstr, bDebug) {
 			bstream.readString(sizeOfSignature); // digital signature data
 		}
 		
+		progress.isValid = true;
+		
 		// report # files and total length
 		if (localFiles.length > 0) {
 			postMessage(progress);
@@ -269,7 +276,7 @@ function unzip(bstr, bDebug) {
 			// actually do the unzipping
 			localfile.unzip();
 			
-			if (localfile.isValid) {
+			if (progress.isValid) {
 				progress.zipLocalFiles.push(localfile);
 			}
 		}
@@ -676,9 +683,14 @@ var MHD_FIRSTVOLUME		= 0x0100;
 var MHD_ENCRYPTVER		= 0x0200;
 
 function RarVolumeHeader(bstream) {
+
+	// byte 1,2
 	this.crc = bstream.readBits(16);
+
+	// byte 3
 	this.headType = bstream.readBits(8);
-	
+
+	// bytes 4,5
 	this.flags = {};
 	this.flags.value = bstream.peekBits(16);
 	this.flags.MHD_VOLUME = !!bstream.readBits(1);
@@ -694,11 +706,11 @@ function RarVolumeHeader(bstream) {
 	this.flags.MHD_ENCRYPTVER = !!bstream.readBits(1);
 	bstream.readBits(6); // unused
 	
-	postMessage("FIRSTVOLUME: " + this.flags.MHD_FIRSTVOLUME);
-
+	// byte 6,7
 	this.headSize = bstream.readBits(16);
-	postMessage("Read in a RAR volume header. CRC=" + this.crc + ", headType=" + byteValueToHexString(this.headType) + ", flags="
-	  + twoByteValueToHexString(this.flags.value) + ", headSize=" + this.headSize);
+
+	// skip the rest of the header bytes (for now?)
+	bstream.readBytes( this.headSize - 7 );
 }
 
 function unrar(bstr, bDebug) {
@@ -715,13 +727,6 @@ function unrar(bstr, bDebug) {
 	else {
 		postMessage("Unknown file!");
 	}
-}
-
-function unrarOld(bstream) {
-	// TODO: implement
-}
-
-function unrarNew(bstream) {
 }
 
 onmessage = function(event) {
