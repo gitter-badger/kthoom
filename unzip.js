@@ -47,6 +47,7 @@ function ZipLocalFile(bstream, bDebug) {
 	}
 	
 	bstream.readNumber(4); // swallow signature
+	this.debug = bDebug||false;
 	this.isValid = false;
 	this.version = bstream.readNumber(2);
 	this.generalPurpose = bstream.readNumber(2);
@@ -64,7 +65,7 @@ function ZipLocalFile(bstream, bDebug) {
 		this.filename = bstream.readString(this.fileNameLength);
 	}
 	
-	if (bDebug) {
+	if (this.debug) {
 		postMessage("Zip Local File Header:");
 		postMessage(" version=" + this.version);
 		postMessage(" general purpose=" + this.generalPurpose);
@@ -100,12 +101,13 @@ function ZipLocalFile(bstream, bDebug) {
 		this.compressedSize = bstream.readNumber(4);
 		this.uncompressedSize = bstream.readNumber(4);
 	}
-	
-	// determine what kind of compressed data we have and decompress
-	this.unzip = function() {
+};
+
+// determine what kind of compressed data we have and decompress
+ZipLocalFile.prototype.unzip = function() {
 		// Zip Version 1.0, no compression (store only)
 		if (this.version == 10 && this.compressionMethod == 0) {
-			if (bDebug || true)
+			if (this.debug)
 				postMessage("ZIP v1.0, store only: " + this.filename + " (" + this.compressedSize + " bytes)");
 			progress.currentFileBytesUnzipped = this.compressedSize;
 			progress.totalBytesUnzipped += this.compressedSize;
@@ -114,7 +116,7 @@ function ZipLocalFile(bstream, bDebug) {
 		}
 		// version == 20, compression method == 8 (DEFLATE)
 		else if (this.version == 20 && this.compressionMethod == 8) {
-			if (bDebug || true)
+			if (this.debug || true)
 				postMessage("ZIP v2.0, DEFLATE: " + this.filename + " (" + this.compressedSize + " bytes)");
 			this.fileData = inflate(this.fileData, this.uncompressedSize);
 			postMessage("set to true");
@@ -126,8 +128,7 @@ function ZipLocalFile(bstream, bDebug) {
 			this.isValid = false;
 			this.fileData = null;
 		}
-	};
-}
+};
 
 // helper function that will create a binary stream out of an array of numbers
 // bytes must be an array and contain numbers, each varying from 0-255

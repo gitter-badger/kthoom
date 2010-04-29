@@ -37,9 +37,10 @@ function BitStream(bstr) {
 	
 	this.bytePtr = 0; // tracks which byte we are on
 	this.bitPtr = 0; // tracks which bit we are on (can have values 0 through 7)
-	
-	// returns the next n bits as an unsigned number, advancing the pointer if movePointers is true
-	this.peekBits = function( n, movePointers ) {
+};
+
+// returns the next n bits as an unsigned number, advancing the pointer if movePointers is true
+BitStream.prototype.peekBits = function( n, movePointers ) {
 		if (n <= 0 || typeof n != typeof 1)
 			return 0;
 		
@@ -82,15 +83,15 @@ function BitStream(bstr) {
 		}
 		
 		return result;
-	};
+};
 	
-	this.readBits = function( n ) {
+BitStream.prototype.readBits = function( n ) {
 		return this.peekBits(n, true);
-	};
+};
 	
-	// this returns n bytes as a binary string, advancing the pointer if movePointers is true
-	// only use this for uncompressed blocks as this throws away remaining bits in the current byte
-	this.peekBytes = function( n, movePointers ) {
+// this returns n bytes as a binary string, advancing the pointer if movePointers is true
+// only use this for uncompressed blocks as this throws away remaining bits in the current byte
+BitStream.prototype.peekBytes = function( n, movePointers ) {
 		if (n <= 0 || typeof n != typeof 1)
 			return 0;
 		
@@ -111,12 +112,11 @@ function BitStream(bstr) {
 		}
 		
 		return result;
-	};
-	
-	this.readBytes = function( n ) {
+};
+
+BitStream.prototype.readBytes = function( n ) {
 		return this.peekBytes(n, true);
-	}
-}
+};
 
 // This object allows you to peek and consume bytes as numbers and strings
 // out of a binary stream.
@@ -131,10 +131,11 @@ function ByteStream(bstr) {
 	}
 	this.str = bstr;
 	this.ptr = 0;
-	
-	// peeks at the next n bytes as an unsigned number but does not advance the pointer
-	// TODO: This apparently cannot read more than 4 bytes as a number?
-	this.peekNumber = function( n ) {
+};
+
+// peeks at the next n bytes as an unsigned number but does not advance the pointer
+// TODO: This apparently cannot read more than 4 bytes as a number?
+ByteStream.prototype.peekNumber = function( n ) {
 		// TODO: return error if n would go past the end of the stream?
 		if (n <= 0 || typeof n != typeof 1)
 			return -1;
@@ -148,28 +149,27 @@ function ByteStream(bstr) {
 			--curByte;
 		}
 		return result;
-	};
+};
 
-	// returns the next n bytes as an unsigned number (or -1 on error)
-	// and advances the stream pointer n bytes
-	this.readNumber = function( n ) {
+// returns the next n bytes as an unsigned number (or -1 on error)
+// and advances the stream pointer n bytes
+ByteStream.prototype.readNumber = function( n ) {
 		var num = this.peekNumber( n );
 		this.ptr += n;
 		return num;
-	};
+};
 	
-	// peeks at the next n bytes as a string but does not advance the pointer
-	this.peekString = function( n ) {
+// peeks at the next n bytes as a string but does not advance the pointer
+ByteStream.prototype.peekString = function( n ) {
 		if (n <= 0 || typeof n != typeof 1)
 			return 0;
 		return this.str.substr(this.ptr, n);
-	};
+};
 
-	// returns the next n bytes as a string (or -1 on error)
-	// and advances the stream pointer n bytes
-	this.readString = function( n ) {
+// returns the next n bytes as a string (or -1 on error)
+// and advances the stream pointer n bytes
+ByteStream.prototype.readString = function( n ) {
 		var strToReturn = this.peekString( n );
 		this.ptr += n;
 		return strToReturn;
-	};
-}
+};
