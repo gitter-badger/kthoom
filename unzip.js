@@ -25,7 +25,6 @@ var zEndOfCentralDirLocatorSignature = 0x07064b50;
 
 function ProgressReport() {
 	this.isDone = false;
-	postMessage("initialized to false");
 	this.isValid = false;
 	
 	this.totalNumFilesInZip = 0;
@@ -671,19 +670,48 @@ function inflate(compressedData, numDecompressedBytes) {
 // NOTES on the RAR format
 // http://kthoom.googlecode.com/hg/docs/unrar.html
 
-var MHD_VOLUME			= 0x0001;
-var MHD_COMMENT			= 0x0002;
-var MHD_LOCK			= 0x0004;
-var MHD_SOLID			= 0x0008;
-var MHD_PACK_COMMENT	= 0x0010;
-var MHD_NEWNUMBERING	= 0x0010;
-var MHD_AV				= 0x0020;
-var MHD_PROTECT			= 0x0040;
-var MHD_PASSWORD		= 0x0080;
-var MHD_FIRSTVOLUME		= 0x0100;
-var MHD_ENCRYPTVER		= 0x0200;
+// Volume Types
+var MARK_HEAD			= 0x72,
+	MAIN_HEAD			= 0x73,
+	FILE_HEAD			= 0x74,
+	COMM_HEAD			= 0x75,
+	AV_HEAD				= 0x76,
+	SUB_HEAD			= 0x77,
+	PROTECT_HEAD		= 0x78,
+	SIGN_HEAD			= 0x79,
+	NEWSUB_HEAD			= 0x7a,
+	ENDARC_HEAD			= 0x7b;
 
-function RarVolumeHeader(bstream) {
+// MAIN_HEAD flags
+var MHD_VOLUME			= 0x0001,
+	MHD_COMMENT			= 0x0002,
+	MHD_LOCK			= 0x0004,
+	MHD_SOLID			= 0x0008,
+	MHD_PACK_COMMENT	= 0x0010,
+	MHD_NEWNUMBERING	= 0x0010,
+	MHD_AV				= 0x0020,
+	MHD_PROTECT			= 0x0040,
+	MHD_PASSWORD		= 0x0080,
+	MHD_FIRSTVOLUME		= 0x0100,
+	MHD_ENCRYPTVER		= 0x0200;
+
+// bstream is a bit stream
+function RarVolume(bstream, bDebug) {
+	
+	this.main_head = new RarVolumeHeader(bstream, bDebug);
+	
+	if (this.main_head.headType != MAIN_HEAD) {
+		progress.isValid = false;
+		postMessage("Error! RAR Volume did not include a MAIN_HEAD header");
+	}
+	else {
+	}
+}
+
+// bstream is a bit stream
+function RarVolumeHeader(bstream, bDebug) {
+
+	this.debug = bDebug;
 
 	// byte 1,2
 	this.crc = bstream.readBits(16);
@@ -709,21 +737,61 @@ function RarVolumeHeader(bstream) {
 	
 	// byte 6,7
 	this.headSize = bstream.readBits(16);
+	
+	switch (this.headType) {
+	case MAIN_HEAD:
+		this.highPosAv = bstream.readBits(16);
+		this.posAv = bstream.readBits(32);
+		if (this.flags.MHD_ENCRYPTVER)
+			this.encryptVer = bstream.readBits(8);
+		if (this.debug)
+			postMessage("Found MAIN_HEAD with highPosAv=" + this.highPosAv + ", posAv=" + this.posAv);
+		break;
+	case FILE_HEAD:
+		this.packSize = bstream.readBits(32);
+		this.unpackedSize = bstream.readBits(32);
+		this.hostOS = bstream.readBits(8);
+		this.fileCRC = bstream.readBits(32);
+		this.fileTime = bstream.readBits(32);
+		this.unpVer = bstream.readBits(8);
+		this.method = bstream.readBits(8);
+		this.nameSize = bstream.readBits(16);
+		this.fileAttr = bstream.readBits(32);
 
-	// skip the rest of the header bytes (for now?)
-	bstream.readBytes( this.headSize - 7 );
+		// TODO: if LHD_LARGE is set, read in 
+		// HighPackSize (32 bits)
+		// HighUnpSize (32 bits)
+		
+		// read in filename
+		this.filename = bstream.readBytes(this.nameSize);
+		
+		if (this.debug)
+			postMessage("Found FILE_HEAD with packSize=" + this.packSize + ", unpackedSize= " + this.unpackedSize + ", hostOS=" + this.hostOS + ", unpVer=" + this.unpVer + ", method=" + this.method + ", filename=" + this.filename);
+	
+		break;
+	default:
+		if (this.debug)
+			postMessage("Found header of type 0x" + byteValueToHexString(this.headType));
+		// skip the rest of the header bytes (for now)
+		bstream.readBytes( this.headSize - 7 );
+		break;
+	}
+
 }
 
 function unrar(bstr, bDebug) {
 	var bstream = new BitStream(bstr);
 
-	var header = new RarVolumeHeader(bstream);
+	var header = new RarVolumeHeader(bstream, bDebug);
 	if (header.crc == 0x6152 && 
 		header.headType == 0x72 && 
 		header.flags.value == 0x1A21 &&
 		header.headSize == 7) 
 	{
-		var vhead = new RarVolumeHeader(bstream);
+		if (bDebug)	
+			postMessage("Found RAR signature");
+		var vhead = new RarVolumeHeader(bstream, bDebug),
+			fhead = new RarVolumeHeader(bstream, bDebug);
 	}
 	else {
 		postMessage("Unknown file!");
@@ -731,6 +799,6 @@ function unrar(bstr, bDebug) {
 }
 
 onmessage = function(event) {
-	postMessage( unzip(event.data) );
+	postMessage( unzip(event.data, true) );
 };
 
