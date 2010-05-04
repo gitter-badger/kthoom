@@ -85,7 +85,6 @@ function ZipLocalFile(bstream, bDebug) {
 	}
 	
 	// read in the compressed data
-	var startByte = bstream.ptr;
 	this.fileData = null;
 	if (this.compressedSize > 0) {
 		this.fileData = bstream.readString(this.compressedSize);
@@ -682,32 +681,6 @@ var MARK_HEAD			= 0x72,
 	NEWSUB_HEAD			= 0x7a,
 	ENDARC_HEAD			= 0x7b;
 
-// MAIN_HEAD flags
-var MHD_VOLUME			= 0x0001,
-	MHD_COMMENT			= 0x0002,
-	MHD_LOCK			= 0x0004,
-	MHD_SOLID			= 0x0008,
-	MHD_PACK_COMMENT	= 0x0010,
-	MHD_NEWNUMBERING	= 0x0010,
-	MHD_AV				= 0x0020,
-	MHD_PROTECT			= 0x0040,
-	MHD_PASSWORD		= 0x0080,
-	MHD_FIRSTVOLUME		= 0x0100,
-	MHD_ENCRYPTVER		= 0x0200;
-
-// bstream is a bit stream
-function RarVolume(bstream, bDebug) {
-	
-	this.main_head = new RarVolumeHeader(bstream, bDebug);
-	
-	if (this.main_head.headType != MAIN_HEAD) {
-		progress.isValid = false;
-		postMessage("Error! RAR Volume did not include a MAIN_HEAD header");
-	}
-	else {
-	}
-}
-
 // bstream is a bit stream
 function RarVolumeHeader(bstream, bDebug) {
 
@@ -715,28 +688,58 @@ function RarVolumeHeader(bstream, bDebug) {
 
 	// byte 1,2
 	this.crc = bstream.readBits(16);
+	if (bDebug)
+		postMessage("  crc=" + this.crc);
 
 	// byte 3
 	this.headType = bstream.readBits(8);
+	if (bDebug)
+		postMessage("  headType=" + this.headType);
 
+	// Get flags
 	// bytes 4,5
 	this.flags = {};
 	this.flags.value = bstream.peekBits(16);
-	this.flags.MHD_VOLUME = !!bstream.readBits(1);
-	this.flags.MHD_COMMENT = !!bstream.readBits(1);
-	this.flags.MHD_LOCK = !!bstream.readBits(1);
-	this.flags.MHD_SOLID = !!bstream.readBits(1);
-	this.flags.MHD_PACK_COMMENT = !!bstream.readBits(1);
-	this.flags.MHD_NEWNUMBERING = this.flags.MHD_PACK_COMMENT;
-	this.flags.MHD_AV = !!bstream.readBits(1);
-	this.flags.MHD_PROTECT = !!bstream.readBits(1);
-	this.flags.MHD_PASSWORD = !!bstream.readBits(1);
-	this.flags.MHD_FIRSTVOLUME = !!bstream.readBits(1);
-	this.flags.MHD_ENCRYPTVER = !!bstream.readBits(1);
-	bstream.readBits(6); // unused
+	if (bDebug)
+		postMessage("  flags=" + twoByteValueToHexString(this.flags.value));
+	switch (this.headType) {
+	case MAIN_HEAD:
+		this.flags.MHD_VOLUME = !!bstream.readBits(1);
+		this.flags.MHD_COMMENT = !!bstream.readBits(1);
+		this.flags.MHD_LOCK = !!bstream.readBits(1);
+		this.flags.MHD_SOLID = !!bstream.readBits(1);
+		this.flags.MHD_PACK_COMMENT = !!bstream.readBits(1);
+		this.flags.MHD_NEWNUMBERING = this.flags.MHD_PACK_COMMENT;
+		this.flags.MHD_AV = !!bstream.readBits(1);
+		this.flags.MHD_PROTECT = !!bstream.readBits(1);
+		this.flags.MHD_PASSWORD = !!bstream.readBits(1);
+		this.flags.MHD_FIRSTVOLUME = !!bstream.readBits(1);
+		this.flags.MHD_ENCRYPTVER = !!bstream.readBits(1);
+		bstream.readBits(6); // unused
+		break;
+	case FILE_HEAD:
+		this.flags.LHD_SPLIT_BEFORE = !!bstream.readBits(1); // 0x0001
+		this.flags.LHD_SPLIT_AFTER = !!bstream.readBits(1); // 0x0002
+		this.flags.LHD_PASSWORD = !!bstream.readBits(1); // 0x0004
+		this.flags.LHD_COMMENT = !!bstream.readBits(1); // 0x0008
+		this.flags.LHD_SOLID = !!bstream.readBits(1); // 0x0010
+		bstream.readBits(3); // unused
+		this.flags.LHD_LARGE = !!bstream.readBits(1); // 0x0100
+		this.flags.LHD_UNICODE = !!bstream.readBits(1); // 0x0200
+		this.flags.LHD_SALT = !!bstream.readBits(1); // 0x0400
+		this.flags.LHD_VERSION = !!bstream.readBits(1); // 0x0800
+		this.flags.LHD_EXTTIME = !!bstream.readBits(1); // 0x1000
+		this.flags.LHD_EXTFLAGS = !!bstream.readBits(1); // 0x2000
+		bstream.readBits(2); // unused
+		break;
+	default:
+		bstream.readBits(16);
+	}
 	
 	// byte 6,7
 	this.headSize = bstream.readBits(16);
+	if (bDebug)
+		postMessage("  headSize=" + this.headSize);
 	
 	switch (this.headType) {
 	case MAIN_HEAD:
@@ -758,12 +761,44 @@ function RarVolumeHeader(bstream, bDebug) {
 		this.nameSize = bstream.readBits(16);
 		this.fileAttr = bstream.readBits(32);
 
-		// TODO: if LHD_LARGE is set, read in 
-		// HighPackSize (32 bits)
-		// HighUnpSize (32 bits)
+		if (this.flags.LHD_LARGE) {
+			postMessage("Warning: Reading in LHD_LARGE 64-bit size values");
+			this.HighPackSize = bstream.readBits(32);
+			this.HighUnpSize = bstream.readBits(32);
+		}
 		
 		// read in filename
 		this.filename = bstream.readBytes(this.nameSize);
+		
+		if (this.flags.LHD_SALT) {
+			postMessage("Warning: Reading in 64-bit salt value");
+			this.salt = bstream.readBits(64); // 8 bytes
+		}
+		
+		if (this.flags.LHD_EXTTIME) {
+			postMessage("Reading in LHD_EXTTIME values");
+			// 16-bit flags
+			var extTimeFlags = bstream.readBits(16);
+			
+			// this is adapted straight out of arcread.cpp, Archive::ReadHeader()
+			for (var I = 0; I < 4; ++I) {
+            	var rmode = extTimeFlags >> ((3-I)*4);
+            	if ((rmode & 8)==0)
+            		continue;
+            	if (I!=0)
+            		bstream.readBits(16);
+            	var count = (rmode&3);
+            	for (var J = 0; J < count; ++J) 
+            		bstream.readBits(8);
+            }
+		}
+		
+		if (this.flags.LHD_COMMENT) {
+			postMessage("Found a LHD_COMMENT");
+		}
+		
+		if (bDebug)
+			postMessage("BytePtr = " + bstream.bytePtr);
 		
 		if (this.debug)
 			postMessage("Found FILE_HEAD with packSize=" + this.packSize + ", unpackedSize= " + this.unpackedSize + ", hostOS=" + this.hostOS + ", unpVer=" + this.unpVer + ", method=" + this.method + ", filename=" + this.filename);
@@ -771,12 +806,32 @@ function RarVolumeHeader(bstream, bDebug) {
 		break;
 	default:
 		if (this.debug)
-			postMessage("Found header of type 0x" + byteValueToHexString(this.headType));
+			postMessage("Found a header of type 0x" + byteValueToHexString(this.headType));
 		// skip the rest of the header bytes (for now)
 		bstream.readBytes( this.headSize - 7 );
 		break;
 	}
 
+}
+
+// bstream is a bit stream
+function RarVolume(bstream, bDebug) {
+	
+	this.header = new RarVolumeHeader(bstream, bDebug);
+	
+	if (this.header.headType != FILE_HEAD) {
+		this.isValid = false;
+		progress.isValid = false;
+		postMessage("Error! RAR Volume did not include a FILE_HEAD header");
+	}
+	else {
+		// read in the compressed data
+		this.fileData = null;
+		if (this.header.packSize > 0) {
+			this.fileData = bstream.readBytes(this.header.packSize);
+			this.isValid = true;
+		}
+	}
 }
 
 function unrar(bstr, bDebug) {
@@ -790,8 +845,24 @@ function unrar(bstr, bDebug) {
 	{
 		if (bDebug)	
 			postMessage("Found RAR signature");
-		var vhead = new RarVolumeHeader(bstream, bDebug),
-			fhead = new RarVolumeHeader(bstream, bDebug);
+
+		var mhead = new RarVolumeHeader(bstream, bDebug);
+		if (mhead.headType != MAIN_HEAD) {
+			progress.isValid = false;
+			postMessage("Error! RAR did not include a MAIN_HEAD header");
+		}
+		else {
+			var volumes = [];
+			var volume = null;
+			do {
+				volume = new RarVolume(bstream, bDebug);
+				if (bDebug)
+					postMessage("volume isValid=" + volume.isValid + ", volume packSize=" + volume.header.packSize);
+				if (volume && volume.isValid && volume.header.packSize > 0) {
+					volumes.push(volume);
+				}
+			} while( volume.isValid );
+		}
 	}
 	else {
 		postMessage("Unknown file!");

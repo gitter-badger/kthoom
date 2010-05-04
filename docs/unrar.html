@@ -117,10 +117,47 @@ HighPackSize            4 bytes (only present if <a href="#LHD_LARGE">LHD_LARGE<
 HighUnpSize             4 bytes (only present if <a href="#LHD_LARGE">LHD_LARGE</a> is set)
 FileName                (NameSize) bytes
 Salt                    8 bytes (only present if <a href="#LHD_SALT">LHD_SALT</a> is set)
-ExtTimeFlags            2 bytes (only present if <a href="#LHD_EXTTIME">LHD_EXTTIME</a> is set)
+<a href="#ext-time-structure">ExtTime Structure</a>       See Description (only present if <a href="#LHD_EXTTIME">LHD_EXTTIME</a> is set)
 </pre>
 
-<p>If the LHD_LARGE flag is set, then the archive is large and 64-bits are needed to represent the packed and unpacked size.  HighPackSize is used as the upper 32-bits and PackSize is used as the lower 32-bits.  HighUnpSize is used as the upper 32-bits and UnpSize is used as the lower 32-bits.</p>
+<p>If the LHD_LARGE flag is set, then the archive is large and 64-bits are needed to represent the packed and unpacked size.  HighPackSize is used as the upper 32-bits and PackSize is used as the lower 32-bits for the packed size in bytes.  HighUnpSize is used as the upper 32-bits and UnpSize is used as the lower 32-bits for the unpacked size in bytes.</p>
+
+<h6 id="ext-time-structure"><a href="#ext-time-structure">ExtTime Structure</a></h6>
+
+<p>Follow the following pseudo-code to read in the ExtTime Structure.</p>
+<p><strong>TODO: Fill in details of what this structure represents.</strong></p>
+
+<pre>
+var extTimeFlags = readBits(16)
+
+// Get mtime
+mtime_rmode = extTimeFlags >> 12
+if ((mtime_rmode & 8)==0) continue
+mtime_count = mtime_rmode & 0x3
+mtime_reminder = readBits(8*mtime_count);
+
+// ctime
+ctime_rmode = extTimeFlags >> 8
+if ((ctime_rmode & 8)==0) continue
+Set ctime to readBits(16)
+ctime_count = ctime_rmode & 0x3
+ctime_reminder = readBits(8*ctime_count)
+
+// atime
+atime_rmode = extTimeFlags >> 4
+if ((atime_rmode & 8)==0) continue
+Set atime to readBits(16)
+atime_count = atime_rmode & 0x3
+atime_reminder = readBits(8*atime_count)
+
+// arctime
+arctime_rmode = extTimeFlags
+if ((arctime_rmode & 8)==0) continue
+Set arctime to readBits(16)
+arctime_count = arctime_rmode & 0x3
+arctime_reminder = readBits(8*arctime_count)
+</pre>
+
 
 <h5 id="COMM_HEAD"><a href="#COMM_HEAD">2.1.1.4 COMM_HEAD</a></h5>
 
@@ -257,7 +294,7 @@ ExtTimeFlags            2 bytes (only present if <a href="#LHD_EXTTIME">LHD_EXTT
 
 <h5 id="LHD_SALT"><a href="#LHD_SALT">2.1.2.18 LHD_SALT</a></h5>
 
-<p>Value 0x0400. Indicates if Salt is present.</p>
+<p>Value 0x0400. Indicates if the 64-bit salt value is present.</p>
 
 <h5 id="LHD_VERSION"><a href="#LHD_VERSION">2.1.2.19 LHD_VERSION</a></h5>
 
@@ -265,7 +302,7 @@ ExtTimeFlags            2 bytes (only present if <a href="#LHD_EXTTIME">LHD_EXTT
 
 <h5 id="LHD_EXTTIME"><a href="#LHD_EXTTIME">2.1.2.20 LHD_EXTTIME</a></h5>
 
-<p>Value 0x1000. TBD</p>
+<p>Value 0x1000. The <a href="#ext-time-structure">ExtTime Structure</a> is present in the FILE_HEAD header.</p>
 
 <h5 id="LHD_EXTFLAGS"><a href="#LHD_EXTFLAGS">2.1.2.21 LHD_EXTFLAGS</a></h5>
 

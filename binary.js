@@ -86,7 +86,7 @@ BitStream.prototype.peekBits = function( n, movePointers ) {
 };
 	
 BitStream.prototype.readBits = function( n ) {
-		return this.peekBits(n, true);
+	return this.peekBits(n, true);
 };
 	
 // this returns n bytes as a binary string, advancing the pointer if movePointers is true
@@ -115,7 +115,7 @@ BitStream.prototype.peekBytes = function( n, movePointers ) {
 };
 
 BitStream.prototype.readBytes = function( n ) {
-		return this.peekBytes(n, true);
+	return this.peekBytes(n, true);
 };
 
 // This object allows you to peek and consume bytes as numbers and strings
@@ -154,22 +154,22 @@ ByteStream.prototype.peekNumber = function( n ) {
 // returns the next n bytes as an unsigned number (or -1 on error)
 // and advances the stream pointer n bytes
 ByteStream.prototype.readNumber = function( n ) {
-		var num = this.peekNumber( n );
-		this.ptr += n;
-		return num;
+	var num = this.peekNumber( n );
+	this.ptr += n;
+	return num;
 };
 	
 // peeks at the next n bytes as a string but does not advance the pointer
 ByteStream.prototype.peekString = function( n ) {
-		if (n <= 0 || typeof n != typeof 1)
-			return 0;
-		return this.str.substr(this.ptr, n);
+	if (n <= 0 || typeof n != typeof 1)
+		return 0;
+	return this.str.substr(this.ptr, n);
 };
 
 // returns the next n bytes as a string (or -1 on error)
 // and advances the stream pointer n bytes
 ByteStream.prototype.readString = function( n ) {
-		var strToReturn = this.peekString( n );
-		this.ptr += n;
-		return strToReturn;
+	var strToReturn = this.peekString( n );
+	this.ptr += n;
+	return strToReturn;
 };
