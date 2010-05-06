@@ -52,9 +52,9 @@
 	<h2 id="intro"><a href="#intro">1 Introduction</a></h2>
 </header>
 
-<p>This document describes the RAR format, since it is currently an undocumented format. It serves a similar role as the <a href="http://www.pkware.com/documents/casestudies/APPNOTE.TXT">ZIP App Note</a>. This document is very much a work-in-progress and is far from complete.  If you wish to help, please <a href="#credits">contact Jeff Schiller</a>.</p>
+<p>This document, a work-in-progress, describes the RAR format. It serves a similar role that the <a href="http://www.pkware.com/documents/casestudies/APPNOTE.TXT">ZIP App Note</a> does for the ZIP format.</p>
 
-<p><strong>NOTE 1:</strong> This documentation <strong><em>MUST NOT</em></strong> be used to create RAR-compatible archive programs like <a href="http://www.rarlab.com/">WinRAR</a>. This documentation is only for the purposes of writing decompression software (i.e. unrar) in various languages and was reverse-engineered from the UnRAR source located at <a href="http://www.rarlab.com/rar_add.htm">this page</a> with <a href="#credits">Eugene Roshal's</a> permission.</p>
+<p><strong>NOTE 1:</strong> This documentation <strong><em>MUST NOT</em></strong> be used to create RAR-compatible archive programs like <a href="http://www.rarlab.com/">WinRAR</a>. It is only for the purposes of writing decompression software (i.e. unrar) in various languages.  It was reverse-engineered from the UnRAR source located at <a href="http://www.rarlab.com/rar_add.htm">this page</a> with <a href="#credits">Eugene Roshal's</a> permission.</p>
 
 <p><strong>NOTE 2:</strong> This documentation will initially focus on what I believe is Version 3 of the RAR format.</p>
 
@@ -63,9 +63,8 @@
 	<h3 id="license"><a href="#license">1.1 License</a></h3>
 </header>
 
-<p>The author of this document is Jeff Schiller &lt;codedread@gmail.com&gt;.  This document is licensed under the <a href="http://creativecommons.org/licenses/by/3.0/">CC-BY-3.0</a> License.</p>
+<p>The author of this document is Jeff Schiller &lt;codedread@gmail.com&gt;. It is licensed under the <a href="http://creativecommons.org/licenses/by/3.0/">CC-BY-3.0</a> License.</p>
 
-<p>The author of this document is Jeff Schiller &lt;codedread@gmail.com&gt;.  This document is licensed under the <a href="http://creativecommons.org/licenses/by/3.0/">CC-BY-3.0</a> License.</p>
 </section>
 
 </section>
@@ -147,7 +146,7 @@ EncryptVer              1 byte (only present if <a href="#MHD_ENCRYPTVER">MHD_EN
 	<h5 id="FILE_HEAD"><a href="#FILE_HEAD">2.1.1.3 FILE_HEAD</a></h5>
 </header>
 
-<p>The remaining bytes in the volume header for FILE_HEAD are:</p>
+<p>The remaining bytes in the FILE_HEAD structure are:</p>
 
 <pre>
 PackSize                4 bytes
@@ -423,7 +422,7 @@ arctime_reminder = readBits(8*arctime_count)
 
 <p>Once the header information and packed bytes have been extracted, the packed bytes must then be unpacked.  RAR uses a variety of algorithms for this.  Chief among these are <a href="http://en.wikipedia.org/wiki/LZ77_and_LZ78">Lempel-Ziv compression</a> and <a href="http://en.wikipedia.org/wiki/Prediction_by_partial_matching">Prediction by Partial Matching</a>.  The details of the unpacking are specified in the following subsections based on the values of UnpVer and Method as decoded in the <a href="#FILE_HEAD">FILE_HEAD</a> structure.</p>
 
-<p>If Method is 0x30 (decimal 48), use <a href="#unstore">unstore</a>.</p>
+<p>If Method is 0x30 (decimal 48), then the packed bytes <em>are</em> the unpacked bytes and no decompression/unpacking is necessary (i.e. the file was not compressed).</p>
 
 <p>Otherwise:</p>
 <table>
