@@ -52,6 +52,9 @@ BitStream.prototype.peekBits = function( n, movePointers ) {
 			bytes = this.bytes;
 		
 		// keep going until we have no more bits left to peek at
+		// TODO: Consider putting all bits from bytes we will need into a variable and then
+		//       shifting/masking it to just extract the bits we want.
+		//       This could be considerably faster when reading more than 3 or 4 bits at a time.
 		while (n > 0) {
 			if (bytePtr >= bytes.length) {
 				throw "Error!  Overflowed the bit stream!";

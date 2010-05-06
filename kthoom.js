@@ -152,16 +152,16 @@ function getFile(evt) {
 				if (typeof event.data == typeof {}) {
 					var progress = event.data;
 					if (progress.isValid) {
-						var zipFiles = progress.zipLocalFiles;
+						var localFiles = progress.localFiles;
 						setProgressMeter(progress.totalBytesUnzipped / progress.totalSizeInBytes);
-						if (zipFiles && zipFiles.length > 0) {
-							// convert ZipLocalFiles into a bunch of ImageFiles
-							for (f in zipFiles) {
-								var zip = zipFiles[f];
+						if (localFiles && localFiles.length > 0) {
+							// convert DecompressedFile into a bunch of ImageFiles
+							for (fIndex in localFiles) {
+								var f = localFiles[fIndex];
 								// add any new pages based on the filename
-								if (zip.isValid && imageFilenames.indexOf(zip.filename) == -1) {
-									imageFilenames.push(zip.filename);
-									imageFiles.push(new ImageFile(zip.filename, zip.fileData));
+								if (f.isValid && imageFilenames.indexOf(f.filename) == -1) {
+									imageFilenames.push(f.filename);
+									imageFiles.push(new ImageFile(f.filename, f.fileData));
 								}
 							}
 							
@@ -205,7 +205,7 @@ function getFile(evt) {
 			
 			currentImage = -1;
 			imageFiles = [];
-			imageFileNames = [];
+			imageFilenames = [];
 			
 			// send the binary string to the worker for unzipping
 			worker.postMessage(e.target.result);
@@ -269,7 +269,7 @@ function rotateRight() {
 function closeBook() {
 	currentImage = -1;
 	imageFiles = [];
-	imageFileNames = [];
+	imageFilenames = [];
 
 	// clear img
 	getElem("mainImage").setAttribute("src", null);

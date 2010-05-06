@@ -9,19 +9,13 @@
 
 importScripts('binary.js');
 
-/* 
-  Reference Documentation:
-
-  * ZIP format: http://www.pkware.com/documents/casestudies/APPNOTE.TXT
-  * DEFLATE format: http://tools.ietf.org/html/rfc1951
-
-*/
-var zLocalFileHeaderSignature = 0x04034b50;
-var zArchiveExtraDataSignature = 0x08064b50;
-var zCentralFileHeaderSignature = 0x02014b50;
-var zDigitalSignatureSignature = 0x05054b50;
-var zEndOfCentralDirSignature = 0x06064b50;
-var zEndOfCentralDirLocatorSignature = 0x07064b50;
+// this common interface encapsulates a decompressed file
+// both ZipLocalFile and RarLocalFile support these two 
+// two properties: filename and fileData (unpacked bytes)
+function DecompressedFile(filename, fileData) {
+	this.filename = filename;
+	this.fileData = fileData;
+}
 
 function ProgressReport() {
 	this.isDone = false;
@@ -35,9 +29,23 @@ function ProgressReport() {
 	this.totalBytesUnzipped = 0;
 	this.message = "";
 	
-	this.zipLocalFiles = [];
+	this.localFiles = [];
 }
 var progress = new ProgressReport();
+
+/* 
+  Reference Documentation:
+
+  * ZIP format: http://www.pkware.com/documents/casestudies/APPNOTE.TXT
+  * DEFLATE format: http://tools.ietf.org/html/rfc1951
+
+*/
+var zLocalFileHeaderSignature = 0x04034b50;
+var zArchiveExtraDataSignature = 0x08064b50;
+var zCentralFileHeaderSignature = 0x02014b50;
+var zDigitalSignatureSignature = 0x05054b50;
+var zEndOfCentralDirSignature = 0x06064b50;
+var zEndOfCentralDirLocatorSignature = 0x07064b50;
 
 // takes a ByteStream and parses out the local file information
 function ZipLocalFile(bstream, bDebug) {
@@ -109,7 +117,6 @@ ZipLocalFile.prototype.unzip = function() {
 				postMessage("ZIP v1.0, store only: " + this.filename + " (" + this.compressedSize + " bytes)");
 			progress.currentFileBytesUnzipped = this.compressedSize;
 			progress.totalBytesUnzipped += this.compressedSize;
-			postMessage("set to true");
 			this.isValid = true;
 		}
 		// version == 20, compression method == 8 (DEFLATE)
@@ -117,12 +124,10 @@ ZipLocalFile.prototype.unzip = function() {
 			if (this.debug || true)
 				postMessage("ZIP v2.0, DEFLATE: " + this.filename + " (" + this.compressedSize + " bytes)");
 			this.fileData = inflate(this.fileData, this.uncompressedSize);
-			postMessage("set to true");
 			this.isValid = true;
 		}
 		else {
 			postMessage("UNSUPPORTED VERSION/FORMAT: ZIP v" + this.version + ", compression method=" + this.compressionMethod + ": " + this.filename + " (" + this.compressedSize + " bytes)");
-			postMessage("set to false");
 			this.isValid = false;
 			this.fileData = null;
 		}
@@ -174,7 +179,7 @@ var twoByteValueToHexString = function(num) {
 
 // Takes a binary string of a zip file in
 // returns null on error
-// returns an array of ZipLocalFile objects on success
+// returns an array of DecompressedFile objects on success
 function unzip(bstr, bDebug) {
 	var bstream = new ByteStream(bstr);
 	
@@ -276,13 +281,12 @@ function unzip(bstr, bDebug) {
 			localfile.unzip();
 			
 			if (progress.isValid) {
-				progress.zipLocalFiles.push(localfile);
+				progress.localFiles.push(localfile);
 			}
 		}
 		progress.isDone = true;
 	}
 	else { // check for RAR
-		progress.isValid = false;
 		unrar(bstr, bDebug);
 	}
 	return progress;
@@ -731,6 +735,8 @@ function RarVolumeHeader(bstream, bDebug) {
 		this.flags.LHD_EXTTIME = !!bstream.readBits(1); // 0x1000
 		this.flags.LHD_EXTFLAGS = !!bstream.readBits(1); // 0x2000
 		bstream.readBits(2); // unused
+		if (bDebug)
+			postMessage("  LHD_SPLIT_BEFORE = " + this.flags.LHD_SPLIT_BEFORE);
 		break;
 	default:
 		bstream.readBits(16);
@@ -776,7 +782,6 @@ function RarVolumeHeader(bstream, bDebug) {
 		}
 		
 		if (this.flags.LHD_EXTTIME) {
-			postMessage("Reading in LHD_EXTTIME values");
 			// 16-bit flags
 			var extTimeFlags = bstream.readBits(16);
 			
@@ -797,8 +802,8 @@ function RarVolumeHeader(bstream, bDebug) {
 			postMessage("Found a LHD_COMMENT");
 		}
 		
-		if (bDebug)
-			postMessage("BytePtr = " + bstream.bytePtr);
+//		if (bDebug)
+//			postMessage("BytePtr = " + bstream.bytePtr);
 		
 		if (this.debug)
 			postMessage("Found FILE_HEAD with packSize=" + this.packSize + ", unpackedSize= " + this.unpackedSize + ", hostOS=" + this.hostOS + ", unpVer=" + this.unpVer + ", method=" + this.method + ", filename=" + this.filename);
@@ -814,10 +819,409 @@ function RarVolumeHeader(bstream, bDebug) {
 
 }
 
+var BLOCK_LZ = 0,
+	BLOCK_PPM = 1;
+
+var rLDecode = [0,1,2,3,4,5,6,7,8,10,12,14,16,20,24,28,32,40,48,56,64,80,96,112,128,160,192,224],
+	rLBits = [0,0,0,0,0,0,0,0,1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4,  4,  5,  5,  5,  5],
+	rDBitLengthCounts = [4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,14,0,12],
+	rSDDecode = [0,4,8,16,32,64,128,192],
+	rSDBits = [2,2,3, 4, 5, 6,  6,  6],
+	rDDecode = null,
+	rDBits = null;
+
+var rNC = 299,
+	rDC = 60,
+	rLDC = 17,
+	rRC = 28,
+	rBC = 20,
+	rHUFF_TABLE_SIZE = (rNC+rDC+rRC+rLDC);
+
+var UnpBlockType = BLOCK_LZ;
+
+// read in Huffman tables for RAR
+function RarReadTables(bstream) {
+	var BitLength = new Array(rBC),
+		Table = new Array(rHUFF_TABLE_SIZE);
+
+	// before we start anything we need to get byte-aligned
+	bstream.readBits( (8 - bstream.BitPtr) & 0x7 );
+	
+	var isPPM = bstream.peekBits(1);
+	if (isPPM) {
+		UnpBlockType = BLOCK_PPM;
+		// TODO: implement PPM stuff
+		postMessage("Error!  PPM not implemented yet");
+		return;
+	}
+	else {
+		bstream.readBits(1);
+		
+		var keepOldTable = bstream.readBits(1);
+		if (!keepOldTable) {
+			// TODO: clear old table if !keepOldTable
+		}
+		
+		// read in bit lengths
+		for (var I = 0; I < rBC; ++I) {
+			var Length = bstream.readBits(4);
+			if (Length == 15) {
+				var ZeroCount = bstream.readBits(4);
+				if (ZeroCount == 0) {
+					BitLength[I] = 15;
+				}
+				else {
+					ZeroCount += 2;
+					while (ZeroCount-- > 0 && I < rBC)
+						BitLength[I++] = 0;
+					--I;
+				}
+			}
+			else {
+				BitLength[I] = Length;
+			}
+		}
+		
+		// now all 20 bit lengths are obtained, we construct the Huffman Table:
+		var LenCount = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			TmpPos = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			DecodeLen = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			DecodePos = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			DecodeNum = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			N = 0,
+			M = 0;
+			
+		for (var i = 0; i < rBC; ++i) { postMessage("BitLength[" + i + "] is " + BitLength[i]); }
+		
+		// count number of codes for each length
+		for (I = 0; I < rBC; ++I)
+			LenCount[BitLength[I] & 0xF]++;
+		LenCount[0] = 0;
+		
+		for (var i = 0; i < 16; ++i) { postMessage("Count of length " + i + " is " + LenCount[i]); }
+		
+		for (I = 1; I < 16; ++I) {
+			N = 2 * (N+LenCount[I]);
+			M = (N << (15-I));
+			if (M > 0xFFFF)
+				M = 0xFFFF;
+			DecodeLen[I] = M;
+			DecodePos[I] = DecodePos[I-1] + LenCount[I-1];
+			TmpPos[I] = DecodePos[I];
+			postMessage(" I=" + I + ", LenCount[I]=" + LenCount[I] + ", N=" + N + ", M=" + M);
+		}
+		
+		for (I = 0; I < rBC; ++I)
+			if (BitLength[I] != 0)
+				DecodeNum[ TmpPos[ BitLength[I] & 0xF ]++] = I;
+
+		for (I = 0; I < rBC; ++I) {
+			postMessage("Code[" + I + "] has Len=" + DecodeLen[I] + ", Pos=" + DecodePos[I] + ", Num=" + DecodeNum[I]);
+		}
+	}
+}
+
+// TODO: implement
+function Unpack15(bstream, Solid) {
+	postMessage("ERROR!  RAR 1.5 compression not supported");
+}
+
+function Unpack20(bstream, Solid) {
+	postMessage("ERROR!  RAR 2.0 compression not supported");
+}
+
+function Unpack29(bstream, Solid) {
+	// lazy initialize rDDecode and rDBits
+	if (rDDecode == null) {
+		rDDecode = new Array(rDC);
+		rDBits = new Array(rDC);
+		var Dist=0,BitLength=0,Slot=0;
+		for (var I = 0; I < rDBitLengthCounts.length / 4; I++,BitLength++) {
+			for (var J = 0; J < rDBitLengthCounts[I]; J++,Slot++,Dist+=(1<<BitLength)) {
+				rDDecode[Slot]=Dist;
+				rDBits[Slot]=BitLength;
+			}
+		}
+	}
+	
+	// initialize data
+
+	// read in Huffman tables
+	RarReadTables(bstream);
+
+	postMessage("ERROR!  RAR 2.9 compression not yet supported");
+}
+
+/** Adapt this:
+
+void Unpack::Unpack29(bool Solid)
+{
+  static unsigned char LDecode[]={0,1,2,3,4,5,6,7,8,10,12,14,16,20,24,28,32,40,48,56,64,80,96,112,128,160,192,224};
+  static unsigned char LBits[]=  {0,0,0,0,0,0,0,0,1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4,  4,  5,  5,  5,  5};
+  static int DDecode[DC];
+  static byte DBits[DC];
+  static int DBitLengthCounts[]= {4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,14,0,12};
+  static unsigned char SDDecode[]={0,4,8,16,32,64,128,192};
+  static unsigned char SDBits[]=  {2,2,3, 4, 5, 6,  6,  6};
+  unsigned int Bits;
+
+  if (DDecode[1]==0)
+  {
+    int Dist=0,BitLength=0,Slot=0;
+    for (int I=0;I<sizeof(DBitLengthCounts)/sizeof(DBitLengthCounts[0]);I++,BitLength++)
+      for (int J=0;J<DBitLengthCounts[I];J++,Slot++,Dist+=(1<<BitLength))
+      {
+        DDecode[Slot]=Dist;
+        DBits[Slot]=BitLength;
+      }
+  }
+
+  FileExtracted=true;
+
+  if (!Suspended)
+  {
+    UnpInitData(Solid);
+    if (!UnpReadBuf())
+      return;
+    if ((!Solid || !TablesRead) && !ReadTables())
+      return;
+  }
+
+  while (true)
+  {
+    UnpPtr&=MAXWINMASK;
+
+    if (InAddr>ReadBorder)
+    {
+      if (!UnpReadBuf())
+        break;
+    }
+    if (((WrPtr-UnpPtr) & MAXWINMASK)<260 && WrPtr!=UnpPtr)
+    {
+      UnpWriteBuf();
+      if (WrittenFileSize>DestUnpSize)
+        return;
+      if (Suspended)
+      {
+        FileExtracted=false;
+        return;
+      }
+    }
+    if (UnpBlockType==BLOCK_PPM)
+    {
+      // Here speed is critical, so we do not use SafePPMDecodeChar,
+      // because sometimes even the inline function can introduce
+      // some additional penalty.
+      int Ch=PPM.DecodeChar();
+      if (Ch==-1)              // Corrupt PPM data found.
+      {
+        PPM.CleanUp();         // Reset possibly corrupt PPM data structures.
+        UnpBlockType=BLOCK_LZ; // Set faster and more fail proof LZ mode.
+        break;
+      }
+      if (Ch==PPMEscChar)
+      {
+        int NextCh=SafePPMDecodeChar();
+        if (NextCh==0)  // End of PPM encoding.
+        {
+          if (!ReadTables())
+            break;
+          continue;
+        }
+        if (NextCh==-1) // Corrupt PPM data found.
+          break;
+        if (NextCh==2)  // End of file in PPM mode..
+          break;
+        if (NextCh==3)  // Read VM code.
+        {
+          if (!ReadVMCodePPM())
+            break;
+          continue;
+        }
+        if (NextCh==4) // LZ inside of PPM.
+        {
+          unsigned int Distance=0,Length;
+          bool Failed=false;
+          for (int I=0;I<4 && !Failed;I++)
+          {
+            int Ch=SafePPMDecodeChar();
+            if (Ch==-1)
+              Failed=true;
+            else
+              if (I==3)
+                Length=(byte)Ch;
+              else
+                Distance=(Distance<<8)+(byte)Ch;
+          }
+          if (Failed)
+            break;
+
+          CopyString(Length+32,Distance+2);
+          continue;
+        }
+        if (NextCh==5) // One byte distance match (RLE) inside of PPM.
+        {
+          int Length=SafePPMDecodeChar();
+          if (Length==-1)
+            break;
+          CopyString(Length+4,1);
+          continue;
+        }
+        // If we are here, NextCh must be 1, what means that current byte
+        // is equal to our 'escape' byte, so we just store it to Window.
+      }
+      Window[UnpPtr++]=Ch;
+      continue;
+    }
+
+    int Number=DecodeNumber((struct Decode *)&LD);
+    if (Number<256)
+    {
+      Window[UnpPtr++]=(byte)Number;
+      continue;
+    }
+    if (Number>=271)
+    {
+      int Length=LDecode[Number-=271]+3;
+      if ((Bits=LBits[Number])>0)
+      {
+        Length+=getbits()>>(16-Bits);
+        addbits(Bits);
+      }
+
+      int DistNumber=DecodeNumber((struct Decode *)&DD);
+      unsigned int Distance=DDecode[DistNumber]+1;
+      if ((Bits=DBits[DistNumber])>0)
+      {
+        if (DistNumber>9)
+        {
+          if (Bits>4)
+          {
+            Distance+=((getbits()>>(20-Bits))<<4);
+            addbits(Bits-4);
+          }
+          if (LowDistRepCount>0)
+          {
+            LowDistRepCount--;
+            Distance+=PrevLowDist;
+          }
+          else
+          {
+            int LowDist=DecodeNumber((struct Decode *)&LDD);
+            if (LowDist==16)
+            {
+              LowDistRepCount=LOW_DIST_REP_COUNT-1;
+              Distance+=PrevLowDist;
+            }
+            else
+            {
+              Distance+=LowDist;
+              PrevLowDist=LowDist;
+            }
+          }
+        }
+        else
+        {
+          Distance+=getbits()>>(16-Bits);
+          addbits(Bits);
+        }
+      }
+
+      if (Distance>=0x2000)
+      {
+        Length++;
+        if (Distance>=0x40000L)
+          Length++;
+      }
+
+      InsertOldDist(Distance);
+      InsertLastMatch(Length,Distance);
+      CopyString(Length,Distance);
+      continue;
+    }
+    if (Number==256)
+    {
+      if (!ReadEndOfBlock())
+        break;
+      continue;
+    }
+    if (Number==257)
+    {
+      if (!ReadVMCode())
+        break;
+      continue;
+    }
+    if (Number==258)
+    {
+      if (LastLength!=0)
+        CopyString(LastLength,LastDist);
+      continue;
+    }
+    if (Number<263)
+    {
+      int DistNum=Number-259;
+      unsigned int Distance=OldDist[DistNum];
+      for (int I=DistNum;I>0;I--)
+        OldDist[I]=OldDist[I-1];
+      OldDist[0]=Distance;
+
+      int LengthNumber=DecodeNumber((struct Decode *)&RD);
+      int Length=LDecode[LengthNumber]+2;
+      if ((Bits=LBits[LengthNumber])>0)
+      {
+        Length+=getbits()>>(16-Bits);
+        addbits(Bits);
+      }
+      InsertLastMatch(Length,Distance);
+      CopyString(Length,Distance);
+      continue;
+    }
+    if (Number<272)
+    {
+      unsigned int Distance=SDDecode[Number-=263]+1;
+      if ((Bits=SDBits[Number])>0)
+      {
+        Distance+=getbits()>>(16-Bits);
+        addbits(Bits);
+      }
+      InsertOldDist(Distance);
+      InsertLastMatch(2,Distance);
+      CopyString(2,Distance);
+      continue;
+    }
+  }
+  UnpWriteBuf();
+}
+
+*/
+
+// v must be a valid RarVolume
+function unpack(v) {
+	// TODO: implement what happens when unpVer is < 15
+	var Ver = v.header.unpVer <= 15 ? 15 : v.header.unpVer,
+		Solid = v.header.LHD_SOLID,
+		bstream = new BitStream(v.fileData);
+	
+	switch(Ver) {
+    case 15: // rar 1.5 compression
+      Unpack15(bstream, Solid);
+      break;
+    case 20: // rar 2.x compression
+    case 26: // files larger than 2GB
+      Unpack20(bstream, Solid);
+      break;
+    case 29: // rar 3.x compression
+    case 36: // alternative hash
+      Unpack29(bstream, Solid);
+      break;
+	} // switch(method)
+}
+
 // bstream is a bit stream
-function RarVolume(bstream, bDebug) {
+function RarLocalFile(bstream, bDebug) {
 	
 	this.header = new RarVolumeHeader(bstream, bDebug);
+	this.filename = this.header.filename;
 	
 	if (this.header.headType != FILE_HEAD) {
 		this.isValid = false;
@@ -830,6 +1234,20 @@ function RarVolume(bstream, bDebug) {
 		if (this.header.packSize > 0) {
 			this.fileData = bstream.readBytes(this.header.packSize);
 			this.isValid = true;
+		}
+	}
+}
+
+RarLocalFile.prototype.unrar = function() {
+	if (!this.header.flags.LHD_SPLIT_BEFORE) {
+		// unstore file
+		if (this.header.method == 0x30) {
+			this.isValid = true;
+			progress.currentFileBytesUnzipped += this.fileData.length;
+			progress.totalBytesUnzipped += this.fileData.length;
+		}
+		else {
+			unpack(this);
 		}
 	}
 }
@@ -852,16 +1270,42 @@ function unrar(bstr, bDebug) {
 			postMessage("Error! RAR did not include a MAIN_HEAD header");
 		}
 		else {
-			var volumes = [];
-			var volume = null;
+			var localFiles = [],
+				localFile = null;
 			do {
-				volume = new RarVolume(bstream, bDebug);
+				localFile = new RarLocalFile(bstream, bDebug);
 				if (bDebug)
-					postMessage("volume isValid=" + volume.isValid + ", volume packSize=" + volume.header.packSize);
-				if (volume && volume.isValid && volume.header.packSize > 0) {
-					volumes.push(volume);
+					postMessage("RAR localFile isValid=" + localFile.isValid + ", volume packSize=" + localFile.header.packSize);
+				if (localFile && localFile.isValid && localFile.header.packSize > 0) {
+					progress.totalSizeInBytes += localFile.header.unpackedSize;
+					progress.total
+					progress.isValid = true;
+					localFiles.push(localFile);
 				}
-			} while( volume.isValid );
+			} while( localFile.isValid );
+
+			progress.totalNumFilesInZip = localFiles.length;
+			
+			// now we have all information but things are unpacked
+			// TODO: unpack
+			for (var i = 0; i < localFiles.length; ++i) {
+				var localfile = localFiles[i];
+				
+				// update progress 
+				progress.currentFilename = localfile.header.filename;
+				progress.currentFileBytesUnzipped = 0;
+				
+				// actually do the unzipping
+				localfile.unrar();
+				
+				if (localfile.isValid) {
+					progress.localFiles.push(localfile);
+					postMessage(progress);
+				}
+			}
+			
+			progress.isDone = true;
+			postMessage(progress);
 		}
 	}
 	else {
@@ -870,6 +1314,6 @@ function unrar(bstr, bDebug) {
 }
 
 onmessage = function(event) {
-	postMessage( unzip(event.data, true) );
+	postMessage( unzip(event.data, false) );
 };
 
