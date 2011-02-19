@@ -8,6 +8,8 @@
  */
 importScripts('binary.js');
 
+var gDebug = false;
+
 // this common interface encapsulates a decompressed file
 // both ZipLocalFile and RarLocalFile support these two 
 // two properties: filename and fileData (unpacked bytes)
@@ -94,7 +96,8 @@ function ZipLocalFile(bstream, bDebug) {
 	// read in the compressed data
 	this.fileData = null;
 	if (this.compressedSize > 0) {
-		this.fileData = bstream.readString(this.compressedSize);
+		this.fileData = new Uint8Array(bstream.bytes.buffer, bstream.ptr, this.compressedSize);
+		bstream.ptr += this.compressedSize;
 	}
 	
 	// TODO: deal with data descriptor if present (we currently assume no data descriptor!)
@@ -120,7 +123,7 @@ ZipLocalFile.prototype.unzip = function() {
 		}
 		// version == 20, compression method == 8 (DEFLATE)
 		else if (this.version == 20 && this.compressionMethod == 8) {
-			if (this.debug || true)
+			if (this.debug)
 				postMessage("ZIP v2.0, DEFLATE: " + this.filename + " (" + this.compressedSize + " bytes)");
 			this.fileData = inflate(this.fileData, this.uncompressedSize);
 			this.isValid = true;
@@ -128,6 +131,11 @@ ZipLocalFile.prototype.unzip = function() {
 		else {
 			postMessage("UNSUPPORTED VERSION/FORMAT: ZIP v" + this.version + ", compression method=" + this.compressionMethod + ": " + this.filename + " (" + this.compressedSize + " bytes)");
 			this.isValid = false;
+			this.fileData = null;
+		}
+		
+		if (this.isValid) {
+			this.imageString = "data:image/jpeg;base64," + Utils.encode64(this.fileData);
 			this.fileData = null;
 		}
 };
@@ -176,12 +184,11 @@ var twoByteValueToHexString = function(num) {
 	return nibble[(num>>12)&0xF] + nibble[(num>>8)&0xF] + nibble[(num>>4)&0xF] + nibble[num&0xF];
 }
 
-// Takes a binary string of a zip file in
+// Takes an ArrayBuffer of a zip file in
 // returns null on error
 // returns an array of DecompressedFile objects on success
-function unzip(bstr, bDebug) {
-	var bstream = new ByteStream(bstr);
-	
+function unzip(arrayBuffer, bDebug) {
+	var bstream = new ByteStream(arrayBuffer);
 	// detect local file header signature or return null
 	if (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
 		var localFiles = [];
@@ -217,10 +224,12 @@ function unzip(bstr, bDebug) {
 				bnum = parseInt(bname.substr(bindex), 10);
 			return anum - bnum;
 		});
-		
+
 		// archive extra data record
 		if (bstream.peekNumber(4) == zArchiveExtraDataSignature) {
-			postMessage(" Found an Archive Extra Data Signature");
+			if (gDebug) {
+				postMessage(" Found an Archive Extra Data Signature");
+			}
 			// skipping this record for now
 			bstream.readNumber(4);
 			var archiveExtraFieldLength = bstream.readNumber(4);
@@ -230,7 +239,9 @@ function unzip(bstr, bDebug) {
 		// central directory structure
 		// TODO: handle the rest of the structures (Zip64 stuff)
 		if (bstream.peekNumber(4) == zCentralFileHeaderSignature) {
-			postMessage(" Found a Central File Header");
+			if (gDebug) {
+				postMessage(" Found a Central File Header");
+			}
 			// read all file headers
 			while (bstream.peekNumber(4) == zCentralFileHeaderSignature) {
 				bstream.readNumber(4); // signature
@@ -259,7 +270,9 @@ function unzip(bstr, bDebug) {
 		
 		// digital signature
 		if (bstream.peekNumber(4) == zDigitalSignatureSignature) {
-			postMessage(" Found a Digital Signature");
+			if (gDebug) {
+				postMessage(" Found a Digital Signature");
+			}
 			bstream.readNumber(4);
 			var sizeOfSignature = bstream.readNumber(2);
 			bstream.readString(sizeOfSignature); // digital signature data
@@ -285,6 +298,9 @@ function unzip(bstr, bDebug) {
 			
 			if (progress.isValid) {
 				progress.localFiles.push(localfile);
+				postMessage(progress);
+				// Wipe out old localFiles array now that has been copied out of the thread.
+				progress.localFiles = [];
 			}
 		}
 		progress.isDone = true;
@@ -426,7 +442,7 @@ function Buffer(numBytes) {
 	if (typeof numBytes != typeof 1 || numBytes <= 0) {
 		throw "Error! Buffer initialized with '" + numBytes + "'";
 	}
-	this.data = new Array(numBytes);
+	this.data = new Uint8Array(numBytes);
 	this.ptr = 0;
 	
 	this.insertByte = function(b) {
@@ -436,10 +452,8 @@ function Buffer(numBytes) {
 	
 	this.insertBytes = function(bytes) {
 		// TODO: throw if bytes is invalid?
-		var d = this.data, len = bytes.length;
-		for (var i = 0; i < len; ++i) {
-			d[this.ptr++] = bytes[i];
-		}
+		this.data.set(bytes, this.ptr);
+		this.ptr += bytes.length;
 	};
 }
 
@@ -524,7 +538,7 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer) {
 		++numSymbols;
 		if (symbol < 256) {
 			// copy literal byte to output
-			buffer.insertByte(String.fromCharCode(symbol));
+			buffer.insertByte(symbol);
 			blockSize++;
 		}
 		else {
@@ -561,11 +575,15 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer) {
 	return blockSize;
 }
 
+// {Uint8Array} compressedData A Uint8Array of the compressed file data.
 // compression method 8
 // deflate: http://tools.ietf.org/html/rfc1951
 function inflate(compressedData, numDecompressedBytes) {
+	// Bit stream representing the compressed data.
+	var bstream = new BitStream(compressedData.buffer,
+		compressedData.byteOffset,
+		compressedData.byteLength);
 	var buffer = new Buffer(numDecompressedBytes);
-	var bstream = new BitStream(compressedData);
 	var numBlocks = 0, blockSize = 0;
 	// block format: http://tools.ietf.org/html/rfc1951#page-9
 	do {
@@ -668,8 +686,8 @@ function inflate(compressedData, numDecompressedBytes) {
 	} while (bFinal != 1);
 	// we are done reading blocks if the bFinal bit was set for this block
 	
-	// return the buffer data joined together as a binary string
-	return buffer.data.join("");
+	// return the buffer data bytes
+	return buffer.data;
 }
 
 // =======================
@@ -1203,7 +1221,7 @@ function unpack(v) {
 	// TODO: implement what happens when unpVer is < 15
 	var Ver = v.header.unpVer <= 15 ? 15 : v.header.unpVer,
 		Solid = v.header.LHD_SOLID,
-		bstream = new BitStream(v.fileData);
+		bstream = new OldBitStream(v.fileData);
 	
 	switch(Ver) {
     case 15: // rar 1.5 compression
@@ -1256,7 +1274,7 @@ RarLocalFile.prototype.unrar = function() {
 }
 
 function unrar(bstr, bDebug) {
-	var bstream = new BitStream(bstr);
+	var bstream = new OldBitStream(bstr);
 
 	var header = new RarVolumeHeader(bstream, bDebug);
 	if (header.crc == 0x6152 && 
@@ -1281,7 +1299,6 @@ function unrar(bstr, bDebug) {
 					postMessage("RAR localFile isValid=" + localFile.isValid + ", volume packSize=" + localFile.header.packSize);
 				if (localFile && localFile.isValid && localFile.header.packSize > 0) {
 					progress.totalSizeInBytes += localFile.header.unpackedSize;
-					progress.total
 					progress.isValid = true;
 					localFiles.push(localFile);
 				}
@@ -1304,6 +1321,7 @@ function unrar(bstr, bDebug) {
 				if (localfile.isValid) {
 					progress.localFiles.push(localfile);
 					postMessage(progress);
+					progress.localFiles = [];
 				}
 			}
 			
@@ -1316,7 +1334,65 @@ function unrar(bstr, bDebug) {
 	}
 }
 
-onmessage = function(event) {
-	postMessage( unzip(event.data, false) );
+var Utils = {
+
+	// This code was written by Tyler Akins and has been placed in the
+	// public domain.  It would be nice if you left this header intact.
+	// Base64 code from Tyler Akins -- http://rumkin.com
+
+	// schiller: Removed string concatenation in favour of Array.join() optimization,
+	//           also precalculate the size of the array needed.
+
+	"_keyStr" : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+
+	"encode64" : function(input) {
+//		if(window.btoa) return window.btoa(input); // Use native if available
+		// base64 strings are 4/3 larger than the original string
+		var output = new Array( Math.floor( (input.length + 2) / 3 ) * 4 );
+		var chr1, chr2, chr3;
+		var enc1, enc2, enc3, enc4;
+		var i = 0, p = 0;
+
+		do {
+			chr1 = input[i++];//input.charCodeAt(i++);
+			chr2 = input[i++];//input.charCodeAt(i++);
+			chr3 = input[i++];//input.charCodeAt(i++);
+
+			enc1 = chr1 >> 2;
+			enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+			enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+			enc4 = chr3 & 63;
+
+			if (isNaN(chr2)) {
+				enc3 = enc4 = 64;
+			} else if (isNaN(chr3)) {
+				enc4 = 64;
+			}
+
+			output[p++] = this._keyStr.charAt(enc1);
+			output[p++] = this._keyStr.charAt(enc2);
+			output[p++] = this._keyStr.charAt(enc3);
+			output[p++] = this._keyStr.charAt(enc4);
+		} while (i < input.length);
+
+		return output.join('');
+	}
 };
 
+onmessage = function(event) {
+  postMessage("In unzip.onmessage(" + event.data.fileName + ")");
+  var filename = event.data.fileName;
+  gDebug = event.data.debug;
+
+  var reader = new FileReader();
+  reader.onloadend = function(e) {
+    var start = (new Date).getTime();
+
+    currentImage = -1;
+    imageFiles = [];
+    imageFilenames = [];
+
+    unzip(e.target.result, gDebug);
+  };
+  reader.readAsArrayBuffer(filename);
+};

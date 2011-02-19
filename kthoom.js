@@ -1,5 +1,5 @@
 /*
- * thoom.js
+ * kthoom.js
  *
  * Licensed under the MIT License
  *
@@ -9,9 +9,10 @@
 
 /* Reference Documentation:
 
-  * File API (FileReader): http://www.w3.org/TR/FileAPI/
   * Web Workers: http://www.whatwg.org/specs/web-workers/current-work/
   * Web Workers in Mozilla: https://developer.mozilla.org/En/Using_web_workers
+  * File API (FileReader): http://www.w3.org/TR/FileAPI/
+  * Typed Arrays: http://www.khronos.org/registry/typedarray/specs/latest/#6
 
 */
 
@@ -24,8 +25,6 @@ if (window.opera) {
 	window.console.log = function(str) {opera.postError(str);};
 	window.console.dir = function(str) {};
 }
-
-// TODO: stop polluting the window namespace and stuff into a kthoom object
 
 // key codes
 // TODO: is this reliable?
@@ -40,9 +39,9 @@ var currentImage = -1,
 // TODO: investigate if we really need to store as base64 (leave off ;base64 and just
 //       non-safe URL characters are encoded as %xx ?)
 //       This would save 25% on memory since base64-encoded strings are 4/3 the size of the binary
-function ImageFile(filename, bytes) {
+function ImageFile(filename, imageString) {
 	this.filename = filename;
-	this.dataURI = "data:image/jpeg;base64," + Utils.encode64(bytes);
+	this.dataURI = imageString;
 }
 
 // gets the element with the given id
@@ -135,82 +134,70 @@ function setProgressMeter(pct) {
 }
 
 // attempts to read the file that the user has chosen
+// TODO: Pass the filename to the Worker thread and create the FileReader
+// inside the Worker!
 function getFile(evt) {
 	var inp = evt.target;
 	var filelist = inp.files;
 	if (filelist.length == 1) {
-		var reader = new FileReader();
-		reader.onloadend = function(e) {
-		
-			// try to unzip it in a worker thread
-			var start = (new Date).getTime();
-			var worker = new Worker("unzip.js");
+		var worker = new Worker("unzip.js");
 
-			// this is the function that the worker thread uses to post progress/status
-			worker.onmessage = function(event) {
-				// if thread returned a Progress Report, then time to update
-				if (typeof event.data == typeof {}) {
-					var progress = event.data;
-					if (progress.isValid) {
-						var localFiles = progress.localFiles;
-						setProgressMeter(progress.totalBytesUnzipped / progress.totalSizeInBytes);
-						if (localFiles && localFiles.length > 0) {
-							// convert DecompressedFile into a bunch of ImageFiles
-							for (fIndex in localFiles) {
-								var f = localFiles[fIndex];
-								// add any new pages based on the filename
-								if (f.isValid && imageFilenames.indexOf(f.filename) == -1) {
-									imageFilenames.push(f.filename);
-									imageFiles.push(new ImageFile(f.filename, f.fileData));
-								}
-							}
-							
-							// hide logo
-							getElem("logo").setAttribute("style", "display:none");
-							
-							// display nav
-							getElem("nav").className = "";
-							
-							// display first page if we haven't yet
-							if (currentImage == -1) {
-								currentImage = 0;
-								updatePage();
-							}
-	
-							var counter = getElem("pageCounter");
-							counter.removeChild(counter.firstChild);
-							counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
-							
-							if (progress.isDone) {
-								var diff = ((new Date).getTime() - start)/1000;
-								console.log("Unzipping done in " + diff + "s");
+		// error handler for worker thread
+		worker.onerror = function(error) {
+			console.log("Worker error: " + error.message);
+			throw error;
+		};
+		// this is the function that the worker thread uses to post progress/status
+		worker.onmessage = function(event) {
+			// if thread returned a Progress Report, then time to update
+			if (typeof event.data == typeof {}) {
+				var progress = event.data;
+				if (progress.isValid) {
+					var localFiles = progress.localFiles;
+					setProgressMeter(progress.totalBytesUnzipped / progress.totalSizeInBytes);
+					if (localFiles && localFiles.length > 0) {
+						// convert DecompressedFile into a bunch of ImageFiles
+						for (var fIndex in localFiles) {
+							var f = localFiles[fIndex];
+							// add any new pages based on the filename
+							if (f.isValid && imageFilenames.indexOf(f.filename) == -1) {
+								imageFilenames.push(f.filename);
+								imageFiles.push(new ImageFile(f.filename, f.imageString));
 							}
 						}
-						else {
-							getElem("logo").setAttribute("style", "display:block");
+
+						// hide logo
+						getElem("logo").setAttribute("style", "display:none");
+
+						// display nav
+						getElem("nav").className = "";
+
+						// display first page if we haven't yet
+						if (currentImage == -1) {
+							currentImage = 0;
+							updatePage();
+						}
+
+						var counter = getElem("pageCounter");
+						counter.removeChild(counter.firstChild);
+						counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
+
+						if (progress.isDone) {
+							var diff = ((new Date).getTime() - start)/1000;
+							console.log("Unzipping done in " + diff + "s");
 						}
 					}
+					else {
+						getElem("logo").setAttribute("style", "display:block");
+					}
 				}
-				// A string was returned from the thread, just log it
-				else if (typeof event.data == typeof "") {
-					console.log( event.data );
-				}
-				
-			};
-			// error handler for worker thread
-			worker.onerror = function(error) {
-				console.log("Worker error: " + error.message);
-				throw error;
-			};
-			
-			currentImage = -1;
-			imageFiles = [];
-			imageFilenames = [];
-			
-			// send the binary string to the worker for unzipping
-			worker.postMessage(e.target.result);
+			}
+			// A string was returned from the thread, just log it
+			else if (typeof event.data == typeof "") {
+				console.log( event.data );
+			}
 		};
-		reader.readAsBinaryString(filelist[0]);
+		worker.postMessage({fileName: filelist[0], debug: true});
 	}
 }
 
@@ -308,59 +295,15 @@ function keyUp(evt) {
 // attaches a change event listener to the file input control
 function init() {
 	if (!window.FileReader) {
-		alert("Sorry, kthoom will not work with your browser because it does not support the File API.  Please try kthoom with Firefox 3.6+.");
+		alert("Sorry, kthoom will not work with your browser because it does not support the File API, Web Workers.  Please try kthoom with Chrome 11+.");
 	}
 	else {
 		initProgressMeter();
-		
+
 		resetFileUploader();
-		
+
 		// add key handler
 		document.addEventListener("keyup", keyUp, false);
 	}
 }
 
-var Utils = {
-
-	// This code was written by Tyler Akins and has been placed in the
-	// public domain.  It would be nice if you left this header intact.
-	// Base64 code from Tyler Akins -- http://rumkin.com
-
-	// schiller: Removed string concatenation in favour of Array.join() optimization,
-	//           also precalculate the size of the array needed.
-
-	"_keyStr" : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-
-	"encode64" : function(input) {
-		if(window.btoa) return window.btoa(input); // Use native if available
-		// base64 strings are 4/3 larger than the original string
-		var output = new Array( Math.floor( (input.length + 2) / 3 ) * 4 );
-		var chr1, chr2, chr3;
-		var enc1, enc2, enc3, enc4;
-		var i = 0, p = 0;
-
-		do {
-			chr1 = input.charCodeAt(i++);
-			chr2 = input.charCodeAt(i++);
-			chr3 = input.charCodeAt(i++);
-
-			enc1 = chr1 >> 2;
-			enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-			enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-			enc4 = chr3 & 63;
-
-			if (isNaN(chr2)) {
-				enc3 = enc4 = 64;
-			} else if (isNaN(chr3)) {
-				enc4 = 64;
-			}
-
-			output[p++] = this._keyStr.charAt(enc1);
-			output[p++] = this._keyStr.charAt(enc2);
-			output[p++] = this._keyStr.charAt(enc3);
-			output[p++] = this._keyStr.charAt(enc4);
-		} while (i < input.length);
-
-		return output.join('');
-	}
-};
