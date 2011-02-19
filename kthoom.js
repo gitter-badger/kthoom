@@ -26,6 +26,8 @@ if (window.opera) {
 	window.console.dir = function(str) {};
 }
 
+window.kthoom = {};
+
 // key codes
 // TODO: is this reliable?
 var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, L: 76, R: 82 };
@@ -123,32 +125,39 @@ function initProgressMeter() {
 }
 
 function setProgressMeter(pct) {
-	var pct = (pct*100);
-	var pctStr = pct + "%";
-	getElem("meter").setAttribute("width", pctStr);
-	var title = getElem("progress_title");
-	while (title.firstChild) title.removeChild(title.firstChild);
-	title.appendChild(document.createTextNode(parseInt(pct)+"%"));
-	// fade it out as it approaches finish
-	title.setAttribute("fill-opacity", (pct > 80) ? ((100-pct)*5)/100 : 1);
+  var pct = (pct*100);
+  var pctStr = pct + "%";
+  document.title = parseInt(pct*100, 10)/100 + "%";
+  getElem("meter").setAttribute("width", pctStr);
+  var title = getElem("progress_title");
+  while (title.firstChild) title.removeChild(title.firstChild);
+  title.appendChild(document.createTextNode(parseInt(pct)+"%"));
+  // fade it out as it approaches finish
+  title.setAttribute("fill-opacity", (pct > 80) ? ((100-pct)*5)/100 : 1);
 }
 
 // attempts to read the file that the user has chosen
 // TODO: Pass the filename to the Worker thread and create the FileReader
 // inside the Worker!
 function getFile(evt) {
-	var inp = evt.target;
-	var filelist = inp.files;
-	if (filelist.length == 1) {
-		var worker = new Worker("unzip.js");
+  var inp = evt.target;
+  var filelist = inp.files;
+  if (filelist.length == 1) {
+      var start = (new Date).getTime();
+//		var worker = new Worker("unzip.js");
 
-		// error handler for worker thread
-		worker.onerror = function(error) {
-			console.log("Worker error: " + error.message);
-			throw error;
-		};
-		// this is the function that the worker thread uses to post progress/status
-		worker.onmessage = function(event) {
+    // error handler for worker thread
+    /*
+    worker.onerror = function(error) {
+      console.log("Worker error: " + error.message);
+      throw error;
+    };
+    */
+
+    // this is the function that the worker thread uses to post progress/status
+    var postMessage = /*worker.onmessage =*/ function(event) {
+			// TODO: Remove this once we're back to using Workers.
+			event = {data: event};
 			// if thread returned a Progress Report, then time to update
 			if (typeof event.data == typeof {}) {
 				var progress = event.data;
@@ -181,14 +190,13 @@ function getFile(evt) {
 						var counter = getElem("pageCounter");
 						counter.removeChild(counter.firstChild);
 						counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
-
-						if (progress.isDone) {
-							var diff = ((new Date).getTime() - start)/1000;
-							console.log("Unzipping done in " + diff + "s");
-						}
 					}
 					else {
 						getElem("logo").setAttribute("style", "display:block");
+					}
+					if (progress.isDone) {
+						var diff = ((new Date).getTime() - start)/1000;
+						console.log("Unzipping done in " + diff + "s");
 					}
 				}
 			}
@@ -197,7 +205,8 @@ function getFile(evt) {
 				console.log( event.data );
 			}
 		};
-		worker.postMessage({fileName: filelist[0], debug: true});
+		// worker.postMessage
+		unzip.postMessage({file: filelist[0], debug: true, postMessage: postMessage});
 	}
 }
 
@@ -306,4 +315,3 @@ function init() {
 		document.addEventListener("keyup", keyUp, false);
 	}
 }
-

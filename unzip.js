@@ -6,9 +6,11 @@
  * Copyright(c) 2010 Jeff Schiller
  *
  */
-importScripts('binary.js');
+//importScripts('binary.js');
 
 var gDebug = false;
+var postMessage = null;
+window.unzip = {};
 
 // this common interface encapsulates a decompressed file
 // both ZipLocalFile and RarLocalFile support these two 
@@ -187,7 +189,7 @@ var twoByteValueToHexString = function(num) {
 // Takes an ArrayBuffer of a zip file in
 // returns null on error
 // returns an array of DecompressedFile objects on success
-function unzip(arrayBuffer, bDebug) {
+var unzip = function(arrayBuffer, bDebug) {
 	var bstream = new ByteStream(arrayBuffer);
 	// detect local file header signature or return null
 	if (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
@@ -304,6 +306,7 @@ function unzip(arrayBuffer, bDebug) {
 			}
 		}
 		progress.isDone = true;
+		postMessage(progress);
 	}
 	else { // check for RAR
 		unrar(bstr, bDebug);
@@ -1379,20 +1382,21 @@ var Utils = {
 	}
 };
 
-onmessage = function(event) {
-  postMessage("In unzip.onmessage(" + event.data.fileName + ")");
-  var filename = event.data.fileName;
+unzip.postMessage = /*onmessage =*/ function(event) {
+  // TODO: Remove this once we're back to using Workers.
+  event = {data: event};
+  postMessage = event.data.postMessage;
+  var file = event.data.file;
+  postMessage("In unzip.onmessage(" + file.fileName + ")");
   gDebug = event.data.debug;
 
   var reader = new FileReader();
   reader.onloadend = function(e) {
-    var start = (new Date).getTime();
-
     currentImage = -1;
     imageFiles = [];
     imageFilenames = [];
 
     unzip(e.target.result, gDebug);
   };
-  reader.readAsArrayBuffer(filename);
+  reader.readAsArrayBuffer(file);
 };
