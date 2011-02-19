@@ -6,7 +6,6 @@
  * Copyright(c) 2010 Jeff Schiller
  *
  */
-
 importScripts('binary.js');
 
 // this common interface encapsulates a decompressed file
@@ -201,18 +200,22 @@ function unzip(bstr, bDebug) {
 		// got all local files, now sort them
 		localFiles.sort(function(a,b) {
 			// extract the number at the end of both filenames
-			// stripping off the .jpg extension
-			var aname = a.filename.substr(0,a.filename.length-4),
-				bname = b.filename.substr(0,b.filename.length-4);
-			
+			var aname = a.filename;
+			var bname = b.filename;
 			var aindex = aname.length, bindex = bname.length;
+
+			// Find the last number character from the back of the filename.
+			while (aname[aindex-1] < '0' || aname[aindex-1] > '9') --aindex;
+			while (bname[bindex-1] < '0' || bname[bindex-1] > '9') --bindex;
+
+			// Find the first number character from the back of the filename
 			while (aname[aindex-1] >= '0' && aname[aindex-1] <= '9') --aindex;
 			while (bname[bindex-1] >= '0' && bname[bindex-1] <= '9') --bindex;
 			
 			// parse them into numbers and return comparison
-			var anum = new Number(aname.substr(aindex)),
-				bnum = new Number(bname.substr(bindex));
-			return anum > bnum;
+			var anum = parseInt(aname.substr(aindex), 10),
+				bnum = parseInt(bname.substr(bindex), 10);
+			return anum - bnum;
 		});
 		
 		// archive extra data record
