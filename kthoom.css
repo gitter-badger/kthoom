@@ -1,0 +1,43 @@
+body {
+	background: #222;
+	color: white;
+}
+
+div.foreground {
+	position: absolute;
+	top: 10px;
+	left: 20px;
+	right: 20px;
+}
+
+div#nav {
+	display: inline;
+	position: absolute;
+	right: 20px;
+}
+
+img#close {
+	position: absolute;
+	right: -30px;
+	top: -5px;
+}
+
+form#uploader {
+	display: inline;
+}
+
+div#nav.hide {
+	display: none;
+}
+
+canvas#canvas {
+	display: none;
+}
+
+div#progress {
+	position: absolute;
+	display: inline;
+	left: 250px;
+	right: 200px;
+	text-align:right;
+}
