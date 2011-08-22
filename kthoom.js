@@ -33,9 +33,11 @@ window.kthoom = {};
 var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, L: 76, R: 82 };
 
 // global variables
-var currentImage = -1,
+var worker;
+var currentImage = 0,
 	imageFiles = [],
 	imageFilenames = [];
+var totalImages = 0;
 
 // stores an image filename and its data: URI
 // TODO: investigate if we really need to store as base64 (leave off ;base64 and just
@@ -104,24 +106,56 @@ function initProgressMeter() {
 	var title = document.createElementNS(svgns, "text");
 	title.id = "progress_title";
 	title.appendChild(document.createTextNode("0%"));
-	title.setAttribute("y", "11.5");
+	title.setAttribute("y", "11");
 	title.setAttribute("x", "99%");
 	title.setAttribute("fill", "white");
-	title.setAttribute("font-size", "14px");
+	title.setAttribute("font-size", "12px");
 	title.setAttribute("text-anchor", "end");
 	g.appendChild(title);
+
+
 	
 	var meter = document.createElementNS(svgns, "rect");
 	meter.id = "meter";
 	meter.setAttribute("width", "0%");
-	meter.setAttribute("height", "16");
+	meter.setAttribute("height", "15");
 	meter.setAttribute("fill", "url(#progress_pattern)");
 	meter.setAttribute("rx", "5");
 	meter.setAttribute("ry", "5");
 	
+	var meter2 = document.createElementNS(svgns, "rect");
+	meter2.id = "meter2";
+	meter2.setAttribute("width", "0%");
+	meter2.setAttribute("height", "15");
+	meter2.setAttribute("opacity", "0.8");
+	meter2.setAttribute("fill", "#007fff");
+	meter2.setAttribute("rx", "5");
+	meter2.setAttribute("ry", "5");
+	
+
 	g.appendChild(meter);
+	g.appendChild(meter2);
+
+	
+	var page = document.createElementNS(svgns, "text");
+	page.id = "page";
+	page.appendChild(document.createTextNode("0/0"));
+	page.setAttribute("y", "11");
+	page.setAttribute("x", "1%");
+	page.setAttribute("fill", "white");
+	page.setAttribute("font-size", "12px");
+	g.appendChild(page);
+	
+	
 	svg.appendChild(g);
 	pdiv.appendChild(svg);
+	
+  svg.onclick = function(e){
+    for(var x = svg, l = 0; x != document.documentElement; x = x.parentNode) l += x.offsetLeft;
+    var page = Math.max(1, Math.round(((e.clientX - l)/svg.offsetWidth) * totalImages)) - 1;
+    currentImage = page;
+    updatePage();
+  }
 }
 
 function setProgressMeter(pct) {
@@ -131,9 +165,11 @@ function setProgressMeter(pct) {
   getElem("meter").setAttribute("width", pctStr);
   var title = getElem("progress_title");
   while (title.firstChild) title.removeChild(title.firstChild);
-  title.appendChild(document.createTextNode(parseInt(pct)+"%"));
+  title.appendChild(document.createTextNode(pct.toFixed(2) +"% "+imageFiles.length+"/"+totalImages+""));
   // fade it out as it approaches finish
   title.setAttribute("fill-opacity", (pct > 80) ? ((100-pct)*5)/100 : 1);
+
+	getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
 }
 
 // attempts to read the file that the user has chosen
@@ -142,10 +178,10 @@ function setProgressMeter(pct) {
 function getFile(evt) {
   var inp = evt.target;
   var filelist = inp.files;
-  window.FYLE = filelist;
   if (filelist.length == 1) {
-      var start = (new Date).getTime();
-		var worker = new Worker("unzip.js");
+    closeBook();
+    var start = (new Date).getTime();
+		worker = new Worker("unzip.js");
 
     // error handler for worker thread
     //*
@@ -158,7 +194,11 @@ function getFile(evt) {
     // this is the function that the worker thread uses to post progress/status
     worker.onmessage = function(event) {
 			// if thread returned a Progress Report, then time to update
-			if (typeof event.data == typeof {}) {
+			if(event.data.filename){
+			  if(/\.[a-z]+$/i.test(event.data.filename)){
+			    totalImages++;
+			  }
+			}else if (typeof event.data == typeof {}) {
 				var progress = event.data;
 				if (progress.isValid) {
 					var localFiles = progress.localFiles;
@@ -175,23 +215,24 @@ function getFile(evt) {
 						}
 
 						// hide logo
-						getElem("logo").setAttribute("style", "display:none");
+						//getElem("logo").setAttribute("style", "display:none");
 
 						// display nav
 						getElem("nav").className = "";
 
 						// display first page if we haven't yet
-						if (currentImage == -1) {
-							currentImage = 0;
+						if (imageFiles.length == currentImage + 1) {
 							updatePage();
 						}
 
-						var counter = getElem("pageCounter");
-						counter.removeChild(counter.firstChild);
-						counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
+						//var counter = getElem("pageCounter");
+						//counter.removeChild(counter.firstChild);
+						//counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
+						
+
 					}
 					else {
-						getElem("logo").setAttribute("style", "display:block");
+						//getElem("logo").setAttribute("style", "display:block");
 					}
 					if (progress.isDone) {
 						var diff = ((new Date).getTime() - start)/1000;
@@ -205,17 +246,20 @@ function getFile(evt) {
 			}
 		};
 		// worker.postMessage
-		worker.postMessage({file: window.webkitURL.createObjectURL(filelist[0]), debug: true, fileName: filelist[0].fileName});
+		worker.postMessage({file: window.webkitURL.createObjectURL(filelist[0]), debug: false, fileName: filelist[0].fileName});
 	}
 }
 
 function updatePage() {
-	var counter = getElem("pageCounter");
-	counter.removeChild(counter.firstChild);
-	counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
-	
+  getElem("mainImage").setAttribute("src", 'images/loading.svg');
+	var title = getElem("page");
+  while (title.firstChild) title.removeChild(title.firstChild);
+  title.appendChild(document.createTextNode(  (currentImage+1) + "/" + totalImages  ));
+  
+	getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
 	if (imageFiles[currentImage])
 		getElem("mainImage").setAttribute("src", imageFiles[currentImage].dataURI);
+	scrollTo(0,0);
 }
 
 function showPrevPage() {
@@ -227,7 +271,8 @@ function showPrevPage() {
 
 function showNextPage() {
 	currentImage++;
-	if (currentImage >= imageFiles.length) currentImage = 0;
+	
+	if (currentImage >= Math.max(totalImages, imageFiles.length)) currentImage = 0;
 	updatePage();
 	getElem("next").focus();
 }
@@ -262,21 +307,25 @@ function rotateRight() {
 }
 
 function closeBook() {
-	currentImage = -1;
+  if(worker) worker.terminate();
+	currentImage = 0;
 	imageFiles = [];
 	imageFilenames = [];
-
+  totalImages = 0;
 	// clear img
-	getElem("mainImage").setAttribute("src", null);
+	//getElem("mainImage").setAttribute("src", 'images/loading.svg');
 	
 	// clear file upload
 	resetFileUploader();
 	
 	// display logo
-	getElem("logo").setAttribute("style", "display:block");
+	//getElem("logo").setAttribute("style", "display:block");
 	
 	// hide nav
-	getElem("nav").className = "hide";
+	//getElem("nav").className = "hide";
+	
+	setProgressMeter(0);
+	updatePage();
 }
 
 function keyUp(evt) {
@@ -307,9 +356,7 @@ function init() {
 	}
 	else {
 		initProgressMeter();
-
 		resetFileUploader();
-
 		// add key handler
 		document.addEventListener("keyup", keyUp, false);
 	}

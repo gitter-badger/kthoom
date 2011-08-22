@@ -1,6 +1,8 @@
 body {
 	background: #222;
 	color: white;
+	font-family: sans-serif;
+	margin: 0px;
 }
 
 div.foreground {
@@ -13,7 +15,7 @@ div.foreground {
 div#nav {
 	display: inline;
 	position: absolute;
-	right: 20px;
+	right: 0;
 }
 
 img#close {
@@ -24,6 +26,10 @@ img#close {
 
 form#uploader {
 	display: inline;
+}
+
+#filechooser {
+	color: white;
 }
 
 div#nav.hide {
@@ -38,6 +44,16 @@ div#progress {
 	position: absolute;
 	display: inline;
 	left: 250px;
-	right: 200px;
+	right: 100px;
+	height: 20px;
+	margin-top: 5px;
 	text-align:right;
+}
+
+#mainImage {
+  margin-top: 10px;
+}
+
+#logo {
+  margin-top: 20px;
 }
