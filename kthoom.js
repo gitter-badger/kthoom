@@ -38,6 +38,7 @@ var currentImage = 0,
 	imageFiles = [],
 	imageFilenames = [];
 var totalImages = 0;
+var lastCompletion = 0;
 
 // stores an image filename and its data: URI
 // TODO: investigate if we really need to store as base64 (leave off ;base64 and just
@@ -152,7 +153,7 @@ function initProgressMeter() {
 	
   svg.onclick = function(e){
     for(var x = svg, l = 0; x != document.documentElement; x = x.parentNode) l += x.offsetLeft;
-    var page = Math.max(1, Math.round(((e.clientX - l)/svg.offsetWidth) * totalImages)) - 1;
+    var page = Math.max(1, Math.ceil(((e.clientX - l)/svg.offsetWidth) * totalImages)) - 1;
     currentImage = page;
     updatePage();
   }
@@ -160,11 +161,31 @@ function initProgressMeter() {
 
 function setProgressMeter(pct) {
   var pct = (pct*100);
-  var pctStr = pct + "%";
   document.title = parseInt(pct*100, 10)/100 + "%";
-  getElem("meter").setAttribute("width", pctStr);
+  
+  var part = 1/totalImages;
+  var remain = ((pct - lastCompletion)/100)/part;
+  //console.log(pct-lastCompletion, remain);
+  //console.log(lastCompletion, pct-lastCompletion,remain);
+  var fract = Math.min(1, remain);
+  var smartpct = ((imageFiles.length/totalImages) + fract * part )* 100;
+  //console.log(smartpct);
+  
+   // + Math.min((pct - lastCompletion), 100/totalImages * 0.9 + (pct - lastCompletion - 100/totalImages)/2, 100/totalImages);
+  var oldval = parseFloat(getElem("meter").getAttribute('width'));
+  if(isNaN(oldval)) oldval = 0;
+  //console.log(oldval);
+  var weight = 0.5;
+  smartpct = (weight * smartpct + (1-weight) * oldval);
+  if(pct == 100) smartpct = 100;
+    
+  //console.log(pct - smartpct);
+  if(!isNaN(smartpct)){
+    getElem("meter").setAttribute("width", smartpct + '%');
+  }
   var title = getElem("progress_title");
   while (title.firstChild) title.removeChild(title.firstChild);
+
   title.appendChild(document.createTextNode(pct.toFixed(2) +"% "+imageFiles.length+"/"+totalImages+""));
   // fade it out as it approaches finish
   title.setAttribute("fill-opacity", (pct > 80) ? ((100-pct)*5)/100 : 1);
@@ -202,7 +223,8 @@ function getFile(evt) {
 				var progress = event.data;
 				if (progress.isValid) {
 					var localFiles = progress.localFiles;
-					setProgressMeter(progress.totalBytesUnzipped / progress.totalSizeInBytes);
+					var percentage = progress.totalBytesUnzipped / progress.totalSizeInBytes;
+					setProgressMeter(percentage);
 					if (localFiles && localFiles.length > 0) {
 						// convert DecompressedFile into a bunch of ImageFiles
 						for (var fIndex in localFiles) {
@@ -219,7 +241,8 @@ function getFile(evt) {
 
 						// display nav
 						getElem("nav").className = "";
-
+            lastCompletion = percentage * 100;
+            
 						// display first page if we haven't yet
 						if (imageFiles.length == currentImage + 1) {
 							updatePage();
