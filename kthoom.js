@@ -30,7 +30,7 @@ window.kthoom = {};
 
 // key codes
 // TODO: is this reliable?
-var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, L: 76, R: 82 };
+var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, L: 76, R: 82, H: 72, V: 86 };
 
 // global variables
 var worker;
@@ -110,7 +110,7 @@ function initProgressMeter() {
 	title.id = "progress_title";
 	title.appendChild(document.createTextNode("0%"));
 	title.setAttribute("y", "11");
-	title.setAttribute("x", "99%");
+	title.setAttribute("x", "99.5%");
 	title.setAttribute("fill", "white");
 	title.setAttribute("font-size", "12px");
 	title.setAttribute("text-anchor", "end");
@@ -144,7 +144,7 @@ function initProgressMeter() {
 	page.id = "page";
 	page.appendChild(document.createTextNode("0/0"));
 	page.setAttribute("y", "11");
-	page.setAttribute("x", "1%");
+	page.setAttribute("x", "0.5%");
 	page.setAttribute("fill", "white");
 	page.setAttribute("font-size", "12px");
 	g.appendChild(page);
@@ -163,12 +163,8 @@ function initProgressMeter() {
 
 function setProgressMeter(pct) {
   var pct = (pct*100);
-  document.title = parseInt(pct*100, 10)/100 + "%";
-  
   var part = 1/totalImages;
   var remain = ((pct - lastCompletion)/100)/part;
-  //console.log(pct-lastCompletion, remain);
-  //console.log(lastCompletion, pct-lastCompletion,remain);
   var fract = Math.min(1, remain);
   var smartpct = ((imageFiles.length/totalImages) + fract * part )* 100;
   //console.log(smartpct);
@@ -176,12 +172,10 @@ function setProgressMeter(pct) {
    // + Math.min((pct - lastCompletion), 100/totalImages * 0.9 + (pct - lastCompletion - 100/totalImages)/2, 100/totalImages);
   var oldval = parseFloat(getElem("meter").getAttribute('width'));
   if(isNaN(oldval)) oldval = 0;
-  //console.log(oldval);
   var weight = 0.5;
   smartpct = (weight * smartpct + (1-weight) * oldval);
   if(pct == 100) smartpct = 100;
     
-  //console.log(pct - smartpct);
   if(!isNaN(smartpct)){
     getElem("meter").setAttribute("width", smartpct + '%');
   }
@@ -193,6 +187,11 @@ function setProgressMeter(pct) {
   title.setAttribute("fill-opacity", (pct > 80) ? ((100-pct)*5)/100 : 1);
 
 	getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
+	
+	if(pct > 0){
+	  getElem("nav").className = "";
+	  getElem("progress").className = "";
+	}
 }
 
 // attempts to read the file that the user has chosen
@@ -203,6 +202,7 @@ function getFile(evt) {
   var filelist = inp.files;
   if (filelist.length == 1) {
     closeBook();
+    
     var start = (new Date).getTime();
 		worker = new Worker("decode.js");
 
@@ -242,7 +242,6 @@ function getFile(evt) {
 						//getElem("logo").setAttribute("style", "display:none");
 
 						// display nav
-						getElem("nav").className = "";
             lastCompletion = percentage * 100;
             
 						// display first page if we haven't yet
@@ -280,36 +279,48 @@ function updatePage() {
 	if (imageFiles[currentImage]){
 		setImage(imageFiles[currentImage].dataURI);
 	}else{
-    setImage('images/loading.svg');
+    setImage('loading');
   }
 }
 
 
 function setImage(url){
-  var img = new Image();
-  var canvas = getElem('mainImage');
-  img.onload = function(){
-    var h = img.height, w = img.width, x = canvas.getContext('2d'), sw = w, sh = h;
-    rotateTimes = rotateTimes % 4;
-    x.save();
-    if(rotateTimes % 2 == 1){ sh = w; sw = h;}
-    canvas.height = sh;
-    canvas.width = sw;
-    x.translate(sw/2, sh/2);
-    x.rotate(Math.PI/2 * rotateTimes);
-    x.translate(-w/2, -h/2);
-    if(vflip){
-      x.scale(1, -1)
-      x.translate(0, -h);
+  var canvas = getElem('mainImage'), 
+      x = canvas.getContext('2d');
+  if(url == 'loading'){
+    canvas.width = innerWidth;
+    x.fillStyle = 'red';
+    x.font = '50px sans-serif';
+    x.strokeStyle = 'black';
+    x.fillText("Loading Page #"+(currentImage+1), 100, 100)
+  }else{
+    var img = new Image();
+    img.onload = function(){
+      var h = img.height, 
+          w = img.width, 
+          sw = w, 
+          sh = h;
+      rotateTimes =  (4 + rotateTimes) % 4;
+      x.save();
+      if(rotateTimes % 2 == 1){ sh = w; sw = h;}
+      canvas.height = sh;
+      canvas.width = sw;
+      x.translate(sw/2, sh/2);
+      x.rotate(Math.PI/2 * rotateTimes);
+      x.translate(-w/2, -h/2);
+      if(vflip){
+        x.scale(1, -1)
+        x.translate(0, -h);
+      }
+      if(hflip){
+        x.scale(-1, 1)
+        x.translate(-w, 0);
+      }
+      x.drawImage(img, 0, 0);
+      x.restore();
     }
-    if(hflip){
-      x.scale(-1, 1)
-      x.translate(-w, 0);
-    }
-    x.drawImage(img, 0, 0);
-    x.restore();
+    img.src = url;
   }
-  img.src = url;
 }
 
 function showPrevPage() {
@@ -341,6 +352,7 @@ function closeBook() {
 	//getElem("logo").setAttribute("style", "display:block");
 	
 	getElem("nav").className = "hide";
+	getElem("progress").className = "hide";
 	
 	setProgressMeter(0);
 	updatePage();
@@ -348,6 +360,8 @@ function closeBook() {
 
 function keyUp(evt) {
 	var code = evt.keyCode;
+  if(getComputedStyle(getElem("progress")).display == 'none') return;
+	if(evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
 	switch(code) {
 		case Key.LEFT:
 			showPrevPage();
@@ -356,10 +370,20 @@ function keyUp(evt) {
 			showNextPage();
 			break;
 		case Key.L:
-			rotateLeft();
+			rotateTimes--;
+			updatePage();
 			break;
 		case Key.R:
-			rotateRight();
+			rotateTimes++;
+			updatePage();
+			break;
+		case Key.H:
+			hflip = !hflip;
+			updatePage();
+			break;
+		case Key.V:
+			vflip = !vflip;
+			updatePage();
 			break;
 		default:
 //			console.log("KeyCode = " + code);

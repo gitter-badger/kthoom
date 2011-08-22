@@ -38,8 +38,6 @@ function ProgressReport() {
 }
 var progress = new ProgressReport();
 
-
-
 onmessage = function(event) {
   // TODO: Remove this once we're back to using Workers.
   var file = event.data.file;
@@ -51,11 +49,16 @@ onmessage = function(event) {
   gDebug = event.data.debug;
   xhr.onload = function(){
     var result = xhr.response;
-    currentImage = -1;
-    imageFiles = [];
-    imageFilenames = [];
-    unzip(result, gDebug);
-    //unrar(result, gDebug);
+    var arr = new Uint8Array(result, 0, 7);
+    if(arr[0] == 80 && arr[1] == 75 && arr[2] == 3 && arr[3] == 4){
+    	unzip(result, gDebug);
+    }else if(arr[0] == 0x52 && arr[1] == 0x61 && arr[2] == 0x72 && arr[3] == 0x21 && arr[4] == 0x1a && arr[5] == 0x07 && arr[6] == 0x00){
+      postMessage("found RAR file");
+      unrar(result, gDebug);
+      
+    }else{
+      postMessage("Error: Unknown file format");
+    }
   }
 
 };

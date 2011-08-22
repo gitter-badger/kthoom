@@ -5,26 +5,26 @@ body {
 	margin: 0px;
 }
 
-div.foreground {
+.foreground {
 	position: absolute;
 	top: 10px;
 	left: 20px;
 	right: 20px;
 }
 
-div#nav {
+#nav {
 	display: inline;
 	position: absolute;
 	right: 0;
 }
 
-img#close {
+#close {
 	position: absolute;
 	right: -30px;
 	top: -5px;
 }
 
-form#uploader {
+#uploader {
 	display: inline;
 }
 
@@ -34,15 +34,12 @@ form#uploader {
 	position: absolute;
 }
 
-div#nav.hide {
-	display: none;
-}
 
 
-div#progress {
+#progress {
 	position: absolute;
 	display: inline;
-	left: 250px;
+	left: 200px;
 	right: 100px;
 	height: 20px;
 	margin-top: 5px;
@@ -55,4 +52,9 @@ div#progress {
 
 #logo {
   margin-top: 20px;
+}
+
+
+.hide {
+	display: none !important;
 }
