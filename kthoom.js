@@ -142,22 +142,21 @@ function setProgressMeter(pct) {
 function getFile(evt) {
   var inp = evt.target;
   var filelist = inp.files;
+  window.FYLE = filelist;
   if (filelist.length == 1) {
       var start = (new Date).getTime();
-//		var worker = new Worker("unzip.js");
+		var worker = new Worker("unzip.js");
 
     // error handler for worker thread
-    /*
+    //*
     worker.onerror = function(error) {
       console.log("Worker error: " + error.message);
       throw error;
     };
-    */
+    //*/
 
     // this is the function that the worker thread uses to post progress/status
-    var postMessage = /*worker.onmessage =*/ function(event) {
-			// TODO: Remove this once we're back to using Workers.
-			event = {data: event};
+    worker.onmessage = function(event) {
 			// if thread returned a Progress Report, then time to update
 			if (typeof event.data == typeof {}) {
 				var progress = event.data;
@@ -206,7 +205,7 @@ function getFile(evt) {
 			}
 		};
 		// worker.postMessage
-		unzip.postMessage({file: filelist[0], debug: true, postMessage: postMessage});
+		worker.postMessage({file: window.webkitURL.createObjectURL(filelist[0]), debug: true, fileName: filelist[0].fileName});
 	}
 }
 

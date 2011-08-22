@@ -6,11 +6,11 @@
  * Copyright(c) 2010 Jeff Schiller
  *
  */
-//importScripts('binary.js');
+importScripts('binary.js');
 
 var gDebug = false;
-var postMessage = null;
-window.unzip = {};
+//var postMessage = null;
+//window.unzip = {};
 
 // this common interface encapsulates a decompressed file
 // both ZipLocalFile and RarLocalFile support these two 
@@ -137,10 +137,10 @@ ZipLocalFile.prototype.unzip = function() {
 		}
 		
 		if (this.isValid) {
-			var bb = new BlobBuilder();
-			console.log(this.fileData.byteLength, this.fileData.byteOffset);
+			var bb = new WebKitBlobBuilder();
+			//console.log(this.fileData.byteLength, this.fileData.byteOffset);
 			bb.append(this.fileData.buffer);
-			this.imageString = webkitURL.createObjectURL(bb.getBlob().slice(this.fileData.byteOffset, this.fileData.byteLength));
+			this.imageString = webkitURL.createObjectURL(bb.getBlob().webkitSlice(this.fileData.byteOffset, this.fileData.byteOffset + this.fileData.byteLength));
 			this.fileData = null;
 		}
 };
@@ -1385,21 +1385,21 @@ var Utils = {
 	}
 };
 
-unzip.postMessage = /*onmessage =*/ function(event) {
+onmessage = function(event) {
   // TODO: Remove this once we're back to using Workers.
-  event = {data: event};
-  postMessage = event.data.postMessage;
   var file = event.data.file;
-  postMessage("In unzip.onmessage(" + file.fileName + ")");
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', file, true);
+  xhr.responseType = 'arraybuffer';
+  xhr.send();
   gDebug = event.data.debug;
-
-  var reader = new FileReader();
-  reader.onloadend = function(e) {
+  xhr.onload = function(){
+    var result = xhr.response;
     currentImage = -1;
     imageFiles = [];
     imageFilenames = [];
+    unzip(result, gDebug);
+  }
 
-    unzip(e.target.result, gDebug);
-  };
-  reader.readAsArrayBuffer(file);
 };
