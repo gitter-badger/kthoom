@@ -37,6 +37,8 @@ var worker;
 var currentImage = 0,
 	imageFiles = [],
 	imageFilenames = [];
+	
+var rotateTimes = 0, hflip = false, vflip = false;
 var totalImages = 0;
 var lastCompletion = 0;
 
@@ -202,7 +204,7 @@ function getFile(evt) {
   if (filelist.length == 1) {
     closeBook();
     var start = (new Date).getTime();
-		worker = new Worker("unzip.js");
+		worker = new Worker("decode.js");
 
     // error handler for worker thread
     //*
@@ -248,10 +250,6 @@ function getFile(evt) {
 							updatePage();
 						}
 
-						//var counter = getElem("pageCounter");
-						//counter.removeChild(counter.firstChild);
-						//counter.appendChild(document.createTextNode("Page " + (currentImage+1) + "/" + imageFiles.length));
-						
 
 					}
 					else {
@@ -269,20 +267,49 @@ function getFile(evt) {
 			}
 		};
 		// worker.postMessage
-		worker.postMessage({file: window.webkitURL.createObjectURL(filelist[0]), debug: false, fileName: filelist[0].fileName});
+		worker.postMessage({file: window.webkitURL.createObjectURL(filelist[0]), debug: true, fileName: filelist[0].fileName});
 	}
 }
 
 function updatePage() {
-  getElem("mainImage").setAttribute("src", 'images/loading.svg');
 	var title = getElem("page");
   while (title.firstChild) title.removeChild(title.firstChild);
   title.appendChild(document.createTextNode(  (currentImage+1) + "/" + totalImages  ));
   
 	getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
-	if (imageFiles[currentImage])
-		getElem("mainImage").setAttribute("src", imageFiles[currentImage].dataURI);
-	scrollTo(0,0);
+	if (imageFiles[currentImage]){
+		setImage(imageFiles[currentImage].dataURI);
+	}else{
+    setImage('images/loading.svg');
+  }
+}
+
+
+function setImage(url){
+  var img = new Image();
+  var canvas = getElem('mainImage');
+  img.onload = function(){
+    var h = img.height, w = img.width, x = canvas.getContext('2d'), sw = w, sh = h;
+    rotateTimes = rotateTimes % 4;
+    x.save();
+    if(rotateTimes % 2 == 1){ sh = w; sw = h;}
+    canvas.height = sh;
+    canvas.width = sw;
+    x.translate(sw/2, sh/2);
+    x.rotate(Math.PI/2 * rotateTimes);
+    x.translate(-w/2, -h/2);
+    if(vflip){
+      x.scale(1, -1)
+      x.translate(0, -h);
+    }
+    if(hflip){
+      x.scale(-1, 1)
+      x.translate(-w, 0);
+    }
+    x.drawImage(img, 0, 0);
+    x.restore();
+  }
+  img.src = url;
 }
 
 function showPrevPage() {
@@ -300,52 +327,20 @@ function showNextPage() {
 	getElem("next").focus();
 }
 
-// TODO: fix it. not quite working yet
-function rotateLeft() {
-	var c = getElem("canvas"),
-		ctx = c.getContext("2d"),
-		img = getElem("mainImage");
-	
-	// reset image to default raster resolution
-	img.setAttribute("width", "");
-	
-	// get max dimension and size the canvas accordingly
-	var max = Math.max(img.width, img.height);
-	c.setAttribute("width", max);
-	c.setAttribute("height", max);
-
-	ctx.translate(max/2,max/2);
-	ctx.rotate(-90*Math.PI/180);
-	ctx.translate(-max/2,-max/2);
-	
-	ctx.drawImage(img, 0, 0);
-
-	img.setAttribute("width", "100%");
-	img.setAttribute("src", c.toDataURL());
-}
-
-// TODO: implement
-function rotateRight() {
-	var c = getElem("canvas");
-}
-
 function closeBook() {
   if(worker) worker.terminate();
 	currentImage = 0;
 	imageFiles = [];
 	imageFilenames = [];
   totalImages = 0;
-	// clear img
-	//getElem("mainImage").setAttribute("src", 'images/loading.svg');
-	
+  lastCompletion = 0;
 	// clear file upload
 	resetFileUploader();
 	
 	// display logo
 	//getElem("logo").setAttribute("style", "display:block");
 	
-	// hide nav
-	//getElem("nav").className = "hide";
+	getElem("nav").className = "hide";
 	
 	setProgressMeter(0);
 	updatePage();
@@ -382,5 +377,6 @@ function init() {
 		resetFileUploader();
 		// add key handler
 		document.addEventListener("keyup", keyUp, false);
+		
 	}
 }
