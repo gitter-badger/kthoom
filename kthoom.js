@@ -303,9 +303,7 @@ function setImage(url){
     if(document.body.scrollHeight/innerHeight > 1){
       document.body.style.overflowY = 'scroll';
     }
-    canvas.style.display = 'none';
-    canvas.style.display = '';
-    document.body.style.overflowY = '';
+    
     var img = new Image();
     img.onload = function(){
       var h = img.height, 
@@ -328,9 +326,14 @@ function setImage(url){
         x.scale(-1, 1)
         x.translate(-w, 0);
       }
+      canvas.style.display = 'none';
+      scrollTo(0,0);
       x.drawImage(img, 0, 0);
+
+        
+      canvas.style.display = '';
+      document.body.style.overflowY = '';
       x.restore();
-      
     }
     img.src = url;
   }
