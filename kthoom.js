@@ -130,7 +130,7 @@ function initProgressMeter() {
 	meter2.id = "meter2";
 	meter2.setAttribute("width", "0%");
 	meter2.setAttribute("height", "15");
-	meter2.setAttribute("opacity", "0.8");
+	meter2.setAttribute("opacity", "0.7");
 	meter2.setAttribute("fill", "#007fff");
 	meter2.setAttribute("rx", "5");
 	meter2.setAttribute("ry", "5");
@@ -167,6 +167,7 @@ function setProgressMeter(pct) {
   var remain = ((pct - lastCompletion)/100)/part;
   var fract = Math.min(1, remain);
   var smartpct = ((imageFiles.length/totalImages) + fract * part )* 100;
+  if(totalImages == 0) smartpct = pct;
   //console.log(smartpct);
   
    // + Math.min((pct - lastCompletion), 100/totalImages * 0.9 + (pct - lastCompletion - 100/totalImages)/2, 100/totalImages);
@@ -188,7 +189,12 @@ function setProgressMeter(pct) {
 
 	getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
 	
-	if(pct > 0){
+	var title = getElem("page");
+  while (title.firstChild) title.removeChild(title.firstChild);
+  title.appendChild(document.createTextNode(  (currentImage+1) + "/" + totalImages  ));
+  
+  
+	if(totalImages > 0){
 	  getElem("nav").className = "";
 	  getElem("progress").className = "";
 	}
@@ -217,16 +223,15 @@ function getFile(evt) {
     // this is the function that the worker thread uses to post progress/status
     worker.onmessage = function(event) {
 			// if thread returned a Progress Report, then time to update
-			if(event.data.filename){
-			  if(/\.[a-z]+$/i.test(event.data.filename)){
-			    totalImages++;
-			  }
-			}else if (typeof event.data == typeof {}) {
+			if (typeof event.data == typeof {}) {
 				var progress = event.data;
 				if (progress.isValid) {
+				  //console.log(progress);
 					var localFiles = progress.localFiles;
 					var percentage = progress.totalBytesUnzipped / progress.totalSizeInBytes;
+          totalImages = progress.totalNumFilesInZip;
 					setProgressMeter(percentage);
+					
 					if (localFiles && localFiles.length > 0) {
 						// convert DecompressedFile into a bunch of ImageFiles
 						for (var fIndex in localFiles) {
@@ -237,7 +242,8 @@ function getFile(evt) {
 								imageFiles.push(new ImageFile(f.filename, f.imageString));
 							}
 						}
-
+            
+            
 						// hide logo
 						//getElem("logo").setAttribute("style", "display:none");
 
@@ -294,6 +300,12 @@ function setImage(url){
     x.strokeStyle = 'black';
     x.fillText("Loading Page #"+(currentImage+1), 100, 100)
   }else{
+    if(document.body.scrollHeight/innerHeight > 1){
+      document.body.style.overflowY = 'scroll';
+    }
+    canvas.style.display = 'none';
+    canvas.style.display = '';
+    document.body.style.overflowY = '';
     var img = new Image();
     img.onload = function(){
       var h = img.height, 
@@ -318,6 +330,7 @@ function setImage(url){
       }
       x.drawImage(img, 0, 0);
       x.restore();
+      
     }
     img.src = url;
   }

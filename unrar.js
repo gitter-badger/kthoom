@@ -135,9 +135,13 @@ function RarVolumeHeader(bstream, bDebug) {
 //		if (bDebug)
 //			postMessage("BytePtr = " + bstream.bytePtr);
 		
+		for(var _i = 0, _s = ''; _i < this.filename.length; _i++){
+		  _s += String.fromCharCode(this.filename[_i]);
+		}
+		
 		if (this.debug)
-			postMessage("Found FILE_HEAD with packSize=" + this.packSize + ", unpackedSize= " + this.unpackedSize + ", hostOS=" + this.hostOS + ", unpVer=" + this.unpVer + ", method=" + this.method + ", filename=" + this.filename);
-	
+			postMessage("Found FILE_HEAD with packSize=" + this.packSize + ", unpackedSize= " + this.unpackedSize + ", hostOS=" + this.hostOS + ", unpVer=" + this.unpVer + ", method=" + this.method + ", filename=" + _s);
+		
 		break;
 	default:
 		if (this.debug)
@@ -282,255 +286,14 @@ function Unpack29(bstream, Solid) {
 	postMessage("ERROR!  RAR 2.9 compression not yet supported");
 }
 
-/** Adapt this:
-
-void Unpack::Unpack29(bool Solid)
-{
-  static unsigned char LDecode[]={0,1,2,3,4,5,6,7,8,10,12,14,16,20,24,28,32,40,48,56,64,80,96,112,128,160,192,224};
-  static unsigned char LBits[]=  {0,0,0,0,0,0,0,0,1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4,  4,  5,  5,  5,  5};
-  static int DDecode[DC];
-  static byte DBits[DC];
-  static int DBitLengthCounts[]= {4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,14,0,12};
-  static unsigned char SDDecode[]={0,4,8,16,32,64,128,192};
-  static unsigned char SDBits[]=  {2,2,3, 4, 5, 6,  6,  6};
-  unsigned int Bits;
-
-  if (DDecode[1]==0)
-  {
-    int Dist=0,BitLength=0,Slot=0;
-    for (int I=0;I<sizeof(DBitLengthCounts)/sizeof(DBitLengthCounts[0]);I++,BitLength++)
-      for (int J=0;J<DBitLengthCounts[I];J++,Slot++,Dist+=(1<<BitLength))
-      {
-        DDecode[Slot]=Dist;
-        DBits[Slot]=BitLength;
-      }
-  }
-
-  FileExtracted=true;
-
-  if (!Suspended)
-  {
-    UnpInitData(Solid);
-    if (!UnpReadBuf())
-      return;
-    if ((!Solid || !TablesRead) && !ReadTables())
-      return;
-  }
-
-  while (true)
-  {
-    UnpPtr&=MAXWINMASK;
-
-    if (InAddr>ReadBorder)
-    {
-      if (!UnpReadBuf())
-        break;
-    }
-    if (((WrPtr-UnpPtr) & MAXWINMASK)<260 && WrPtr!=UnpPtr)
-    {
-      UnpWriteBuf();
-      if (WrittenFileSize>DestUnpSize)
-        return;
-      if (Suspended)
-      {
-        FileExtracted=false;
-        return;
-      }
-    }
-    if (UnpBlockType==BLOCK_PPM)
-    {
-      // Here speed is critical, so we do not use SafePPMDecodeChar,
-      // because sometimes even the inline function can introduce
-      // some additional penalty.
-      int Ch=PPM.DecodeChar();
-      if (Ch==-1)              // Corrupt PPM data found.
-      {
-        PPM.CleanUp();         // Reset possibly corrupt PPM data structures.
-        UnpBlockType=BLOCK_LZ; // Set faster and more fail proof LZ mode.
-        break;
-      }
-      if (Ch==PPMEscChar)
-      {
-        int NextCh=SafePPMDecodeChar();
-        if (NextCh==0)  // End of PPM encoding.
-        {
-          if (!ReadTables())
-            break;
-          continue;
-        }
-        if (NextCh==-1) // Corrupt PPM data found.
-          break;
-        if (NextCh==2)  // End of file in PPM mode..
-          break;
-        if (NextCh==3)  // Read VM code.
-        {
-          if (!ReadVMCodePPM())
-            break;
-          continue;
-        }
-        if (NextCh==4) // LZ inside of PPM.
-        {
-          unsigned int Distance=0,Length;
-          bool Failed=false;
-          for (int I=0;I<4 && !Failed;I++)
-          {
-            int Ch=SafePPMDecodeChar();
-            if (Ch==-1)
-              Failed=true;
-            else
-              if (I==3)
-                Length=(byte)Ch;
-              else
-                Distance=(Distance<<8)+(byte)Ch;
-          }
-          if (Failed)
-            break;
-
-          CopyString(Length+32,Distance+2);
-          continue;
-        }
-        if (NextCh==5) // One byte distance match (RLE) inside of PPM.
-        {
-          int Length=SafePPMDecodeChar();
-          if (Length==-1)
-            break;
-          CopyString(Length+4,1);
-          continue;
-        }
-        // If we are here, NextCh must be 1, what means that current byte
-        // is equal to our 'escape' byte, so we just store it to Window.
-      }
-      Window[UnpPtr++]=Ch;
-      continue;
-    }
-
-    int Number=DecodeNumber((struct Decode *)&LD);
-    if (Number<256)
-    {
-      Window[UnpPtr++]=(byte)Number;
-      continue;
-    }
-    if (Number>=271)
-    {
-      int Length=LDecode[Number-=271]+3;
-      if ((Bits=LBits[Number])>0)
-      {
-        Length+=getbits()>>(16-Bits);
-        addbits(Bits);
-      }
-
-      int DistNumber=DecodeNumber((struct Decode *)&DD);
-      unsigned int Distance=DDecode[DistNumber]+1;
-      if ((Bits=DBits[DistNumber])>0)
-      {
-        if (DistNumber>9)
-        {
-          if (Bits>4)
-          {
-            Distance+=((getbits()>>(20-Bits))<<4);
-            addbits(Bits-4);
-          }
-          if (LowDistRepCount>0)
-          {
-            LowDistRepCount--;
-            Distance+=PrevLowDist;
-          }
-          else
-          {
-            int LowDist=DecodeNumber((struct Decode *)&LDD);
-            if (LowDist==16)
-            {
-              LowDistRepCount=LOW_DIST_REP_COUNT-1;
-              Distance+=PrevLowDist;
-            }
-            else
-            {
-              Distance+=LowDist;
-              PrevLowDist=LowDist;
-            }
-          }
-        }
-        else
-        {
-          Distance+=getbits()>>(16-Bits);
-          addbits(Bits);
-        }
-      }
-
-      if (Distance>=0x2000)
-      {
-        Length++;
-        if (Distance>=0x40000L)
-          Length++;
-      }
-
-      InsertOldDist(Distance);
-      InsertLastMatch(Length,Distance);
-      CopyString(Length,Distance);
-      continue;
-    }
-    if (Number==256)
-    {
-      if (!ReadEndOfBlock())
-        break;
-      continue;
-    }
-    if (Number==257)
-    {
-      if (!ReadVMCode())
-        break;
-      continue;
-    }
-    if (Number==258)
-    {
-      if (LastLength!=0)
-        CopyString(LastLength,LastDist);
-      continue;
-    }
-    if (Number<263)
-    {
-      int DistNum=Number-259;
-      unsigned int Distance=OldDist[DistNum];
-      for (int I=DistNum;I>0;I--)
-        OldDist[I]=OldDist[I-1];
-      OldDist[0]=Distance;
-
-      int LengthNumber=DecodeNumber((struct Decode *)&RD);
-      int Length=LDecode[LengthNumber]+2;
-      if ((Bits=LBits[LengthNumber])>0)
-      {
-        Length+=getbits()>>(16-Bits);
-        addbits(Bits);
-      }
-      InsertLastMatch(Length,Distance);
-      CopyString(Length,Distance);
-      continue;
-    }
-    if (Number<272)
-    {
-      unsigned int Distance=SDDecode[Number-=263]+1;
-      if ((Bits=SDBits[Number])>0)
-      {
-        Distance+=getbits()>>(16-Bits);
-        addbits(Bits);
-      }
-      InsertOldDist(Distance);
-      InsertLastMatch(2,Distance);
-      CopyString(2,Distance);
-      continue;
-    }
-  }
-  UnpWriteBuf();
-}
-
-*/
 
 // v must be a valid RarVolume
 function unpack(v) {
 	// TODO: implement what happens when unpVer is < 15
+	postMessage('unpacking'+v.fileData);
 	var Ver = v.header.unpVer <= 15 ? 15 : v.header.unpVer,
 		Solid = v.header.LHD_SOLID,
-		bstream = new OldBitStream(v.fileData);
+		bstream = new BitStream(v.fileData.buffer);
 	
 	switch(Ver) {
     case 15: // rar 1.5 compression
@@ -553,10 +316,10 @@ function RarLocalFile(bstream, bDebug) {
 	this.header = new RarVolumeHeader(bstream, bDebug);
 	this.filename = this.header.filename;
 	
-	if (this.header.headType != FILE_HEAD) {
+	if (this.header.headType != FILE_HEAD && this.header.headType != ENDARC_HEAD) {
 		this.isValid = false;
 		progress.isValid = false;
-		postMessage("Error! RAR Volume did not include a FILE_HEAD header");
+		postMessage("Error! RAR Volume did not include a FILE_HEAD header ");
 	}
 	else {
 		// read in the compressed data
@@ -580,10 +343,16 @@ RarLocalFile.prototype.unrar = function() {
 			unpack(this);
 		}
 	}
+	if (this.isValid) {
+		var bb = new WebKitBlobBuilder();
+		bb.append(this.fileData.buffer);
+		this.imageString = webkitURL.createObjectURL(bb.getBlob().webkitSlice(this.fileData.byteOffset, this.fileData.byteOffset + this.fileData.byteLength));
+		this.fileData = null;
+	}
 }
 
 function unrar(bstr, bDebug) {
-	var bstream = new OldBitStream(bstr);
+	var bstream = new BitStream(bstr);
 
 	var header = new RarVolumeHeader(bstream, bDebug);
 	if (header.crc == 0x6152 && 

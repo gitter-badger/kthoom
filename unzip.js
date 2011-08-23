@@ -53,10 +53,6 @@ function ZipLocalFile(bstream, bDebug) {
 		postMessage(" filename = '" + this.filename + "'");
 	}
 	
-	postMessage({
-	  filename: this.filename
-	})
-	
 	this.extraField = null;
 	if (this.extraFieldLength > 0) {
 		this.extraField = bstream.readString(this.extraFieldLength);
