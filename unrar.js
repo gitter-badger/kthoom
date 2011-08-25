@@ -23,7 +23,7 @@ function RarVolumeHeader(bstream, bDebug) {
   // byte 1,2
 
   this.crc = bstream.readBits(16);
-  console.log(this.crc);
+  //console.log(this.crc);
   if (bDebug)
     postMessage("  crc=" + this.crc);
 
@@ -397,23 +397,17 @@ function Unpack29(bstream, Solid) {
   
   var MAXWINSIZE = 0x400000, MAXWINMASK = MAXWINSIZE -1;
   
-  
-  
-  
   // initialize data
-  var inAddr = 0;
-
   tablesRead = false;
-  //Utility.Fill(oldDist, 0); // memset(oldDist,0,sizeof(OldDist));
-  
+
   rOldDist = [0,0,0,0]
   
   var oldDistPtr = 0;
   lastDist = 0;
   lastLength = 0;
 
-  //Utility.Fill(unpOldTable, (byte)0); // memset(UnpOldTable,0,sizeof(UnpOldTable));
-
+  for(var i = UnpOldTable.length; i--;) UnpOldTable[i] = 0;
+    
   //var unpPtr = 0;
   //var wrPtr = 0;
   var ppmEscChar = 2;
@@ -423,35 +417,24 @@ function Unpack29(bstream, Solid) {
   var writtenFileSize = 0;
   var readTop = 0;
   var readBorder = 0;
+  
+  
+  
   // read in Huffman tables
   RarReadTables(bstream);
   //todo get rid fo that
-  var killswitch = 2000, _buf  = '';
+  
+ 
+  
+  var _buf  = '';
   while(true){
     var num = RarDecodeNumber(bstream, LD);
     
     
     if(num < 256){
-
       rBuffer.insertByte(num);
-      if(rBuffer.ptr > 28600 && rBuffer.ptr < 30000){
-          //console.log("Print Char", num, String.fromCharCode(num));
-          
-      _buf += ('0'+num.toString(16)).slice(-2)+' '//String.fromCharCode(num);
-    //__buf += "Print Char "+num+'\n';
-        }
       continue;
-    }else{
-    
-    
-    if(_buf){
-      //console.log(")",_buf);
-      _buf = '';
-      }
-      if(rBuffer.ptr > 28600 && rBuffer.ptr < 30000){
-    console.log("DecLD",num);
     }
-}
     if(num >= 271){
       //console.log('>=271');
       var Length = rLDecode[num -= 271] + 3;
@@ -498,12 +481,13 @@ function Unpack29(bstream, Solid) {
       continue;
     }
     if(num == 256){
-      console.log("check end of block");
+      //console.log("check end of block");
       if(!RarReadEndOfBlock(bstream)) break;
+      
       continue;
     }
     if(num == 257){
-      console.log("READVMCODE");
+      //console.log("READVMCODE");
       if(!RarReadVMCode(bstream)) break;
       continue;
     }
@@ -546,12 +530,19 @@ function Unpack29(bstream, Solid) {
       RarCopyString(2, Distance);
       continue;
     }
+    
   }
-  console.log(__buf);
-  throw "poop";
+  //console.log(__buf);
 }
 
 function RarReadEndOfBlock(bstream){
+  
+  var change = rBuffer.ptr - progress.currentFileBytesUnzipped;
+	progress.currentFileBytesUnzipped = rBuffer.ptr;
+	progress.totalBytesUnzipped += change;
+	postMessage(progress);
+
+
   var NewTable = false, NewFile = false;
   if(bstream.readBits(1)){
     NewTable = true;
@@ -572,7 +563,7 @@ function RarReadVMCode(bstream){
   }else if(Length == 8){
     Length = bstream.readBits(16);
   }
-  console.log("FB",FirstByte, Length);
+  //console.log("FB",FirstByte, Length);
   var vmCode = [];
   for(var I = 0; I < Length; I++){
     //do something here with cheking readbuf
@@ -584,7 +575,7 @@ function RarReadVMCode(bstream){
 
 
 function RarAddVMCode(firstByte, vmCode, length){
-  console.log(vmCode);
+  //console.log(vmCode);
   return true;
 }
 
@@ -601,7 +592,6 @@ function RarInsertOldDist(distance){
 
 var __buf = '';
 
-/*
 //this is the real function, the other one is for debugging
 function RarCopyString(length, distance){
   var destPtr = rBuffer.ptr - distance;
@@ -611,8 +601,9 @@ function RarCopyString(length, distance){
   }else{
     rBuffer.insertBytes(rBuffer.data.subarray(destPtr, destPtr + length));
   }
-}*/
-
+  
+}
+/*
 function RarCopyString(length, distance){
   //console.log('dont copy that floppy', rBuffer.ptr - distance, rBuffer.ptr - distance + length, rBuffer.ptr)
   //rBuffer.data.subarray(rBuffer.ptr - distance, rBuffer.ptr - distance + length)
@@ -630,13 +621,7 @@ function RarCopyString(length, distance){
       s += String.fromCharCode(sa[i]);
       sr.push(sa[i]);
     }
-      if(rBuffer.ptr > 28600 && rBuffer.ptr < 30000){
-      console.log("CopyString",length,distance);
-      //__buf += ("CopyString "+ length+" "+distance)+"\n";
-      if(length == 5 && distance == 16){
-        console.log('omfg');
-      }
-    }
+
 
     
   }else{
@@ -646,23 +631,16 @@ function RarCopyString(length, distance){
       s += String.fromCharCode(sa[i]);
       sr.push(sa[i]);
     }
-      if(rBuffer.ptr > 28600 && rBuffer.ptr < 30000){
-      console.log("CopyString",length,distance,s,sr);
-      //__buf += ("CopyString "+ length+" "+distance)+"\n";
-      if(length == 5 && distance == 16){
-        console.log('omfg');
-      }
-    }
+
 
 
     rBuffer.insertBytes(sa);
   }
 }
-
+*/
 // v must be a valid RarVolume
 function unpack(v) {
   // TODO: implement what happens when unpVer is < 15
-  postMessage('unpacking'+v.fileData);
   var Ver = v.header.unpVer <= 15 ? 15 : v.header.unpVer,
     Solid = v.header.LHD_SOLID,
     bstream = new rBitStream(v.fileData.buffer, v.fileData.byteOffset, v.fileData.byteLength );
@@ -682,6 +660,7 @@ function unpack(v) {
       Unpack29(bstream, Solid);
       break;
   } // switch(method)
+  return rBuffer.data;
 }
 
 // bstream is a bit stream
@@ -712,16 +691,15 @@ RarLocalFile.prototype.unrar = function() {
       this.isValid = true;
       progress.currentFileBytesUnzipped += this.fileData.length;
       progress.totalBytesUnzipped += this.fileData.length;
-    }
-    else {
-      console.log(this);
-      unpack(this);
+    } else {
+      //console.log(this);
+      this.fileData = unpack(this);
     }
   }
   if (this.isValid) {
     var bb = new WebKitBlobBuilder();
     bb.append(this.fileData.buffer);
-    this.imageString = webkitURL.createObjectURL(bb.getBlob().webkitSlice(this.fileData.byteOffset, this.fileData.byteOffset + this.fileData.byteLength));
+    this.imageString = webkitURL.createObjectURL(bb.getBlob());
     this.fileData = null;
   }
 }
@@ -756,11 +734,33 @@ function unrar(bstr, bDebug) {
           localFiles.push(localFile);
         }
       } while( localFile.isValid );
-
       progress.totalNumFilesInZip = localFiles.length;
       
       // now we have all information but things are unpacked
       // TODO: unpack
+      localFiles = localFiles.sort(function(a,b) {
+			  // extract the number at the end of both filenames
+			  var aname = a.filename;
+			  var bname = b.filename;
+			  return aname > bname ? 1 : -1;
+			  /*
+			  var aindex = aname.length, bindex = bname.length;
+        
+			  // Find the last number character from the back of the filename.
+			  while (aname[aindex-1] < '0' || aname[aindex-1] > '9') --aindex;
+			  while (bname[bindex-1] < '0' || bname[bindex-1] > '9') --bindex;
+
+			  // Find the first number character from the back of the filename
+			  while (aname[aindex-1] >= '0' && aname[aindex-1] <= '9') --aindex;
+			  while (bname[bindex-1] >= '0' && bname[bindex-1] <= '9') --bindex;
+			
+			  // parse them into numbers and return comparison
+			  var anum = parseInt(aname.substr(aindex), 10),
+				  bnum = parseInt(bname.substr(bindex), 10);
+			  return bnum - anum;*/
+		  });
+
+      postMessage(localFiles.map(function(a){return a.filename}).join(', '));
       for (var i = 0; i < localFiles.length; ++i) {
         var localfile = localFiles[i];
         

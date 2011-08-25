@@ -30,7 +30,9 @@ window.kthoom = {};
 
 // key codes
 // TODO: is this reliable?
-var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, L: 76, R: 82, H: 72, V: 86 };
+var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, 
+A: 65, B: 66, C: 67, D: 68, E: 69, F: 70, G: 71, H: 72, I: 73, J: 74, K: 75, L: 76, M: 77, 
+N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90};
 
 // global variables
 var worker;
@@ -294,7 +296,8 @@ function setImage(url){
   var canvas = getElem('mainImage'), 
       x = canvas.getContext('2d');
   if(url == 'loading'){
-    canvas.width = innerWidth;
+    updateScale(true);
+    canvas.width = innerWidth - 100;
     x.fillStyle = 'red';
     x.font = '50px sans-serif';
     x.strokeStyle = 'black';
@@ -305,6 +308,14 @@ function setImage(url){
     }
     
     var img = new Image();
+    img.onerror = function(){
+      canvas.width = innerWidth - 100;
+      updateScale(true);
+      x.fillStyle = 'red';
+      x.font = '50px sans-serif';
+      x.strokeStyle = 'black';
+      x.fillText("Page #"+(currentImage+1)+" Appears Corrupt", 100, 100)
+    }
     img.onload = function(){
       var h = img.height, 
           w = img.width, 
@@ -329,7 +340,8 @@ function setImage(url){
       canvas.style.display = 'none';
       scrollTo(0,0);
       x.drawImage(img, 0, 0);
-
+      
+      updateScale();
         
       canvas.style.display = '';
       document.body.style.overflowY = '';
@@ -376,6 +388,26 @@ function closeBook() {
 	updatePage();
 }
 
+var fitMode = Key.W;
+
+function updateScale(clear){
+  getElem('mainImage').style.width='';
+  getElem('mainImage').style.height='';
+  getElem('mainImage').style.maxWidth='';
+  getElem('mainImage').style.maxHeight='';
+  
+  if(clear || fitMode == Key.N){
+  }else if(fitMode == Key.B){
+    getElem('mainImage').style.maxWidth = '100%';
+    getElem('mainImage').style.maxHeight = (innerHeight-20*3.5)+'px'
+  }else if(fitMode == Key.H){
+    getElem('mainImage').style.height = (innerHeight-20*3.5)+'px'
+  }else if(fitMode == Key.W){
+    getElem('mainImage').style.width = '100%';
+  }
+}
+
+
 function keyUp(evt) {
 	var code = evt.keyCode;
   if(getComputedStyle(getElem("progress")).display == 'none') return;
@@ -395,13 +427,32 @@ function keyUp(evt) {
 			rotateTimes++;
 			updatePage();
 			break;
-		case Key.H:
-			hflip = !hflip;
+		case Key.F:
+		  if(!hflip && !vflip){
+		    hflip = true;
+		  }else if(hflip == true){
+		    vflip = true;
+		    hflip = false;
+		  }else if(vflip == true){
+		    vflip = false;
+		  }
 			updatePage();
 			break;
-		case Key.V:
-			vflip = !vflip;
-			updatePage();
+		case Key.W:
+      fitMode = Key.W;
+			updateScale();
+			break;
+		case Key.H:
+      fitMode = Key.H;
+			updateScale();
+			break;
+		case Key.B:
+      fitMode = Key.B;
+			updateScale();
+			break;
+		case Key.N:
+      fitMode = Key.N;
+			updateScale();
 			break;
 		default:
 //			console.log("KeyCode = " + code);
@@ -419,6 +470,6 @@ function init() {
 		resetFileUploader();
 		// add key handler
 		document.addEventListener("keyup", keyUp, false);
-		
+		window.addEventListener("resize", updateScale, false);
 	}
 }

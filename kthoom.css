@@ -10,6 +10,7 @@ body {
 	top: 10px;
 	left: 20px;
 	right: 20px;
+	text-align:center;
 }
 
 #nav {
@@ -29,17 +30,22 @@ body {
 }
 
 #filechooser {
-	color: white;
 	display: inline;
 	position: absolute;
+	overflow: hidden;
+	width: 100px;
 }
 
+#filebutton {
+  display: inline;
+  position: absolute;
+}
 
 
 #progress {
 	position: absolute;
 	display: inline;
-	left: 200px;
+	left: 100px;
 	right: 100px;
 	height: 20px;
 	margin-top: 5px;
