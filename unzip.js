@@ -103,54 +103,12 @@ ZipLocalFile.prototype.unzip = function() {
 			var bb = new WebKitBlobBuilder();
 			//console.log(this.fileData.byteLength, this.fileData.byteOffset);
 			bb.append(this.fileData.buffer);
+
 			this.imageString = webkitURL.createObjectURL(bb.getBlob().webkitSlice(this.fileData.byteOffset, this.fileData.byteOffset + this.fileData.byteLength));
 			this.fileData = null;
 		}
 };
 
-// helper function that will create a binary stream out of an array of numbers
-// bytes must be an array and contain numbers, each varying from 0-255
-var createBinaryString = function(bytes) {
-	if (typeof bytes != typeof []) {
-		return null;
-	}
-	var i = bytes.length,
-		bstr = new Array(i);
-	while (i--)
-		bstr[i] = String.fromCharCode(bytes[i]);
-	return bstr.join('');
-};
-
-// shows a number as its binary representation (8 => "1000")
-// len is the number of bits, if num=8 and len=6, this function would return "001000"
-var binaryValueToString = function(num, len) {
-	if (typeof num != typeof 1) {
-		throw ("Error! Non-number sent to binaryValueToString: " + num);
-		return null;
-	}
-	var len = len || 0,
-		str = "";
-	do {
-		// get least-significant bit
-		var bit = (num & 0x1);
-		// insert it left into the string
-		str = (bit ? "1" : "0") + str;
-		// shift it one bit right
-		num >>= 1;
-		--len;
-	} while (num != 0 || len > 0);
-	
-	return str;
-};
-
-// shows a byte value as its hex representation
-var nibble = "0123456789ABCDEF";
-var byteValueToHexString = function(num) {
-	return nibble[num>>4] + nibble[num&0xF];
-}
-var twoByteValueToHexString = function(num) {
-	return nibble[(num>>12)&0xF] + nibble[(num>>8)&0xF] + nibble[(num>>4)&0xF] + nibble[num&0xF];
-}
 
 // Takes an ArrayBuffer of a zip file in
 // returns null on error
@@ -275,7 +233,7 @@ var unzip = function(arrayBuffer, bDebug) {
 		postMessage(progress);
 	}
 	else { // check for RAR
-		unrar(bstream, bDebug);
+		unrar(arrayBuffer, bDebug);
 	}
 	return progress;
 }
@@ -391,11 +349,13 @@ function decodeSymbol(bstream, hcTable) {
 	// loop until we match
 	for (;;) {
 		// read in next bit
-		code = (code<<1) | bstream.readBits(1);
+		var bit = bstream.readBits(1);
+		code = (code<<1) | bit;
 		++len;
 		
 		// check against Huffman Code table and break if found
 		if (hcTable.hasOwnProperty(code) && hcTable[code].length == len) {
+		
 			break;
 		}
 		if (len > hcTable.maxLength) {
@@ -407,24 +367,6 @@ function decodeSymbol(bstream, hcTable) {
 	return hcTable[code].symbol;
 }
 
-function Buffer(numBytes) {
-	if (typeof numBytes != typeof 1 || numBytes <= 0) {
-		throw "Error! Buffer initialized with '" + numBytes + "'";
-	}
-	this.data = new Uint8Array(numBytes);
-	this.ptr = 0;
-	
-	this.insertByte = function(b) {
-		// TODO: throw if byte is invalid?
-		this.data[this.ptr++] = b;
-	};
-	
-	this.insertBytes = function(bytes) {
-		// TODO: throw if bytes is invalid?
-		this.data.set(bytes, this.ptr);
-		this.ptr += bytes.length;
-	};
-}
 
 var CodeLengthCodeOrder = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
 	/*

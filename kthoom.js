@@ -194,7 +194,7 @@ function setProgressMeter(pct) {
   title.appendChild(document.createTextNode(  (currentImage+1) + "/" + totalImages  ));
   
   
-	if(totalImages > 0){
+	if(pct > 0){
 	  getElem("nav").className = "";
 	  getElem("progress").className = "";
 	}
@@ -369,6 +369,8 @@ function closeBook() {
 	
 	getElem("nav").className = "hide";
 	getElem("progress").className = "hide";
+	
+	getElem("meter").setAttribute("width", '0%');
 	
 	setProgressMeter(0);
 	updatePage();
