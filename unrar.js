@@ -166,6 +166,8 @@ var rLDecode = [0,1,2,3,4,5,6,7,8,10,12,14,16,20,24,28,32,40,48,56,64,80,96,112,
   rDDecode = null,
   rDBits = null;
 
+var rLOW_DIST_REP_COUNT = 16;
+
 var rNC = 299,
   rDC = 60,
   rLDC = 17,
@@ -364,18 +366,23 @@ function Unpack20(bstream, Solid) {
   postMessage("ERROR!  RAR 2.0 compression not supported");
 }
 
+var lowDistRepCount = 0, prevLowDist = 0;
+
 function Unpack29(bstream, Solid) {
   // lazy initialize rDDecode and rDBits
   if (rDDecode == null) {
     rDDecode = new Array(rDC);
     rDBits = new Array(rDC);
+    
     var Dist=0,BitLength=0,Slot=0;
-    for (var I = 0; I < rDBitLengthCounts.length / 4; I++,BitLength++) {
+    
+    for (var I = 0; I < rDBitLengthCounts.length; I++,BitLength++) {
       for (var J = 0; J < rDBitLengthCounts[I]; J++,Slot++,Dist+=(1<<BitLength)) {
         rDDecode[Slot]=Dist;
         rDBits[Slot]=BitLength;
       }
     }
+    
   }
   
   var Bits;
@@ -411,37 +418,69 @@ function Unpack29(bstream, Solid) {
   // read in Huffman tables
   RarReadTables(bstream);
   //todo get rid fo that
-  var killswitch = 420;
-  while(killswitch--){
+  var killswitch = 370, _buf  = '';
+  while(true){
     var num = RarDecodeNumber(bstream, LD);
-    console.log("DecLD",num,String.fromCharCode(num));
-    if(num < 256){
     
+    if(num < 256){
+
+      _buf += String.fromCharCode(num);
       rBuffer.insertByte(num);
       continue;
-    }
+    }else{
+      //console.log(")",_buf);
+      _buf = '';
+//console.log("DecLD",num);
+}
     if(num >= 271){
-      var length = rLDecode[num -= 271] + 3;
+      //console.log('>=271');
+      var Length = rLDecode[num -= 271] + 3;
       if((Bits = rLBits[num]) > 0){
-        
-        length += bstream.readBits(Bits);
+        Length += bstream.readBits(Bits);
       }
       var DistNumber = RarDecodeNumber(bstream, DD);
       var Distance = rDDecode[DistNumber]+1;
+      //console.log("$$271-",Distance);
       if((Bits = rDBits[DistNumber]) > 0){
         if(DistNumber > 9){
           if(Bits > 4){
-            console.log("B4", bstream.peekBits(Bits - 4));
-            Distance += bstream.readBits(Bits - 4);
+            Distance += ((bstream.getBits() >>> (20 - Bits)) << 4);
+            bstream.readBits(Bits - 4);
             //todo: check this
           }
+          if(lowDistRepCount > 0){
+            lowDistRepCount--;
+            Distance += prevLowDist;
+          }else{
+            var LowDist = RarDecodeNumber(bstream, LDD);
+            if(LowDist == 16){
+              lowDistRepCount = rLOW_DIST_REP_COUNT - 1;
+              Distance += prevLowDist;
+            }else{
+              Distance += LowDist;
+              prevLowDist = LowDist;
+            }
+          }
+        }else{
+          Distance += bstream.readBits(Bits);
         }
       }
+      if(Distance >= 0x2000){
+        Length++;
+        if(Distance >= 0x40000){
+          Length++;
+        }
+      }
+      //console.log("Magick", Distance, Length);
+      RarInsertOldDist(Distance);
+      RarInsertLastMatch(Length, Distance);
+      RarCopyString(Length, Distance);
+      continue;
     }
     if(num == 256){
       //if !readEndOfBlock break
       console.log("check end of block");
-      continue;
+      break;
     }
     if(num == 257){
       console.log("READVMCODE");
@@ -452,8 +491,24 @@ function Unpack29(bstream, Solid) {
       continue;
     }
     if(num < 263){
+      console.log('<263');
       var DistNum = num - 259;
-      //var Distance = oldDis
+      var Distance = rOldDist[DistNum];
+      //is this not equivalent to RarInsertOldDist?
+      for(var I = DistNum; I > 0; I--){
+        rOldDist[I] = rOldDist[I-1];
+      }
+      rOldDist[0] = Distance;
+      var LengthNumber = RarDecodeNumber(bstream, RD);
+      var Length = rLDecode[LengthNumber] + 2;
+      if((Bits = rLBits[LengthNumber]) > 0){
+        Length += bstream.readBits(Bits);
+        console.log("263>0:"+Length);
+      }
+      console.log("<263:"+DistNum+";"+Distance+";"+LengthNumber+";"+Length);
+      RarInsertLastMatch(Length, Distance);
+      RarCopyString(Length, Distance);
+      continue;
     }
     if(num < 272){
       var Distance = rSDDecode[num -= 263] + 1;
@@ -486,8 +541,16 @@ function RarInsertOldDist(distance){
 }
 
 
-function RarCopyString(len, distance){
-  rBuffer.insertBytes(rBuffer.data.subarray(rBuffer.ptr - distance, rBuffer.ptr - distance + length));
+function RarCopyString(length, distance){
+  //console.log('dont copy that floppy', rBuffer.ptr - distance, rBuffer.ptr - distance + length, rBuffer.ptr)
+  //rBuffer.data.subarray(rBuffer.ptr - distance, rBuffer.ptr - distance + length)
+  var sa = rBuffer.data.subarray(rBuffer.ptr - distance, rBuffer.ptr - distance + length);
+
+  for(var s = "", i = 0; i < sa.length; i++){
+    s += String.fromCharCode(sa[i])
+  }
+  //console.log("]",s);
+  rBuffer.insertBytes(sa);
 }
 
 // v must be a valid RarVolume
