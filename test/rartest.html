@@ -100,7 +100,7 @@ var progress = new ProgressReport();
 <script>
 
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'rartest.txt.rar', true);
+  xhr.open('GET', 'codedread3.cbr', true);
   xhr.responseType = 'arraybuffer';
   xhr.send();
   postMessage = function(a){
@@ -121,5 +121,12 @@ var progress = new ProgressReport();
       console.log(fr.result);
     }
     fr.readAsText(bb.getBlob())
+  }
+  
+  function getURL(){
+  var bb = new WebKitBlobBuilder();
+    bb.append(rBuffer.data.buffer);
+    return webkitURL.createObjectURL(bb.getBlob());
+
   }
 </script>

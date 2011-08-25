@@ -106,7 +106,13 @@ function RarVolumeHeader(bstream, bDebug) {
     }
     
     // read in filename
+    
     this.filename = bstream.readBytes(this.nameSize);
+    for(var _i = 0, _s = ''; _i < this.filename.length; _i++){
+      _s += String.fromCharCode(this.filename[_i]);
+    }
+    
+    this.filename = _s;
     
     if (this.flags.LHD_SALT) {
       postMessage("Warning: Reading in 64-bit salt value");
@@ -137,12 +143,9 @@ function RarVolumeHeader(bstream, bDebug) {
 //    if (bDebug)
 //      postMessage("BytePtr = " + bstream.bytePtr);
     
-    for(var _i = 0, _s = ''; _i < this.filename.length; _i++){
-      _s += String.fromCharCode(this.filename[_i]);
-    }
     
     if (this.debug)
-      postMessage("Found FILE_HEAD with packSize=" + this.packSize + ", unpackedSize= " + this.unpackedSize + ", hostOS=" + this.hostOS + ", unpVer=" + this.unpVer + ", method=" + this.method + ", filename=" + _s);
+      postMessage("Found FILE_HEAD with packSize=" + this.packSize + ", unpackedSize= " + this.unpackedSize + ", hostOS=" + this.hostOS + ", unpVer=" + this.unpVer + ", method=" + this.method + ", filename=" + this.filename);
     
     break;
   default:
@@ -368,6 +371,11 @@ function Unpack20(bstream, Solid) {
 
 var lowDistRepCount = 0, prevLowDist = 0;
 
+var rOldDist = [0,0,0,0];
+var lastDist;
+var lastLength;
+
+
 function Unpack29(bstream, Solid) {
   // lazy initialize rDDecode and rDBits
   if (rDDecode == null) {
@@ -395,14 +403,14 @@ function Unpack29(bstream, Solid) {
   // initialize data
   var inAddr = 0;
 
-  //tablesRead = false;
+  tablesRead = false;
   //Utility.Fill(oldDist, 0); // memset(oldDist,0,sizeof(OldDist));
   
   rOldDist = [0,0,0,0]
   
   var oldDistPtr = 0;
-  var lastDist = 0;
-  var lastLength = 0;
+  lastDist = 0;
+  lastLength = 0;
 
   //Utility.Fill(unpOldTable, (byte)0); // memset(UnpOldTable,0,sizeof(UnpOldTable));
 
@@ -418,19 +426,31 @@ function Unpack29(bstream, Solid) {
   // read in Huffman tables
   RarReadTables(bstream);
   //todo get rid fo that
-  var killswitch = 370, _buf  = '';
+  var killswitch = 2000, _buf  = '';
   while(true){
     var num = RarDecodeNumber(bstream, LD);
     
+    
     if(num < 256){
 
-      _buf += String.fromCharCode(num);
       rBuffer.insertByte(num);
+      if(rBuffer.ptr > 28600 && rBuffer.ptr < 30000){
+          //console.log("Print Char", num, String.fromCharCode(num));
+          
+      _buf += ('0'+num.toString(16)).slice(-2)+' '//String.fromCharCode(num);
+    //__buf += "Print Char "+num+'\n';
+        }
       continue;
     }else{
+    
+    
+    if(_buf){
       //console.log(")",_buf);
       _buf = '';
-//console.log("DecLD",num);
+      }
+      if(rBuffer.ptr > 28600 && rBuffer.ptr < 30000){
+    console.log("DecLD",num);
+    }
 }
     if(num >= 271){
       //console.log('>=271');
@@ -478,34 +498,40 @@ function Unpack29(bstream, Solid) {
       continue;
     }
     if(num == 256){
-      //if !readEndOfBlock break
       console.log("check end of block");
-      break;
+      if(!RarReadEndOfBlock(bstream)) break;
+      continue;
     }
     if(num == 257){
       console.log("READVMCODE");
+      if(!RarReadVMCode(bstream)) break;
       continue;
     }
     if(num == 258){
-      console.log("Copy String blarghe");
+      if(lastLength != 0){
+        RarCopyString(lastLength, lastDist);
+      }
       continue;
     }
     if(num < 263){
-      console.log('<263');
+      //console.log('<263');
       var DistNum = num - 259;
       var Distance = rOldDist[DistNum];
       //is this not equivalent to RarInsertOldDist?
+      //RarInsertOldDist(Distance);
+
       for(var I = DistNum; I > 0; I--){
         rOldDist[I] = rOldDist[I-1];
       }
       rOldDist[0] = Distance;
+
       var LengthNumber = RarDecodeNumber(bstream, RD);
       var Length = rLDecode[LengthNumber] + 2;
       if((Bits = rLBits[LengthNumber]) > 0){
         Length += bstream.readBits(Bits);
-        console.log("263>0:"+Length);
+        //console.log("263>0:"+Length);
       }
-      console.log("<263:"+DistNum+";"+Distance+";"+LengthNumber+";"+Length);
+      //console.log("<263:"+num+";"+Distance+";"+LengthNumber+";"+Length,DistNum,rOldDist.join(','));
       RarInsertLastMatch(Length, Distance);
       RarCopyString(Length, Distance);
       continue;
@@ -521,14 +547,47 @@ function Unpack29(bstream, Solid) {
       continue;
     }
   }
-  
-  
+  console.log(__buf);
+  throw "poop";
+}
+
+function RarReadEndOfBlock(bstream){
+  var NewTable = false, NewFile = false;
+  if(bstream.readBits(1)){
+    NewTable = true;
+  }else{
+    NewFile = true;
+    NewTable = !!bstream.readBits(1);
+  }
+  tablesRead = !NewTable;
+  return !(NewFile || NewTable && !RarReadTables(bstream));
 }
 
 
-var rOldDist = [0,0,0,0];
-var lastDist;
-var lastLength;
+function RarReadVMCode(bstream){
+  var FirstByte = bstream.readBits(8);
+  var Length = (FirstByte & 7) + 1;
+  if(Length == 7){
+    Length = bstream.readBits(8) + 7;
+  }else if(Length == 8){
+    Length = bstream.readBits(16);
+  }
+  console.log("FB",FirstByte, Length);
+  var vmCode = [];
+  for(var I = 0; I < Length; I++){
+    //do something here with cheking readbuf
+    
+    vmCode.push(bstream.readBits(8));
+  }
+  return RarAddVMCode(FirstByte, vmCode, Length);
+}
+
+
+function RarAddVMCode(firstByte, vmCode, length){
+  console.log(vmCode);
+  return true;
+}
+
 
 function RarInsertLastMatch(length, distance){
   lastDist = distance;
@@ -540,17 +599,64 @@ function RarInsertOldDist(distance){
   rOldDist.splice(0,0,distance);
 }
 
+var __buf = '';
+
+/*
+//this is the real function, the other one is for debugging
+function RarCopyString(length, distance){
+  var destPtr = rBuffer.ptr - distance;
+  
+  if(length > distance){
+    while(length-- > 0) rBuffer.insertByte(rBuffer.data[destPtr++]);
+  }else{
+    rBuffer.insertBytes(rBuffer.data.subarray(destPtr, destPtr + length));
+  }
+}*/
 
 function RarCopyString(length, distance){
   //console.log('dont copy that floppy', rBuffer.ptr - distance, rBuffer.ptr - distance + length, rBuffer.ptr)
   //rBuffer.data.subarray(rBuffer.ptr - distance, rBuffer.ptr - distance + length)
-  var sa = rBuffer.data.subarray(rBuffer.ptr - distance, rBuffer.ptr - distance + length);
+  var destPtr = rBuffer.ptr - distance;
+  if(length > distance){
+    var len = length,dp = destPtr;
+    while(len-- > 0){
+      
+      rBuffer.insertByte(rBuffer.data[dp++]);
+    };
 
-  for(var s = "", i = 0; i < sa.length; i++){
-    s += String.fromCharCode(sa[i])
+    var sa = rBuffer.data.subarray(destPtr, destPtr + length);
+
+    for(var s = "",sr = [], i = 0; i < sa.length; i++){
+      s += String.fromCharCode(sa[i]);
+      sr.push(sa[i]);
+    }
+      if(rBuffer.ptr > 28600 && rBuffer.ptr < 30000){
+      console.log("CopyString",length,distance);
+      //__buf += ("CopyString "+ length+" "+distance)+"\n";
+      if(length == 5 && distance == 16){
+        console.log('omfg');
+      }
+    }
+
+    
+  }else{
+    var sa = rBuffer.data.subarray(destPtr, destPtr + length);
+
+    for(var s = "",sr = [], i = 0; i < sa.length; i++){
+      s += String.fromCharCode(sa[i]);
+      sr.push(sa[i]);
+    }
+      if(rBuffer.ptr > 28600 && rBuffer.ptr < 30000){
+      console.log("CopyString",length,distance,s,sr);
+      //__buf += ("CopyString "+ length+" "+distance)+"\n";
+      if(length == 5 && distance == 16){
+        console.log('omfg');
+      }
+    }
+
+
+    rBuffer.insertBytes(sa);
   }
-  //console.log("]",s);
-  rBuffer.insertBytes(sa);
 }
 
 // v must be a valid RarVolume
