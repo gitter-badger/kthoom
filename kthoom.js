@@ -499,6 +499,13 @@ function init() {
 		  canKeyPrev = (scrollX <= 0);
 		}, false);
 		document.addEventListener("keydown", keyHandler, false);
-		window.addEventListener("resize", function(){updateScale()}, false);
+		window.addEventListener("resize", function(){
+		  updateScale();
+		  if(screen.width - innerWidth < 4 && screen.height - innerHeight < 4){
+		    getElem("header").className = 'fullscreen';
+      }else{
+		    getElem("header").className = '';
+      }
+		}, false);
 	}
 }
