@@ -1,5 +1,6 @@
 // =======================
 // NOTES on the RAR format
+// Copyright(c) 2011 antimatter15
 // http://kthoom.googlecode.com/hg/docs/unrar.html
 
 // Volume Types

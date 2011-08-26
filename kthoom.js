@@ -4,6 +4,7 @@
  * Licensed under the MIT License
  *
  * Copyright(c) 2010 Jeff Schiller
+ * Copyright(c) 2011 antimatter15
  *
  */
 
