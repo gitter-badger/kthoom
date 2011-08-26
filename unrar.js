@@ -1,4 +1,3 @@
-
 // =======================
 // NOTES on the RAR format
 // http://kthoom.googlecode.com/hg/docs/unrar.html
@@ -235,8 +234,7 @@ function RarReadTables(bstream) {
     return;
   }
   
-  if (!bstream.readBits(1)) {
-    //discard old table
+  if (!bstream.readBits(1)) { //discard old table
     for(var i = UnpOldTable.length; i--;) UnpOldTable[i] = 0;
   }
 
@@ -268,26 +266,20 @@ function RarReadTables(bstream) {
   var TableSize = rHUFF_TABLE_SIZE;
   //console.log(DecodeLen, DecodePos, DecodeNum);
   for(var i = 0; i < TableSize;){
-    //check inAddr > readTop - 5 or something like that
-    //0xfffe 63386
     var num = RarDecodeNumber(bstream, BD);
     if(num < 16){
-      //console.log("LT6");
       Table[i] = (num + UnpOldTable[i]) & 0xf;
       i++;
     }else if(num < 18){
-      //console.log("LT8-",num);
       var N = (num == 16) ? (bstream.readBits(3) + 3) : (bstream.readBits(7) + 11);
-      //console.log("GN", N);
+
       while(N-- > 0 && i < TableSize){
         Table[i] = Table[i - 1];
         i++;
       }
     }else{
       var N = (num == 18) ? (bstream.readBits(3) + 3) : (bstream.readBits(7) + 11);
-      //console.log("Other-"+num);
-      
-      //console.log("GN", N);
+
       while(N-- > 0 && i < TableSize){
         Table[i++] = 0;
       }
@@ -308,7 +300,7 @@ function RarReadTables(bstream) {
 
 function RarDecodeNumber(bstream, dec){
   var DecodeLen = dec.DecodeLen, DecodePos = dec.DecodePos, DecodeNum = dec.DecodeNum;
-  var bitField = bstream.getBits() & 0xfffe; //answer is 5 btw
+  var bitField = bstream.getBits() & 0xfffe;
   //some sort of rolled out binary search
   var bits = ((bitField < DecodeLen[8])?
     ((bitField < DecodeLen[4])?
@@ -338,9 +330,6 @@ function RarMakeDecodeTables(BitLength, offset, dec, size){
   var LenCount = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
       TmpPos = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
       N = 0, M = 0;
-  
-  //for (var i = 0; i < rBC; ++i) { postMessage("BitLength[" + i + "] is " + BitLength[i]); }
-  
   for(var i = DecodeNum.length; i--;) DecodeNum[i] = 0;
   for(var i = 0; i < size; i++){
     LenCount[BitLength[i + offset] & 0xF]++;
@@ -350,10 +339,6 @@ function RarMakeDecodeTables(BitLength, offset, dec, size){
   DecodePos[0] = 0;
   DecodeLen[0] = 0;
   
-  //for(var _i = 0; _i < 16; ++_i){
-  //  postMessage("Count of length "+_i+" is "+LenCount[_i]);
-  //}
-  
   for (var I = 1; I < 16; ++I) {
     N = 2 * (N+LenCount[I]);
     M = (N << (15-I));
@@ -362,15 +347,11 @@ function RarMakeDecodeTables(BitLength, offset, dec, size){
     DecodeLen[I] = M;
     DecodePos[I] = DecodePos[I-1] + LenCount[I-1];
     TmpPos[I] = DecodePos[I];
-    //postMessage(" I=" + I + ", LenCount[I]=" + LenCount[I] + ", N=" + N + ", M=" + M);
   }
   for (I = 0; I < size; ++I)
     if (BitLength[I + offset] != 0)
       DecodeNum[ TmpPos[ BitLength[offset + I] & 0xF ]++] = I;
   
-  //for (I = 0; I < 16; ++I) {
-  //  postMessage("Code[" + I + "] has Len=" + DecodeLen[I] + ", Pos=" + DecodePos[I] + ", Num=" + DecodeNum[I]);
-  //}
 }
 
 // TODO: implement
@@ -403,60 +384,35 @@ function Unpack29(bstream, Solid) {
         rDBits[Slot]=BitLength;
       }
     }
-    
   }
   
   var Bits;
-  
-  var MAXWINSIZE = 0x400000, MAXWINMASK = MAXWINSIZE -1;
-  
-  // initialize data
-  tablesRead = false;
+  //tablesRead = false;
 
   rOldDist = [0,0,0,0]
   
-  var oldDistPtr = 0;
   lastDist = 0;
   lastLength = 0;
 
   for(var i = UnpOldTable.length; i--;) UnpOldTable[i] = 0;
     
-  //var unpPtr = 0;
-  //var wrPtr = 0;
-  var ppmEscChar = 2;
-
-  //initFilters();
-  var ppmError = false;
-  var writtenFileSize = 0;
-  var readTop = 0;
-  var readBorder = 0;
-  
-  
-  
   // read in Huffman tables
   RarReadTables(bstream);
-  //todo get rid fo that
-  
  
-  
-  var _buf  = '';
   while(true){
     var num = RarDecodeNumber(bstream, LD);
-    
     
     if(num < 256){
       rBuffer.insertByte(num);
       continue;
     }
     if(num >= 271){
-      //console.log('>=271');
       var Length = rLDecode[num -= 271] + 3;
       if((Bits = rLBits[num]) > 0){
         Length += bstream.readBits(Bits);
       }
       var DistNumber = RarDecodeNumber(bstream, DD);
       var Distance = rDDecode[DistNumber]+1;
-      //console.log("$$271-",Distance);
       if((Bits = rDBits[DistNumber]) > 0){
         if(DistNumber > 9){
           if(Bits > 4){
@@ -487,7 +443,6 @@ function Unpack29(bstream, Solid) {
           Length++;
         }
       }
-      //console.log("Magick", Distance, Length);
       RarInsertOldDist(Distance);
       RarInsertLastMatch(Length, Distance);
       RarCopyString(Length, Distance);
@@ -511,11 +466,8 @@ function Unpack29(bstream, Solid) {
       continue;
     }
     if(num < 263){
-      //console.log('<263');
       var DistNum = num - 259;
       var Distance = rOldDist[DistNum];
-      //is this not equivalent to RarInsertOldDist?
-      //RarInsertOldDist(Distance);
 
       for(var I = DistNum; I > 0; I--){
         rOldDist[I] = rOldDist[I-1];
@@ -526,9 +478,7 @@ function Unpack29(bstream, Solid) {
       var Length = rLDecode[LengthNumber] + 2;
       if((Bits = rLBits[LengthNumber]) > 0){
         Length += bstream.readBits(Bits);
-        //console.log("263>0:"+Length);
       }
-      //console.log("<263:"+num+";"+Distance+";"+LengthNumber+";"+Length,DistNum,rOldDist.join(','));
       RarInsertLastMatch(Length, Distance);
       RarCopyString(Length, Distance);
       continue;
@@ -545,7 +495,6 @@ function Unpack29(bstream, Solid) {
     }
     
   }
-  //console.log(__buf);
 }
 
 function RarReadEndOfBlock(bstream){
@@ -563,7 +512,7 @@ function RarReadEndOfBlock(bstream){
     NewFile = true;
     NewTable = !!bstream.readBits(1);
   }
-  tablesRead = !NewTable;
+  //tablesRead = !NewTable;
   return !(NewFile || NewTable && !RarReadTables(bstream));
 }
 
@@ -576,11 +525,9 @@ function RarReadVMCode(bstream){
   }else if(Length == 8){
     Length = bstream.readBits(16);
   }
-  //console.log("FB",FirstByte, Length);
   var vmCode = [];
   for(var I = 0; I < Length; I++){
     //do something here with cheking readbuf
-    
     vmCode.push(bstream.readBits(8));
   }
   return RarAddVMCode(FirstByte, vmCode, Length);
@@ -608,7 +555,6 @@ var __buf = '';
 //this is the real function, the other one is for debugging
 function RarCopyString(length, distance){
   var destPtr = rBuffer.ptr - distance;
-  
   if(length > distance){
     while(length-- > 0) rBuffer.insertByte(rBuffer.data[destPtr++]);
   }else{
@@ -616,41 +562,6 @@ function RarCopyString(length, distance){
   }
   
 }
-/*
-function RarCopyString(length, distance){
-  //console.log('dont copy that floppy', rBuffer.ptr - distance, rBuffer.ptr - distance + length, rBuffer.ptr)
-  //rBuffer.data.subarray(rBuffer.ptr - distance, rBuffer.ptr - distance + length)
-  var destPtr = rBuffer.ptr - distance;
-  if(length > distance){
-    var len = length,dp = destPtr;
-    while(len-- > 0){
-      
-      rBuffer.insertByte(rBuffer.data[dp++]);
-    };
-
-    var sa = rBuffer.data.subarray(destPtr, destPtr + length);
-
-    for(var s = "",sr = [], i = 0; i < sa.length; i++){
-      s += String.fromCharCode(sa[i]);
-      sr.push(sa[i]);
-    }
-
-
-    
-  }else{
-    var sa = rBuffer.data.subarray(destPtr, destPtr + length);
-
-    for(var s = "",sr = [], i = 0; i < sa.length; i++){
-      s += String.fromCharCode(sa[i]);
-      sr.push(sa[i]);
-    }
-
-
-
-    rBuffer.insertBytes(sa);
-  }
-}
-*/
 // v must be a valid RarVolume
 function unpack(v) {
   // TODO: implement what happens when unpVer is < 15
