@@ -355,7 +355,7 @@ function showPrevPage() {
 	currentImage--;
 	if (currentImage < 0) currentImage = imageFiles.length - 1;
 	updatePage();
-	getElem("prev").focus();
+	//getElem("prev").focus();
 }
 
 function showNextPage() {
@@ -363,7 +363,7 @@ function showNextPage() {
 	
 	if (currentImage >= Math.max(totalImages, imageFiles.length)) currentImage = 0;
 	updatePage();
-	getElem("next").focus();
+	//getElem("next").focus();
 }
 
 function closeBook() {

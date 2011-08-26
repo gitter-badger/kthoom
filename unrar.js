@@ -21,7 +21,8 @@ function RarVolumeHeader(bstream, bDebug) {
   this.debug = bDebug;
 
   // byte 1,2
-
+  postMessage("Rar Volume Header");
+  
   this.crc = bstream.readBits(16);
   //console.log(this.crc);
   if (bDebug)
@@ -36,6 +37,7 @@ function RarVolumeHeader(bstream, bDebug) {
   // bytes 4,5
   this.flags = {};
   this.flags.value = bstream.peekBits(16);
+  
   if (bDebug)
     postMessage("  flags=" + twoByteValueToHexString(this.flags.value));
   switch (this.headType) {
@@ -103,7 +105,18 @@ function RarVolumeHeader(bstream, bDebug) {
       postMessage("Warning: Reading in LHD_LARGE 64-bit size values");
       this.HighPackSize = bstream.readBits(32);
       this.HighUnpSize = bstream.readBits(32);
+    }else{
+      this.HighPackSize = 0;
+      this.HighUnpSize = 0;
+      if(this.unpackedSize == 0xffffffff){
+        //this.HighUnpSize = 
+      }
     }
+    this.fullPackSize = 0;
+    this.fullUnpackSize = 0;
+    this.fullPackSize |= this.HighPackSize;
+    this.fullPackSize <<= 32;
+    this.fullPackSize |= this.packSize;
     
     // read in filename
     
@@ -671,7 +684,7 @@ function RarLocalFile(bstream, bDebug) {
   
   if (this.header.headType != FILE_HEAD && this.header.headType != ENDARC_HEAD) {
     this.isValid = false;
-    progress.isValid = false;
+    //progress.isValid = false;
     postMessage("Error! RAR Volume did not include a FILE_HEAD header ");
   }
   else {
@@ -685,6 +698,7 @@ function RarLocalFile(bstream, bDebug) {
 }
 
 RarLocalFile.prototype.unrar = function() {
+
   if (!this.header.flags.LHD_SPLIT_BEFORE) {
     // unstore file
     if (this.header.method == 0x30) {
@@ -693,7 +707,10 @@ RarLocalFile.prototype.unrar = function() {
       progress.totalBytesUnzipped += this.fileData.length;
     } else {
       //console.log(this);
+      this.isValid = true;
       this.fileData = unpack(this);
+      
+
     }
   }
   if (this.isValid) {
@@ -732,6 +749,9 @@ function unrar(bstr, bDebug) {
           progress.totalSizeInBytes += localFile.header.unpackedSize;
           progress.isValid = true;
           localFiles.push(localFile);
+        }else if(localFile.header.packSize == 0 && localFile.header.unpackedSize == 0){
+          localFile.isValid = true;
+          progress.isValid = true;
         }
       } while( localFile.isValid );
       progress.totalNumFilesInZip = localFiles.length;
