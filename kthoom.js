@@ -4,7 +4,6 @@
  * Licensed under the MIT License
  *
  * Copyright(c) 2010 Jeff Schiller
- * Copyright(c) 2011 antimatter15
  *
  */
 
@@ -49,9 +48,10 @@ var lastCompletion = 0;
 // TODO: investigate if we really need to store as base64 (leave off ;base64 and just
 //       non-safe URL characters are encoded as %xx ?)
 //       This would save 25% on memory since base64-encoded strings are 4/3 the size of the binary
-function ImageFile(filename, imageString) {
+function ImageFile(filename, imageString, metadata) {
 	this.filename = filename;
 	this.dataURI = imageString;
+	this.data = metadata;
 }
 
 // gets the element with the given id
@@ -188,7 +188,7 @@ function setProgressMeter(pct) {
 
   title.appendChild(document.createTextNode(pct.toFixed(2) +"% "+imageFiles.length+"/"+totalImages+""));
   // fade it out as it approaches finish
-  title.setAttribute("fill-opacity", (pct > 80) ? ((100-pct)*5)/100 : 1);
+  //title.setAttribute("fill-opacity", (pct > 80) ? ((100-pct)*5)/100 : 1);
 
 	getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
 	
@@ -234,7 +234,7 @@ function getFile(evt) {
 					var percentage = progress.totalBytesUnzipped / progress.totalSizeInBytes;
           totalImages = progress.totalNumFilesInZip;
 					setProgressMeter(percentage);
-					
+
 					if (localFiles && localFiles.length > 0) {
 						// convert DecompressedFile into a bunch of ImageFiles
 						for (var fIndex in localFiles) {
@@ -242,13 +242,13 @@ function getFile(evt) {
 							// add any new pages based on the filename
 							if (f.isValid && imageFilenames.indexOf(f.filename) == -1) {
 								imageFilenames.push(f.filename);
-								imageFiles.push(new ImageFile(f.filename, f.imageString));
+								imageFiles.push(new ImageFile(f.filename, f.imageString, f));
 							}
 						}
             
             
 						// hide logo
-						//getElem("logo").setAttribute("style", "display:none");
+						getElem("logo").setAttribute("style", "display:none");
 
 						// display nav
             lastCompletion = percentage * 100;
@@ -296,9 +296,11 @@ function updatePage() {
 function setImage(url){
   var canvas = getElem('mainImage'), 
       x = canvas.getContext('2d');
+  document.getElementById('mainText').style.display = 'none';
   if(url == 'loading'){
     updateScale(true);
     canvas.width = innerWidth - 100;
+    canvas.height = 200;
     x.fillStyle = 'red';
     x.font = '50px sans-serif';
     x.strokeStyle = 'black';
@@ -311,11 +313,32 @@ function setImage(url){
     var img = new Image();
     img.onerror = function(){
       canvas.width = innerWidth - 100;
+      canvas.height = 300;
       updateScale(true);
-      x.fillStyle = 'red';
+      x.fillStyle = 'orange';
       x.font = '50px sans-serif';
       x.strokeStyle = 'black';
-      x.fillText("Page #"+(currentImage+1)+" Appears Corrupt", 100, 100)
+      x.fillText("Page #"+(currentImage+1)+" ("+imageFiles[currentImage].filename+")", 100, 100)
+      x.fillStyle = 'red';
+      x.fillText("Is corrupt or not an image", 100, 200);
+      
+      if(/(html|htm)$/.test(imageFiles[currentImage].filename)){
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.onload = function(){
+          document.getElementById('mainText').style.display = '';
+          document.getElementById('mainText').innerHTML = '<iframe style="width:100%;height:700px;border:0" src="data:text/html,'+escape(xhr.responseText)+'"></iframe>';
+        }
+        xhr.send(null);
+      }else if(!/(jpg|jpeg|png|gif)$/.test(imageFiles[currentImage].filename) && imageFiles[currentImage].data.uncompressedSize < 10*1024){
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.onload = function(){
+          document.getElementById('mainText').style.display = '';
+          document.getElementById('mainText').innerText = xhr.responseText;
+        }
+        xhr.send(null);
+      }
     }
     img.onload = function(){
       var h = img.height, 
@@ -400,25 +423,26 @@ function updateScale(clear){
   if(clear || fitMode == Key.N){
   }else if(fitMode == Key.B){
     getElem('mainImage').style.maxWidth = '100%';
-    getElem('mainImage').style.maxHeight = (innerHeight-20*3.5)+'px'
+    getElem('mainImage').style.maxHeight = (innerHeight-20*3)+'px'
   }else if(fitMode == Key.H){
-    getElem('mainImage').style.height = (innerHeight-20*3.5)+'px'
+    getElem('mainImage').style.height = (innerHeight-20*3)+'px'
   }else if(fitMode == Key.W){
     getElem('mainImage').style.width = '100%';
   }
 }
 
+var canKeyNext = true, canKeyPrev = true;
 
-function keyUp(evt) {
+function keyHandler(evt) {
 	var code = evt.keyCode;
   if(getComputedStyle(getElem("progress")).display == 'none') return;
 	if(evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
 	switch(code) {
 		case Key.LEFT:
-			showPrevPage();
+		  if(canKeyPrev) showPrevPage();
 			break;
 		case Key.RIGHT:
-			showNextPage();
+		  if(canKeyNext) showNextPage();
 			break;
 		case Key.L:
 			rotateTimes--;
@@ -470,7 +494,11 @@ function init() {
 		initProgressMeter();
 		resetFileUploader();
 		// add key handler
-		document.addEventListener("keyup", keyUp, false);
-		window.addEventListener("resize", updateScale, false);
+		document.addEventListener("keydown", function(){
+		  canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft)/document.body.scrollWidth) >= 1;
+		  canKeyPrev = (scrollX <= 0);
+		}, false);
+		document.addEventListener("keydown", keyHandler, false);
+		window.addEventListener("resize", function(){updateScale()}, false);
 	}
 }

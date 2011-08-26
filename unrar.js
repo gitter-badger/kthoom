@@ -400,6 +400,9 @@ function Unpack20(bstream, Solid) {
     }
     if(num == 269){
       RarReadTables20(bstream);
+
+      RarUpdateProgress()
+      
       continue;
     }
     if(num == 256){
@@ -438,6 +441,14 @@ function Unpack20(bstream, Solid) {
     }
     
   }
+  RarUpdateProgress()
+}
+
+function RarUpdateProgress(){
+  var change = rBuffer.ptr - progress.currentFileBytesUnzipped;
+  progress.currentFileBytesUnzipped = rBuffer.ptr;
+  progress.totalBytesUnzipped += change;
+  postMessage(progress);
 }
 
 
@@ -620,14 +631,12 @@ function Unpack29(bstream, Solid) {
     }
     
   }
+  RarUpdateProgress()
 }
 
 function RarReadEndOfBlock(bstream){
   
-  var change = rBuffer.ptr - progress.currentFileBytesUnzipped;
-	progress.currentFileBytesUnzipped = rBuffer.ptr;
-	progress.totalBytesUnzipped += change;
-	postMessage(progress);
+  RarUpdateProgress()
 
 
   var NewTable = false, NewFile = false;
@@ -757,10 +766,8 @@ RarLocalFile.prototype.unrar = function() {
 
     }
   }
-  if (this.isValid) {
-    var bb = new WebKitBlobBuilder();
-    bb.append(this.fileData.buffer);
-		this.imageString = webkitURL.createObjectURL(bb.getBlob().webkitSlice(this.fileData.byteOffset, this.fileData.byteOffset + this.fileData.byteLength));
+	if (this.isValid && this.fileData && this.fileData.buffer) {
+		this.imageString = createURLFromArray(this.fileData);
     this.fileData = null;
   }
 }

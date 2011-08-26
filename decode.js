@@ -103,6 +103,36 @@ function Buffer(numBytes) {
 	};
 }
 
+
+function createURLFromArray(array){
+  var bb, url;
+  var bb = (typeof BlobBuilder == 'function' ? (new BlobBuilder()) : //Chrome 8
+             (typeof WebKitBlobBuilder == 'function' ? (new WebKitBlobBuilder()) : //Chrome 12
+               (typeof MozBlobBuilder == 'function' ? (new MozBlobBuilder()) : //Firefox 6
+             null)));
+  if(!bb) return false;
+  bb.append(array.buffer);
+  var offset = array.byteOffset, len = array.byteLength;
+  var blob = bb.getBlob();
+  
+  if(blob.webkitSlice){ //Chrome 12
+    blob = blob.webkitSlice(offset, offset + len);
+  }else if(blob.mozSlice){ //Firefox 5
+    blob = blob.webkitSlice(offset, offset + len);
+  }else if(blob.slice){ //
+    blob = blob.slice(2, 3).length == 1 ? 
+      blob.slice(offset, offset + len) : //future behavior
+      blob.slice(offset, len); //Old behavior
+  }
+  
+  var url = (typeof createObjectURL == 'function' ? createObjectURL(blob) : //Chrome 9?
+              (typeof createBlobURL == 'function' ? createBlobURL(blob) : //Chrome 8
+                ((typeof URL == 'object' && typeof URL.createObjectURL == 'function') ? URL.createObjectURL(blob) : //Chrome 15? Firefox
+                  ((typeof webkitURL == 'object' && typeof webkitURL.createObjectURL == 'function') ? webkitURL.createObjectURL(blob) : //Chrome 10
+                    ''))));
+  return url;
+}
+
 onmessage = function(event) {
   // TODO: Remove this once we're back to using Workers.
   var file = event.data.file;

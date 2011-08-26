@@ -56,6 +56,9 @@ function ZipLocalFile(bstream, bDebug) {
 	this.extraField = null;
 	if (this.extraFieldLength > 0) {
 		this.extraField = bstream.readString(this.extraFieldLength);
+		if (this.debug) {
+		  postMessage(" extra field=" + this.extraField);
+		}
 	}
 	
 	// read in the compressed data
@@ -78,16 +81,18 @@ function ZipLocalFile(bstream, bDebug) {
 
 // determine what kind of compressed data we have and decompress
 ZipLocalFile.prototype.unzip = function() {
+    
+
 		// Zip Version 1.0, no compression (store only)
-		if (this.version == 10 && this.compressionMethod == 0) {
+		if (this.compressionMethod == 0 ) {
 			if (this.debug)
-				postMessage("ZIP v1.0, store only: " + this.filename + " (" + this.compressedSize + " bytes)");
+				postMessage("ZIP v"+this.version+", store only: " + this.filename + " (" + this.compressedSize + " bytes)");
 			progress.currentFileBytesUnzipped = this.compressedSize;
 			progress.totalBytesUnzipped += this.compressedSize;
 			this.isValid = true;
 		}
 		// version == 20, compression method == 8 (DEFLATE)
-		else if (this.version == 20 && this.compressionMethod == 8) {
+		else if (this.compressionMethod == 8) {
 			if (this.debug)
 				postMessage("ZIP v2.0, DEFLATE: " + this.filename + " (" + this.compressedSize + " bytes)");
 			this.fileData = inflate(this.fileData, this.uncompressedSize);
@@ -100,11 +105,7 @@ ZipLocalFile.prototype.unzip = function() {
 		}
 		
 		if (this.isValid) {
-			var bb = new WebKitBlobBuilder();
-			//console.log(this.fileData.byteLength, this.fileData.byteOffset);
-			bb.append(this.fileData.buffer);
-
-			this.imageString = webkitURL.createObjectURL(bb.getBlob().webkitSlice(this.fileData.byteOffset, this.fileData.byteOffset + this.fileData.byteLength));
+			this.imageString = createURLFromArray(this.fileData);
 			this.fileData = null;
 		}
 };
@@ -122,7 +123,7 @@ var unzip = function(arrayBuffer, bDebug) {
 		while (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
 			var oneLocalFile = new ZipLocalFile(bstream, bDebug);
 			// this should strip out directories/folders
-			if (oneLocalFile && oneLocalFile.uncompressedSize > 0) {
+			if (oneLocalFile && oneLocalFile.uncompressedSize > 0 && oneLocalFile.fileData) {
 				localFiles.push(oneLocalFile);
 				progress.totalNumFilesInZip++;
 				progress.totalSizeInBytes += oneLocalFile.uncompressedSize;
@@ -509,7 +510,8 @@ function inflate(compressedData, numDecompressedBytes) {
 			var len = bstream.readBits(16),
 				nlen = bstream.readBits(16);
 			// TODO: check if nlen is the ones-complement of len?
-			buffer.insertBytes(bstream.readBytes(len));
+			
+			if(len > 0) buffer.insertBytes(bstream.readBytes(len));
 			blockSize = len;
 		}
 		// fixed Huffman codes

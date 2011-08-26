@@ -8,8 +8,8 @@ body {
 .foreground {
 	position: absolute;
 	top: 10px;
-	left: 20px;
-	right: 20px;
+	left: 10px;
+	right: 10px;
 	text-align:center;
 }
 
@@ -41,8 +41,12 @@ body {
 	text-align:right;
 }
 
+#mainContent {
+  margin-top: 30px;
+}
+
 #mainImage {
-  margin-top: 40px;
+  margin-top: 5px;
 }
 
 #logo {
@@ -54,7 +58,18 @@ body {
 	display: none !important;
 }
 
-
+#mainText {
+  text-align: left;
+  width: 90%;
+  position: relative;
+  top: 10px;
+  background: #ccc;
+  color: black;
+  margin-right: auto;
+  margin-left: auto;
+  padding: 10px;
+  word-wrap: break-word;
+}
 #filechooser {
 	display: inline;
 	position: absolute;
