@@ -84,10 +84,10 @@ function initProgressMeter() {
 	var rect = document.createElementNS(svgns, "rect");
 	rect.setAttribute("width", "100%");
 	rect.setAttribute("height", "100%");
-	rect.setAttribute("fill", "red");
+	rect.setAttribute("fill", "#cc2929");
 	
 	var poly = document.createElementNS(svgns, "polygon");
-	poly.setAttribute("fill", "yellow");
+	poly.setAttribute("fill", "#c9cc29");
 	poly.setAttribute("points", "15,0 30,0 15,20 0,20");
 
 	patt.appendChild(rect);
@@ -132,7 +132,7 @@ function initProgressMeter() {
 	meter2.id = "meter2";
 	meter2.setAttribute("width", "0%");
 	meter2.setAttribute("height", "15");
-	meter2.setAttribute("opacity", "0.7");
+	meter2.setAttribute("opacity", "0.8");
 	meter2.setAttribute("fill", "#007fff");
 	meter2.setAttribute("rx", "5");
 	meter2.setAttribute("ry", "5");
