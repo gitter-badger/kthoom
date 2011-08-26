@@ -29,17 +29,6 @@ body {
 	display: inline;
 }
 
-#filechooser {
-	display: inline;
-	position: absolute;
-	overflow: hidden;
-	width: 100px;
-}
-
-#filebutton {
-  display: inline;
-  position: absolute;
-}
 
 
 #progress {
@@ -64,3 +53,13 @@ body {
 .hide {
 	display: none !important;
 }
+
+
+#filechooser {
+	display: inline;
+	position: absolute;
+	color: transparent !important;
+	overflow: hidden;
+	width: 100px;
+}
+
