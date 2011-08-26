@@ -39,10 +39,33 @@ var worker;
 var currentImage = 0,
 	imageFiles = [],
 	imageFilenames = [];
-	
-var rotateTimes = 0, hflip = false, vflip = false;
 var totalImages = 0;
 var lastCompletion = 0;
+
+	
+var rotateTimes = 0, hflip = false, vflip = false, fitMode = Key.B;
+
+function saveSettings(){
+  localStorage.kthoom_settings = JSON.stringify({
+    rotateTimes: rotateTimes,
+    hflip: hflip,
+    vflip: vflip,
+    fitMode: fitMode
+  })
+}
+
+function loadSettings(){
+  try{
+    if(localStorage.kthoom_settings.length < 10) return;
+    var s = JSON.parse(localStorage.kthoom_settings);
+    rotateTimes = s.rotateTimes;
+    hflip = s.hflip;
+    vflip = s.vflip;
+    fitMode = s.fitMode;
+  }catch(err){
+  }
+}
+
 
 // stores an image filename and its data: URI
 // TODO: investigate if we really need to store as base64 (leave off ;base64 and just
@@ -102,7 +125,7 @@ function initProgressMeter() {
 	var outline = document.createElementNS(svgns, "rect");
 	outline.setAttribute("y", "1");
 	outline.setAttribute("width", "100%");
-	outline.setAttribute("height", "13");
+	outline.setAttribute("height", "15");
 	outline.setAttribute("fill", "#777");
 	outline.setAttribute("stroke", "white");
 	outline.setAttribute("rx", "5");
@@ -112,7 +135,7 @@ function initProgressMeter() {
 	var title = document.createElementNS(svgns, "text");
 	title.id = "progress_title";
 	title.appendChild(document.createTextNode("0%"));
-	title.setAttribute("y", "11");
+	title.setAttribute("y", "13");
 	title.setAttribute("x", "99.5%");
 	title.setAttribute("fill", "white");
 	title.setAttribute("font-size", "12px");
@@ -124,7 +147,7 @@ function initProgressMeter() {
 	var meter = document.createElementNS(svgns, "rect");
 	meter.id = "meter";
 	meter.setAttribute("width", "0%");
-	meter.setAttribute("height", "15");
+	meter.setAttribute("height", "17");
 	meter.setAttribute("fill", "url(#progress_pattern)");
 	meter.setAttribute("rx", "5");
 	meter.setAttribute("ry", "5");
@@ -132,7 +155,7 @@ function initProgressMeter() {
 	var meter2 = document.createElementNS(svgns, "rect");
 	meter2.id = "meter2";
 	meter2.setAttribute("width", "0%");
-	meter2.setAttribute("height", "15");
+	meter2.setAttribute("height", "17");
 	meter2.setAttribute("opacity", "0.8");
 	meter2.setAttribute("fill", "#007fff");
 	meter2.setAttribute("rx", "5");
@@ -146,7 +169,7 @@ function initProgressMeter() {
 	var page = document.createElementNS(svgns, "text");
 	page.id = "page";
 	page.appendChild(document.createTextNode("0/0"));
-	page.setAttribute("y", "11");
+	page.setAttribute("y", "13");
 	page.setAttribute("x", "0.5%");
 	page.setAttribute("fill", "white");
 	page.setAttribute("font-size", "12px");
@@ -188,7 +211,7 @@ function setProgressMeter(pct) {
 
   title.appendChild(document.createTextNode(pct.toFixed(2) +"% "+imageFiles.length+"/"+totalImages+""));
   // fade it out as it approaches finish
-  //title.setAttribute("fill-opacity", (pct > 80) ? ((100-pct)*5)/100 : 1);
+  //title.setAttribute("fill-opacity", (pct > 90) ? ((100-pct)*5)/100 : 1);
 
 	getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
 	
@@ -390,6 +413,14 @@ function showNextPage() {
 	//getElem("next").focus();
 }
 
+
+function toggleToolbar(){
+  var s = getElem("header").className == 'fullscreen';
+  getElem("header").className = s?'':'fullscreen';
+  //getElem("toolbarbutton").innerText = s?'-':'+';
+  updateScale();
+}
+
 function closeBook() {
   if(worker) worker.terminate();
 	currentImage = 0;
@@ -401,7 +432,7 @@ function closeBook() {
 	resetFileUploader();
 	
 	// display logo
-	//getElem("logo").setAttribute("style", "display:block");
+	getElem("logo").setAttribute("style", "display:block");
 	
 	getElem("nav").className = "hide";
 	getElem("progress").className = "hide";
@@ -412,32 +443,43 @@ function closeBook() {
 	updatePage();
 }
 
-var fitMode = Key.W;
-
 function updateScale(clear){
   getElem('mainImage').style.width='';
   getElem('mainImage').style.height='';
   getElem('mainImage').style.maxWidth='';
   getElem('mainImage').style.maxHeight='';
-  
+  var maxheight = innerHeight - 15;
+  if(getElem("header").className != "fullscreen"){
+    maxheight -= 25;
+  }
   if(clear || fitMode == Key.N){
   }else if(fitMode == Key.B){
     getElem('mainImage').style.maxWidth = '100%';
-    getElem('mainImage').style.maxHeight = (innerHeight-20*3)+'px'
+    getElem('mainImage').style.maxHeight = maxheight+'px'
   }else if(fitMode == Key.H){
-    getElem('mainImage').style.height = (innerHeight-20*3)+'px'
+    getElem('mainImage').style.height = maxheight+'px'
   }else if(fitMode == Key.W){
     getElem('mainImage').style.width = '100%';
   }
+  saveSettings();
 }
 
 var canKeyNext = true, canKeyPrev = true;
 
 function keyHandler(evt) {
 	var code = evt.keyCode;
+  if(code == Key.O){
+		  getElem('filechooser').click();
+  }
   if(getComputedStyle(getElem("progress")).display == 'none') return;
+  canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft)/ document.body.scrollWidth) >= 1;
+  canKeyPrev = (scrollX <= 0);
+
 	if(evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
 	switch(code) {
+		case Key.X:
+		  toggleToolbar();
+			break;
 		case Key.LEFT:
 		  if(canKeyPrev) showPrevPage();
 			break;
@@ -480,7 +522,7 @@ function keyHandler(evt) {
 			updateScale();
 			break;
 		default:
-//			console.log("KeyCode = " + code);
+			//console.log("KeyCode = " + code);
 			break;
 	}
 }
@@ -493,19 +535,14 @@ function init() {
 	else {
 		initProgressMeter();
 		resetFileUploader();
+		loadSettings();
 		// add key handler
-		document.addEventListener("keydown", function(){
-		  canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft)/document.body.scrollWidth) >= 1;
-		  canKeyPrev = (scrollX <= 0);
-		}, false);
 		document.addEventListener("keydown", keyHandler, false);
 		window.addEventListener("resize", function(){
+		  var f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
+		  getElem("header").className = f?'fullscreen':'';
 		  updateScale();
-		  if(screen.width - innerWidth < 4 && screen.height - innerHeight < 4){
-		    getElem("header").className = 'fullscreen';
-      }else{
-		    getElem("header").className = '';
-      }
 		}, false);
 	}
 }
+

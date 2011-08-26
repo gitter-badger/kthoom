@@ -8,8 +8,8 @@ body {
 .foreground {
 	position: absolute;
 	top: 10px;
-	left: 10px;
-	right: 10px;
+	left: 5px;
+	right: 5px;
 	text-align:center;
 }
 
@@ -27,26 +27,25 @@ body {
 
 #uploader {
 	display: inline;
+	left: 0;
+	position: absolute;
 }
 
 #header {
   height: 30px;
+  margin-top: -5px;
 }
 
 #progress {
 	position: absolute;
 	display: inline;
-	left: 100px;
-	right: 100px;
+	left: 95px;
+	right: 115px;
 	height: 20px;
 	margin-top: 5px;
 	text-align:right;
 }
 
-
-#mainImage {
-  margin-top: 5px;
-}
 
 #logo {
   margin-top: 20px;
@@ -87,6 +86,9 @@ body {
   right: 0;
   background-color: black;
   padding-bottom: 70px;
+  -webkit-transition: opacity 0.2s linear;
+  -moz-transition: opacity 0.2s linear;
+  transition: opacity 0.2s linear;
   background: -moz-linear-gradient(top, rgba(0,2,34,1) 0%, rgba(0,1,24,1) 30%, rgba(0,0,0,0) 100%); /* FF3.6+ */
   background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(0,2,34,1)), color-stop(30%,rgba(0,1,24,1)), color-stop(100%,rgba(0,0,0,0))); /* Chrome,Safari4+ */
   background: -webkit-linear-gradient(top, rgba(0,2,34,1) 0%,rgba(0,1,24,1) 30%,rgba(0,0,0,0) 100%); /* Chrome10+,Safari5.1+ */
