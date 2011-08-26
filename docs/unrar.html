@@ -178,32 +178,34 @@ Packed Data             (Total Packed Size) bytes
 <pre>
 var extTimeFlags = readBits(16)
 
-// Get mtime
+<b>mtime:</b>
 mtime_rmode = extTimeFlags >> 12
-if ((mtime_rmode & 8)==0) continue
+if ((mtime_rmode & 8)==0) goto ctime
 mtime_count = mtime_rmode & 0x3
 mtime_reminder = readBits(8*mtime_count);
 
-// ctime
+<b>ctime:</b>
 ctime_rmode = extTimeFlags >> 8
-if ((ctime_rmode & 8)==0) continue
+if ((ctime_rmode & 8)==0) goto atime
 Set ctime to readBits(16)
 ctime_count = ctime_rmode & 0x3
 ctime_reminder = readBits(8*ctime_count)
 
-// atime
+<b>atime:</b>
 atime_rmode = extTimeFlags >> 4
-if ((atime_rmode & 8)==0) continue
+if ((atime_rmode & 8)==0) goto arctime
 Set atime to readBits(16)
 atime_count = atime_rmode & 0x3
 atime_reminder = readBits(8*atime_count)
 
-// arctime
+<b>arctime:</b>
 arctime_rmode = extTimeFlags
-if ((arctime_rmode & 8)==0) continue
+if ((arctime_rmode & 8)==0) goto done_exttime
 Set arctime to readBits(16)
 arctime_count = arctime_rmode & 0x3
 arctime_reminder = readBits(8*arctime_count)
+
+<b>done_exttime</b>
 </pre>
 
 
