@@ -398,10 +398,23 @@ function setImage(url){
   }
 }
 
+function showPreview(){
+  if(/fullscreen/.test(getElem("header").className)){
+    getElem("header").className += ' preview';
+    setTimeout(function(){
+      getElem("header").className += ' previewout';
+      setTimeout(function(){
+        getElem("header").className = getElem("header").className.replace(/previewout|preview/g,'');
+      }, 1000);
+    }, 1337);
+  }
+}
+
 function showPrevPage() {
 	currentImage--;
 	if (currentImage < 0) currentImage = imageFiles.length - 1;
 	updatePage();
+	//showPreview();
 	//getElem("prev").focus();
 }
 
@@ -410,12 +423,13 @@ function showNextPage() {
 	
 	if (currentImage >= Math.max(totalImages, imageFiles.length)) currentImage = 0;
 	updatePage();
+	//showPreview();
 	//getElem("next").focus();
 }
 
 
 function toggleToolbar(){
-  var s = getElem("header").className == 'fullscreen';
+  var s = /fullscreen/.test(getElem("header").className);
   getElem("header").className = s?'':'fullscreen';
   //getElem("toolbarbutton").innerText = s?'-':'+';
   updateScale();
@@ -449,7 +463,7 @@ function updateScale(clear){
   getElem('mainImage').style.maxWidth='';
   getElem('mainImage').style.maxHeight='';
   var maxheight = innerHeight - 15;
-  if(getElem("header").className != "fullscreen"){
+  if(!/fullscreen/.test(getElem("header").className)){
     maxheight -= 25;
   }
   if(clear || fitMode == Key.N){

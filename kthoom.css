@@ -68,6 +68,8 @@ body {
   padding: 10px;
   word-wrap: break-word;
 }
+
+
 #filechooser {
 	display: inline;
 	position: absolute;
@@ -86,9 +88,9 @@ body {
   right: 0;
   background-color: black;
   padding-bottom: 70px;
-  -webkit-transition: opacity 0.2s linear;
-  -moz-transition: opacity 0.2s linear;
-  transition: opacity 0.2s linear;
+  -webkit-transition: opacity 0.2s ease;
+  -moz-transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease;
   background: -moz-linear-gradient(top, rgba(0,2,34,1) 0%, rgba(0,1,24,1) 30%, rgba(0,0,0,0) 100%); /* FF3.6+ */
   background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(0,2,34,1)), color-stop(30%,rgba(0,1,24,1)), color-stop(100%,rgba(0,0,0,0))); /* Chrome,Safari4+ */
   background: -webkit-linear-gradient(top, rgba(0,2,34,1) 0%,rgba(0,1,24,1) 30%,rgba(0,0,0,0) 100%); /* Chrome10+,Safari5.1+ */
@@ -102,3 +104,13 @@ body {
   opacity: 1;
 }
 
+#header.preview {
+  -webkit-transition: opacity 1s ease;
+  -moz-transition: opacity 1s ease;
+  transition: opacity 1s ease;
+  opacity: 0.7;
+}
+
+#header.previewout {
+  opacity: 0;
+}
