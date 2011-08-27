@@ -610,7 +610,7 @@ function keyHandler(evt) {
 // attaches a change event listener to the file input control
 function init() {
   if (!window.FileReader) {
-    alert("Sorry, kthoom will not work with your browser because it does not support the File API, Web Workers.  Please try kthoom with Chrome 11+.");
+    alert("Sorry, kthoom will not work with your browser because it does not support the File API.  Please try kthoom with Chrome 12+ or Firefox 7+.");
   }
   else {
     initProgressMeter();

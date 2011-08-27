@@ -35,6 +35,11 @@ function BitStream(ab, opt_offset, opt_length) {
   this.bitPtr = 0; // tracks which bit we are on (can have values 0 through 7)
 };
 
+//   byte0      byte1     byte2       byte3
+// 7......0 | 7......0 | 7......0 | 7......0
+// 
+// The bit pointer starts at bit0 of byte0 and moves left until it reaches
+// bit7 of byte0, then jumps to bit0 of byte1, etc.
 BitStream.prototype.peekBits = function(n, movePointers) {
   if (n <= 0 || typeof n != typeof 1) {
     return 0;
@@ -142,6 +147,11 @@ function rBitStream(ab, opt_offset, opt_length) {
   this.bitPtr = 0; // tracks which bit we are on (can have values 0 through 7)
 };
 
+//   byte0      byte1     byte2       byte3
+// 7......0 | 7......0 | 7......0 | 7......0
+// 
+// The bit pointer starts at bit7 of byte0 and moves right until it reaches
+// bit0 of byte0, then goes to bit7 of byte1, etc.
 rBitStream.prototype.peekBits = function(n, movePointers) {
   if (n <= 0 || typeof n != typeof 1) {
     return 0;
