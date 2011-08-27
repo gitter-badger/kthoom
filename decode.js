@@ -105,6 +105,8 @@ function Buffer(numBytes) {
 
 
 function createURLFromArray(array){
+  return array
+  
   var bb, url;
   var bb = (typeof BlobBuilder == 'function' ? (new BlobBuilder()) : //Chrome 8
              (typeof WebKitBlobBuilder == 'function' ? (new WebKitBlobBuilder()) : //Chrome 12
@@ -118,7 +120,7 @@ function createURLFromArray(array){
   if(blob.webkitSlice){ //Chrome 12
     blob = blob.webkitSlice(offset, offset + len);
   }else if(blob.mozSlice){ //Firefox 5
-    blob = blob.webkitSlice(offset, offset + len);
+    blob = blob.mozSlice(offset, offset + len);
   }else if(blob.slice){ //
     blob = blob.slice(2, 3).length == 1 ? 
       blob.slice(offset, offset + len) : //future behavior
@@ -134,17 +136,25 @@ function createURLFromArray(array){
 }
 
 onmessage = function(event) {
-  // TODO: Remove this once we're back to using Workers.
   var file = event.data.file;
   
+  gDebug = event.data.debug;
+  unzip(file, gDebug);
+/*
+  var fr = new FileReader();
+  fr.onload = function(){
+    var result = fr.result;
+    unzip(result, gDebug);
+  }
+  fr.readAsArrayBuffer(file);
+
   var xhr = new XMLHttpRequest();
   xhr.open('GET', file, true);
   xhr.responseType = 'arraybuffer';
   xhr.send();
-  gDebug = event.data.debug;
   xhr.onload = function(){
     var result = xhr.response;
   	unzip(result, gDebug);
   }
-
+*/
 };

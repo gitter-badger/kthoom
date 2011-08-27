@@ -17,13 +17,13 @@
 */
 
 if (!window.console) {
-	window.console = {};
-	window.console.log = function(str) {};
-	window.console.dir = function(str) {};
+  window.console = {};
+  window.console.log = function(str) {};
+  window.console.dir = function(str) {};
 }
 if (window.opera) {
-	window.console.log = function(str) {opera.postError(str);};
-	window.console.dir = function(str) {};
+  window.console.log = function(str) {opera.postError(str);};
+  window.console.dir = function(str) {};
 }
 
 window.kthoom = {};
@@ -37,12 +37,12 @@ N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 
 // global variables
 var worker;
 var currentImage = 0,
-	imageFiles = [],
-	imageFilenames = [];
+  imageFiles = [],
+  imageFilenames = [];
 var totalImages = 0;
 var lastCompletion = 0;
 
-	
+  
 var rotateTimes = 0, hflip = false, vflip = false, fitMode = Key.B;
 
 function saveSettings(){
@@ -72,116 +72,118 @@ function loadSettings(){
 //       non-safe URL characters are encoded as %xx ?)
 //       This would save 25% on memory since base64-encoded strings are 4/3 the size of the binary
 function ImageFile(filename, imageString, metadata) {
-	this.filename = filename;
-	this.dataURI = imageString;
-	this.data = metadata;
+  this.filename = filename;
+  this.dataURI = imageString;
+  this.data = metadata;
 }
 
 // gets the element with the given id
 function getElem(id) {
-	if(document.documentElement.querySelector) {
-		// querySelector lookup
-		return document.body.querySelector('#'+id);
-	}	
-	// getElementById lookup
-	return document.getElementById(id);
+  if(document.documentElement.querySelector) {
+    // querySelector lookup
+    return document.body.querySelector('#'+id);
+  }  
+  // getElementById lookup
+  return document.getElementById(id);
 }
 
 function resetFileUploader() {
-	getElem("uploader").innerHTML = '<input id="filechooser" type="file"/>';
-	getElem("filechooser").addEventListener("change", getFile, false);
+  getElem("uploader").innerHTML = '<input id="filechooser" type="file"/>';
+  getElem("filechooser").addEventListener("change", getFile, false);
 }
 
 function initProgressMeter() {
-	var svgns = "http://www.w3.org/2000/svg";
-	var pdiv = document.getElementById("progress");
-	var svg = document.createElementNS(svgns, "svg");
-	
-	var defs = document.createElementNS(svgns, "defs");
+  var svgns = "http://www.w3.org/2000/svg";
+  var pdiv = document.getElementById("progress");
+  var svg = document.createElementNS(svgns, "svg");
+  svg.style.width = '100%';
+  
+  var defs = document.createElementNS(svgns, "defs");
 
-	var patt = document.createElementNS(svgns, "pattern");
-	patt.id = "progress_pattern";
-	patt.setAttribute("width", "30");
-	patt.setAttribute("height", "20");
-	patt.setAttribute("patternUnits", "userSpaceOnUse");
+  var patt = document.createElementNS(svgns, "pattern");
+  patt.id = "progress_pattern";
+  patt.setAttribute("width", "30");
+  patt.setAttribute("height", "20");
+  patt.setAttribute("patternUnits", "userSpaceOnUse");
 
-	var rect = document.createElementNS(svgns, "rect");
-	rect.setAttribute("width", "100%");
-	rect.setAttribute("height", "100%");
-	rect.setAttribute("fill", "#cc2929");
-	
-	var poly = document.createElementNS(svgns, "polygon");
-	poly.setAttribute("fill", "#c9cc29");
-	poly.setAttribute("points", "15,0 30,0 15,20 0,20");
+  var rect = document.createElementNS(svgns, "rect");
+  rect.setAttribute("width", "100%");
+  rect.setAttribute("height", "100%");
+  rect.setAttribute("fill", "#cc2929");
+  
+  var poly = document.createElementNS(svgns, "polygon");
+  poly.setAttribute("fill", "#c9cc29");
+  poly.setAttribute("points", "15,0 30,0 15,20 0,20");
 
-	patt.appendChild(rect);
-	patt.appendChild(poly);
-	defs.appendChild(patt);
-	
-	svg.appendChild(defs);
-	
-	var g = document.createElementNS(svgns, "g");
-	
-	var outline = document.createElementNS(svgns, "rect");
-	outline.setAttribute("y", "1");
-	outline.setAttribute("width", "100%");
-	outline.setAttribute("height", "15");
-	outline.setAttribute("fill", "#777");
-	outline.setAttribute("stroke", "white");
-	outline.setAttribute("rx", "5");
-	outline.setAttribute("ry", "5");
-	g.appendChild(outline);
+  patt.appendChild(rect);
+  patt.appendChild(poly);
+  defs.appendChild(patt);
+  
+  svg.appendChild(defs);
+  
+  var g = document.createElementNS(svgns, "g");
+  
+  var outline = document.createElementNS(svgns, "rect");
+  outline.setAttribute("y", "1");
+  outline.setAttribute("width", "100%");
+  outline.setAttribute("height", "15");
+  outline.setAttribute("fill", "#777");
+  outline.setAttribute("stroke", "white");
+  outline.setAttribute("rx", "5");
+  outline.setAttribute("ry", "5");
+  g.appendChild(outline);
 
-	var title = document.createElementNS(svgns, "text");
-	title.id = "progress_title";
-	title.appendChild(document.createTextNode("0%"));
-	title.setAttribute("y", "13");
-	title.setAttribute("x", "99.5%");
-	title.setAttribute("fill", "white");
-	title.setAttribute("font-size", "12px");
-	title.setAttribute("text-anchor", "end");
-	g.appendChild(title);
+  var title = document.createElementNS(svgns, "text");
+  title.id = "progress_title";
+  title.appendChild(document.createTextNode("0%"));
+  title.setAttribute("y", "13");
+  title.setAttribute("x", "99.5%");
+  title.setAttribute("fill", "white");
+  title.setAttribute("font-size", "12px");
+  title.setAttribute("text-anchor", "end");
+  g.appendChild(title);
 
 
-	
-	var meter = document.createElementNS(svgns, "rect");
-	meter.id = "meter";
-	meter.setAttribute("width", "0%");
-	meter.setAttribute("height", "17");
-	meter.setAttribute("fill", "url(#progress_pattern)");
-	meter.setAttribute("rx", "5");
-	meter.setAttribute("ry", "5");
-	
-	var meter2 = document.createElementNS(svgns, "rect");
-	meter2.id = "meter2";
-	meter2.setAttribute("width", "0%");
-	meter2.setAttribute("height", "17");
-	meter2.setAttribute("opacity", "0.8");
-	meter2.setAttribute("fill", "#007fff");
-	meter2.setAttribute("rx", "5");
-	meter2.setAttribute("ry", "5");
-	
+  
+  var meter = document.createElementNS(svgns, "rect");
+  meter.id = "meter";
+  meter.setAttribute("width", "0%");
+  meter.setAttribute("height", "17");
+  meter.setAttribute("fill", "url(#progress_pattern)");
+  meter.setAttribute("rx", "5");
+  meter.setAttribute("ry", "5");
+  
+  var meter2 = document.createElementNS(svgns, "rect");
+  meter2.id = "meter2";
+  meter2.setAttribute("width", "0%");
+  meter2.setAttribute("height", "17");
+  meter2.setAttribute("opacity", "0.8");
+  meter2.setAttribute("fill", "#007fff");
+  meter2.setAttribute("rx", "5");
+  meter2.setAttribute("ry", "5");
+  
 
-	g.appendChild(meter);
-	g.appendChild(meter2);
+  g.appendChild(meter);
+  g.appendChild(meter2);
 
-	
-	var page = document.createElementNS(svgns, "text");
-	page.id = "page";
-	page.appendChild(document.createTextNode("0/0"));
-	page.setAttribute("y", "13");
-	page.setAttribute("x", "0.5%");
-	page.setAttribute("fill", "white");
-	page.setAttribute("font-size", "12px");
-	g.appendChild(page);
-	
-	
-	svg.appendChild(g);
-	pdiv.appendChild(svg);
-	
+  
+  var page = document.createElementNS(svgns, "text");
+  page.id = "page";
+  page.appendChild(document.createTextNode("0/0"));
+  page.setAttribute("y", "13");
+  page.setAttribute("x", "0.5%");
+  page.setAttribute("fill", "white");
+  page.setAttribute("font-size", "12px");
+  g.appendChild(page);
+  
+  
+  svg.appendChild(g);
+  pdiv.appendChild(svg);
+  
   svg.onclick = function(e){
-    for(var x = svg, l = 0; x != document.documentElement; x = x.parentNode) l += x.offsetLeft;
-    var page = Math.max(1, Math.ceil(((e.clientX - l)/svg.offsetWidth) * totalImages)) - 1;
+    for(var x = pdiv, l = 0; x != document.documentElement; x = x.parentNode) l += x.offsetLeft;
+    var page = Math.max(1, Math.ceil(((e.clientX - l)/pdiv.offsetWidth) * totalImages)) - 1;
+    console.log(e,l);
     currentImage = page;
     updatePage();
   }
@@ -213,17 +215,17 @@ function setProgressMeter(pct) {
   // fade it out as it approaches finish
   //title.setAttribute("fill-opacity", (pct > 90) ? ((100-pct)*5)/100 : 1);
 
-	getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
-	
-	var title = getElem("page");
+  getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
+  
+  var title = getElem("page");
   while (title.firstChild) title.removeChild(title.firstChild);
   title.appendChild(document.createTextNode(  (currentImage+1) + "/" + totalImages  ));
   
   
-	if(pct > 0){
-	  getElem("nav").className = "";
-	  getElem("progress").className = "";
-	}
+  if(pct > 0){
+    getElem("nav").className = "";
+    getElem("progress").className = "";
+  }
 }
 
 // attempts to read the file that the user has chosen
@@ -236,7 +238,7 @@ function getFile(evt) {
     closeBook();
     
     var start = (new Date).getTime();
-		worker = new Worker("decode.js");
+    worker = new Worker("decode.js");
 
     // error handler for worker thread
     //*
@@ -248,75 +250,133 @@ function getFile(evt) {
 
     // this is the function that the worker thread uses to post progress/status
     worker.onmessage = function(event) {
-			// if thread returned a Progress Report, then time to update
-			if (typeof event.data == typeof {}) {
-				var progress = event.data;
-				if (progress.isValid) {
-				  //console.log(progress);
-					var localFiles = progress.localFiles;
-					var percentage = progress.totalBytesUnzipped / progress.totalSizeInBytes;
+      // if thread returned a Progress Report, then time to update
+      if (typeof event.data == typeof {}) {
+        var progress = event.data;
+        if (progress.isValid) {
+          //console.log(progress);
+          var localFiles = progress.localFiles;
+          var percentage = progress.totalBytesUnzipped / progress.totalSizeInBytes;
           totalImages = progress.totalNumFilesInZip;
-					setProgressMeter(percentage);
+          setProgressMeter(percentage);
 
-					if (localFiles && localFiles.length > 0) {
-						// convert DecompressedFile into a bunch of ImageFiles
-						for (var fIndex in localFiles) {
-							var f = localFiles[fIndex];
-							// add any new pages based on the filename
-							if (f.isValid && imageFilenames.indexOf(f.filename) == -1) {
-								imageFilenames.push(f.filename);
-								imageFiles.push(new ImageFile(f.filename, f.imageString, f));
-							}
-						}
+          if (localFiles && localFiles.length > 0) {
+            console.log(localFiles[0]);
+            // convert DecompressedFile into a bunch of ImageFiles
+            for (var fIndex in localFiles) {
+              var f = localFiles[fIndex];
+              // add any new pages based on the filename
+              if (f.isValid && imageFilenames.indexOf(f.filename) == -1) {
+                imageFilenames.push(f.filename);
+                imageFiles.push(new ImageFile(f.filename, createURLFromArray(f.imageString), f));
+              }
+            }
             
             
-						// hide logo
-						getElem("logo").setAttribute("style", "display:none");
+            // hide logo
+            getElem("logo").setAttribute("style", "display:none");
 
-						// display nav
+            // display nav
             lastCompletion = percentage * 100;
             
-						// display first page if we haven't yet
-						if (imageFiles.length == currentImage + 1) {
-							updatePage();
-						}
+            // display first page if we haven't yet
+            if (imageFiles.length == currentImage + 1) {
+              updatePage();
+            }
 
 
-					}
-					else {
-						//getElem("logo").setAttribute("style", "display:block");
-					}
-					if (progress.isDone) {
-						var diff = ((new Date).getTime() - start)/1000;
-						console.log("Unzipping done in " + diff + "s");
-					}
-				}
-			}
-			// A string was returned from the thread, just log it
-			else if (typeof event.data == typeof "") {
-				console.log( event.data );
-			}
-		};
-		// worker.postMessage
-		var blob = filelist[0];
-		var url = (typeof createObjectURL == 'function' ? createObjectURL(blob) : //Chrome 9?
+          }
+          else {
+            //getElem("logo").setAttribute("style", "display:block");
+          }
+          if (progress.isDone) {
+            var diff = ((new Date).getTime() - start)/1000;
+            console.log("Unzipping done in " + diff + "s");
+          }
+        }
+      }
+      // A string was returned from the thread, just log it
+      else if (typeof event.data == typeof "") {
+        console.log( event.data );
+      }
+    };
+    // worker.postMessage
+    var blob = filelist[0];
+      var fr = new FileReader();
+  fr.onload = function(){
+    var result = fr.result;
+    
+    worker.postMessage({file: result, debug: true, fileName: filelist[0].fileName});
+  }
+  fr.readAsArrayBuffer(blob);
+  }
+}
+
+function createBlobBuilder(){
+  var bb = (typeof BlobBuilder == 'function' ? (new BlobBuilder()) : //Chrome 8
+             (typeof WebKitBlobBuilder == 'function' ? (new WebKitBlobBuilder()) : //Chrome 12
+               (typeof MozBlobBuilder == 'function' ? (new MozBlobBuilder()) : //Firefox 6
+             null)));
+  return bb
+}
+function createURL(blob){
+  var url = (typeof createObjectURL == 'function' ? createObjectURL(blob) : //Chrome 9?
               (typeof createBlobURL == 'function' ? createBlobURL(blob) : //Chrome 8
                 ((typeof URL == 'object' && typeof URL.createObjectURL == 'function') ? URL.createObjectURL(blob) : //Chrome 15? Firefox
                   ((typeof webkitURL == 'object' && typeof webkitURL.createObjectURL == 'function') ? webkitURL.createObjectURL(blob) : //Chrome 10
                     ''))));
-		worker.postMessage({file: url, debug: true, fileName: filelist[0].fileName});
-	}
+  return url;
 }
 
+function createURLFromArray(array){
+  var bb, url;
+  var bb = (typeof BlobBuilder == 'function' ? (new BlobBuilder()) : //Chrome 8
+             (typeof WebKitBlobBuilder == 'function' ? (new WebKitBlobBuilder()) : //Chrome 12
+               (typeof MozBlobBuilder == 'function' ? (new MozBlobBuilder()) : //Firefox 6
+             null)));
+  if(!bb) return false;
+  bb.append(array.buffer);
+  var offset = array.byteOffset, len = array.byteLength;
+  var blob = bb.getBlob();
+  
+  if(blob.webkitSlice){ //Chrome 12
+    blob = blob.webkitSlice(offset, offset + len);
+  }else if(blob.mozSlice){ //Firefox 5
+    blob = blob.mozSlice(offset, offset + len);
+  }else if(blob.slice){ //
+    blob = blob.slice(2, 3).length == 1 ? 
+      blob.slice(offset, offset + len) : //future behavior
+      blob.slice(offset, len); //Old behavior
+  }
+  
+  var url = (typeof createObjectURL == 'function' ? createObjectURL(blob) : //Chrome 9?
+              (typeof createBlobURL == 'function' ? createBlobURL(blob) : //Chrome 8
+                ((typeof URL == 'object' && typeof URL.createObjectURL == 'function') ? URL.createObjectURL(blob) : //Chrome 15? Firefox
+                  ((typeof webkitURL == 'object' && typeof webkitURL.createObjectURL == 'function') ? webkitURL.createObjectURL(blob) : //Chrome 10
+                    ''))));
+  return url;
+}
+
+function sendArray(callback){
+  var bb = createBlobBuilder();
+  bb.append("hello Earthilings we are poops and we will eat your breans");
+  var worker = new Worker('decode.js');
+  worker.onmesage = function(e){
+    console.log(e.data);
+  }
+  worker.postMessage(bb.getBlob());
+}
+
+
 function updatePage() {
-	var title = getElem("page");
+  var title = getElem("page");
   while (title.firstChild) title.removeChild(title.firstChild);
   title.appendChild(document.createTextNode(  (currentImage+1) + "/" + totalImages  ));
   
-	getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
-	if (imageFiles[currentImage]){
-		setImage(imageFiles[currentImage].dataURI);
-	}else{
+  getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
+  if (imageFiles[currentImage]){
+    setImage(imageFiles[currentImage].dataURI);
+  }else{
     setImage('loading');
   }
 }
@@ -417,20 +477,20 @@ function showPreview(){
 }
 
 function showPrevPage() {
-	currentImage--;
-	if (currentImage < 0) currentImage = imageFiles.length - 1;
-	updatePage();
-	//showPreview();
-	//getElem("prev").focus();
+  currentImage--;
+  if (currentImage < 0) currentImage = imageFiles.length - 1;
+  updatePage();
+  //showPreview();
+  //getElem("prev").focus();
 }
 
 function showNextPage() {
-	currentImage++;
-	
-	if (currentImage >= Math.max(totalImages, imageFiles.length)) currentImage = 0;
-	updatePage();
-	//showPreview();
-	//getElem("next").focus();
+  currentImage++;
+  
+  if (currentImage >= Math.max(totalImages, imageFiles.length)) currentImage = 0;
+  updatePage();
+  //showPreview();
+  //getElem("next").focus();
 }
 
 
@@ -443,24 +503,24 @@ function toggleToolbar(){
 
 function closeBook() {
   if(worker) worker.terminate();
-	currentImage = 0;
-	imageFiles = [];
-	imageFilenames = [];
+  currentImage = 0;
+  imageFiles = [];
+  imageFilenames = [];
   totalImages = 0;
   lastCompletion = 0;
-	// clear file upload
-	resetFileUploader();
-	
-	// display logo
-	getElem("logo").setAttribute("style", "display:block");
-	
-	getElem("nav").className = "hide";
-	getElem("progress").className = "hide";
-	
-	getElem("meter").setAttribute("width", '0%');
-	
-	setProgressMeter(0);
-	updatePage();
+  // clear file upload
+  resetFileUploader();
+  
+  // display logo
+  getElem("logo").setAttribute("style", "display:block");
+  
+  getElem("nav").className = "hide";
+  getElem("progress").className = "hide";
+  
+  getElem("meter").setAttribute("width", '0%');
+  
+  setProgressMeter(0);
+  updatePage();
 }
 
 function updateScale(clear){
@@ -487,82 +547,82 @@ function updateScale(clear){
 var canKeyNext = true, canKeyPrev = true;
 
 function keyHandler(evt) {
-	var code = evt.keyCode;
+  var code = evt.keyCode;
   if(code == Key.O){
-		  getElem('filechooser').click();
+      getElem('filechooser').click();
   }
   if(getComputedStyle(getElem("progress")).display == 'none') return;
   canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft)/ document.body.scrollWidth) >= 1;
   canKeyPrev = (scrollX <= 0);
 
-	if(evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
-	switch(code) {
-		case Key.X:
-		  toggleToolbar();
-			break;
-		case Key.LEFT:
-		  if(canKeyPrev) showPrevPage();
-			break;
-		case Key.RIGHT:
-		  if(canKeyNext) showNextPage();
-			break;
-		case Key.L:
-			rotateTimes--;
-			updatePage();
-			break;
-		case Key.R:
-			rotateTimes++;
-			updatePage();
-			break;
-		case Key.F:
-		  if(!hflip && !vflip){
-		    hflip = true;
-		  }else if(hflip == true){
-		    vflip = true;
-		    hflip = false;
-		  }else if(vflip == true){
-		    vflip = false;
-		  }
-			updatePage();
-			break;
-		case Key.W:
+  if(evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
+  switch(code) {
+    case Key.X:
+      toggleToolbar();
+      break;
+    case Key.LEFT:
+      if(canKeyPrev) showPrevPage();
+      break;
+    case Key.RIGHT:
+      if(canKeyNext) showNextPage();
+      break;
+    case Key.L:
+      rotateTimes--;
+      updatePage();
+      break;
+    case Key.R:
+      rotateTimes++;
+      updatePage();
+      break;
+    case Key.F:
+      if(!hflip && !vflip){
+        hflip = true;
+      }else if(hflip == true){
+        vflip = true;
+        hflip = false;
+      }else if(vflip == true){
+        vflip = false;
+      }
+      updatePage();
+      break;
+    case Key.W:
       fitMode = Key.W;
-			updateScale();
-			break;
-		case Key.H:
+      updateScale();
+      break;
+    case Key.H:
       fitMode = Key.H;
-			updateScale();
-			break;
-		case Key.B:
+      updateScale();
+      break;
+    case Key.B:
       fitMode = Key.B;
-			updateScale();
-			break;
-		case Key.N:
+      updateScale();
+      break;
+    case Key.N:
       fitMode = Key.N;
-			updateScale();
-			break;
-		default:
-			//console.log("KeyCode = " + code);
-			break;
-	}
+      updateScale();
+      break;
+    default:
+      //console.log("KeyCode = " + code);
+      break;
+  }
 }
 
 // attaches a change event listener to the file input control
 function init() {
-	if (!window.FileReader) {
-		alert("Sorry, kthoom will not work with your browser because it does not support the File API, Web Workers.  Please try kthoom with Chrome 11+.");
-	}
-	else {
-		initProgressMeter();
-		resetFileUploader();
-		loadSettings();
-		// add key handler
-		document.addEventListener("keydown", keyHandler, false);
-		window.addEventListener("resize", function(){
-		  var f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
-		  getElem("header").className = f?'fullscreen':'';
-		  updateScale();
-		}, false);
-	}
+  if (!window.FileReader) {
+    alert("Sorry, kthoom will not work with your browser because it does not support the File API, Web Workers.  Please try kthoom with Chrome 11+.");
+  }
+  else {
+    initProgressMeter();
+    resetFileUploader();
+    loadSettings();
+    // add key handler
+    document.addEventListener("keydown", keyHandler, false);
+    window.addEventListener("resize", function(){
+      var f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
+      getElem("header").className = f?'fullscreen':'';
+      updateScale();
+    }, false);
+  }
 }
 

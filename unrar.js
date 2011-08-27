@@ -808,6 +808,7 @@ function unrar(bstr, bDebug) {
         }catch(err){
           break;
         }
+        //postMessage("bstream" + bstream.bytePtr+"/"+bstream.bytes.length);
       } while( localFile.isValid );
       progress.totalNumFilesInZip = localFiles.length;
       
