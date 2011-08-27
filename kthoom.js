@@ -298,7 +298,13 @@ function getFile(evt) {
 			}
 		};
 		// worker.postMessage
-		worker.postMessage({file: window.webkitURL.createObjectURL(filelist[0]), debug: true, fileName: filelist[0].fileName});
+		var blob = filelist[0];
+		var url = (typeof createObjectURL == 'function' ? createObjectURL(blob) : //Chrome 9?
+              (typeof createBlobURL == 'function' ? createBlobURL(blob) : //Chrome 8
+                ((typeof URL == 'object' && typeof URL.createObjectURL == 'function') ? URL.createObjectURL(blob) : //Chrome 15? Firefox
+                  ((typeof webkitURL == 'object' && typeof webkitURL.createObjectURL == 'function') ? webkitURL.createObjectURL(blob) : //Chrome 10
+                    ''))));
+		worker.postMessage({file: url, debug: true, fileName: filelist[0].fileName});
 	}
 }
 
