@@ -493,6 +493,7 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer) {
 function inflate(compressedData, numDecompressedBytes) {
 	// Bit stream representing the compressed data.
 	var bstream = new BitStream(compressedData.buffer,
+	  false /* rtl */,
 		compressedData.byteOffset,
 		compressedData.byteLength);
 	var buffer = new Buffer(numDecompressedBytes);

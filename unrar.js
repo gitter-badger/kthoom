@@ -703,7 +703,7 @@ function unpack(v) {
   // TODO: implement what happens when unpVer is < 15
   var Ver = v.header.unpVer <= 15 ? 15 : v.header.unpVer,
     Solid = v.header.LHD_SOLID,
-    bstream = new rBitStream(v.fileData.buffer, v.fileData.byteOffset, v.fileData.byteLength );
+    bstream = new BitStream(v.fileData.buffer, true /* rtl */, v.fileData.byteOffset, v.fileData.byteLength );
   
   rBuffer = new Buffer(v.header.unpackedSize);
 
@@ -773,7 +773,7 @@ RarLocalFile.prototype.unrar = function() {
 }
 
 function unrar(bstr, bDebug) {
-  var bstream = new BitStream(bstr);
+  var bstream = new BitStream(bstr, false /* rtl */);
   
   var header = new RarVolumeHeader(bstream, bDebug);
   if (header.crc == 0x6152 && 
