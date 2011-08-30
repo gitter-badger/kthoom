@@ -78,10 +78,10 @@ var binaryValueToString = function(num, len) {
 var nibble = "0123456789ABCDEF";
 var byteValueToHexString = function(num) {
 	return nibble[num>>4] + nibble[num&0xF];
-}
+};
 var twoByteValueToHexString = function(num) {
 	return nibble[(num>>12)&0xF] + nibble[(num>>8)&0xF] + nibble[(num>>4)&0xF] + nibble[num&0xF];
-}
+};
 
 
 function Buffer(numBytes) {
@@ -103,8 +103,7 @@ function Buffer(numBytes) {
 	};
 }
 
-
-function createURLFromArray(array){
+function createURLFromArray(array) {
   return array
   
   var bb, url;
@@ -112,16 +111,16 @@ function createURLFromArray(array){
              (typeof WebKitBlobBuilder == 'function' ? (new WebKitBlobBuilder()) : //Chrome 12
                (typeof MozBlobBuilder == 'function' ? (new MozBlobBuilder()) : //Firefox 6
              null)));
-  if(!bb) return false;
+  if (!bb) return false;
   bb.append(array.buffer);
   var offset = array.byteOffset, len = array.byteLength;
   var blob = bb.getBlob();
   
-  if(blob.webkitSlice){ //Chrome 12
+  if (blob.webkitSlice) { //Chrome 12
     blob = blob.webkitSlice(offset, offset + len);
-  }else if(blob.mozSlice){ //Firefox 5
+  } else if(blob.mozSlice) { //Firefox 5
     blob = blob.mozSlice(offset, offset + len);
-  }else if(blob.slice){ //
+  } else if(blob.slice) { //
     blob = blob.slice(2, 3).length == 1 ? 
       blob.slice(offset, offset + len) : //future behavior
       blob.slice(offset, len); //Old behavior
@@ -142,19 +141,19 @@ onmessage = function(event) {
   unzip(file, gDebug);
 /*
   var fr = new FileReader();
-  fr.onload = function(){
+  fr.onload = function() {
     var result = fr.result;
     unzip(result, gDebug);
-  }
+  };
   fr.readAsArrayBuffer(file);
 
   var xhr = new XMLHttpRequest();
   xhr.open('GET', file, true);
   xhr.responseType = 'arraybuffer';
   xhr.send();
-  xhr.onload = function(){
+  xhr.onload = function() {
     var result = xhr.response;
   	unzip(result, gDebug);
-  }
+  };
 */
 };

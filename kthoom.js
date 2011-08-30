@@ -45,24 +45,24 @@ var lastCompletion = 0;
   
 var rotateTimes = 0, hflip = false, vflip = false, fitMode = Key.B;
 
-function saveSettings(){
+function saveSettings() {
   localStorage.kthoom_settings = JSON.stringify({
     rotateTimes: rotateTimes,
     hflip: hflip,
     vflip: vflip,
     fitMode: fitMode
-  })
+  });
 }
 
-function loadSettings(){
-  try{
-    if(localStorage.kthoom_settings.length < 10) return;
+function loadSettings() {
+  try {
+    if (localStorage.kthoom_settings.length < 10) return;
     var s = JSON.parse(localStorage.kthoom_settings);
     rotateTimes = s.rotateTimes;
     hflip = s.hflip;
     vflip = s.vflip;
     fitMode = s.fitMode;
-  }catch(err){
+  } catch(err) {
   }
 }
 
@@ -79,7 +79,7 @@ function ImageFile(filename, imageString, metadata) {
 
 // gets the element with the given id
 function getElem(id) {
-  if(document.documentElement.querySelector) {
+  if (document.documentElement.querySelector) {
     // querySelector lookup
     return document.body.querySelector('#'+id);
   }  
@@ -143,8 +143,6 @@ function initProgressMeter() {
   title.setAttribute("text-anchor", "end");
   g.appendChild(title);
 
-
-  
   var meter = document.createElementNS(svgns, "rect");
   meter.id = "meter";
   meter.setAttribute("width", "0%");
@@ -162,10 +160,8 @@ function initProgressMeter() {
   meter2.setAttribute("rx", "5");
   meter2.setAttribute("ry", "5");
   
-
   g.appendChild(meter);
   g.appendChild(meter2);
-
   
   var page = document.createElementNS(svgns, "text");
   page.id = "page";
@@ -180,8 +176,8 @@ function initProgressMeter() {
   svg.appendChild(g);
   pdiv.appendChild(svg);
   
-  svg.onclick = function(e){
-    for(var x = pdiv, l = 0; x != document.documentElement; x = x.parentNode) l += x.offsetLeft;
+  svg.onclick = function(e) {
+    for (var x = pdiv, l = 0; x != document.documentElement; x = x.parentNode) l += x.offsetLeft;
     var page = Math.max(1, Math.ceil(((e.clientX - l)/pdiv.offsetWidth) * totalImages)) - 1;
     console.log(e,l);
     currentImage = page;
@@ -195,17 +191,17 @@ function setProgressMeter(pct) {
   var remain = ((pct - lastCompletion)/100)/part;
   var fract = Math.min(1, remain);
   var smartpct = ((imageFiles.length/totalImages) + fract * part )* 100;
-  if(totalImages == 0) smartpct = pct;
+  if (totalImages == 0) smartpct = pct;
   //console.log(smartpct);
   
    // + Math.min((pct - lastCompletion), 100/totalImages * 0.9 + (pct - lastCompletion - 100/totalImages)/2, 100/totalImages);
   var oldval = parseFloat(getElem("meter").getAttribute('width'));
-  if(isNaN(oldval)) oldval = 0;
+  if (isNaN(oldval)) oldval = 0;
   var weight = 0.5;
   smartpct = (weight * smartpct + (1-weight) * oldval);
-  if(pct == 100) smartpct = 100;
+  if (pct == 100) smartpct = 100;
     
-  if(!isNaN(smartpct)){
+  if (!isNaN(smartpct)) {
     getElem("meter").setAttribute("width", smartpct + '%');
   }
   var title = getElem("progress_title");
@@ -222,7 +218,7 @@ function setProgressMeter(pct) {
   title.appendChild(document.createTextNode(  (currentImage+1) + "/" + totalImages  ));
   
   
-  if(pct > 0){
+  if (pct > 0) {
     getElem("nav").className = "";
     getElem("progress").className = "";
   }
@@ -283,8 +279,6 @@ function getFile(evt) {
             if (imageFiles.length == currentImage + 1) {
               updatePage();
             }
-
-
           }
           else {
             //getElem("logo").setAttribute("style", "display:block");
@@ -303,23 +297,23 @@ function getFile(evt) {
     // worker.postMessage
     var blob = filelist[0];
       var fr = new FileReader();
-  fr.onload = function(){
-    var result = fr.result;
-    
-    worker.postMessage({file: result, debug: true, fileName: filelist[0].fileName});
-  }
-  fr.readAsArrayBuffer(blob);
+    fr.onload = function() {
+      var result = fr.result;
+      worker.postMessage({file: result, debug: true, fileName: filelist[0].fileName});
+    };
+    fr.readAsArrayBuffer(blob);
   }
 }
 
-function createBlobBuilder(){
+function createBlobBuilder() {
   var bb = (typeof BlobBuilder == 'function' ? (new BlobBuilder()) : //Chrome 8
              (typeof WebKitBlobBuilder == 'function' ? (new WebKitBlobBuilder()) : //Chrome 12
                (typeof MozBlobBuilder == 'function' ? (new MozBlobBuilder()) : //Firefox 6
              null)));
-  return bb
+  return bb;
 }
-function createURL(blob){
+
+function createURL(blob) {
   var url = (typeof createObjectURL == 'function' ? createObjectURL(blob) : //Chrome 9?
               (typeof createBlobURL == 'function' ? createBlobURL(blob) : //Chrome 8
                 ((typeof URL == 'object' && typeof URL.createObjectURL == 'function') ? URL.createObjectURL(blob) : //Chrome 15? Firefox
@@ -328,22 +322,22 @@ function createURL(blob){
   return url;
 }
 
-function createURLFromArray(array){
+function createURLFromArray(array) {
   var bb, url;
   var bb = (typeof BlobBuilder == 'function' ? (new BlobBuilder()) : //Chrome 8
              (typeof WebKitBlobBuilder == 'function' ? (new WebKitBlobBuilder()) : //Chrome 12
                (typeof MozBlobBuilder == 'function' ? (new MozBlobBuilder()) : //Firefox 6
              null)));
-  if(!bb) return false;
+  if (!bb) return false;
   bb.append(array.buffer);
   var offset = array.byteOffset, len = array.byteLength;
   var blob = bb.getBlob();
   
-  if(blob.webkitSlice){ //Chrome 12
+  if (blob.webkitSlice) { //Chrome 12
     blob = blob.webkitSlice(offset, offset + len);
-  }else if(blob.mozSlice){ //Firefox 5
+  } else if(blob.mozSlice) { //Firefox 5
     blob = blob.mozSlice(offset, offset + len);
-  }else if(blob.slice){ //
+  } else if(blob.slice) { //
     blob = blob.slice(2, 3).length == 1 ? 
       blob.slice(offset, offset + len) : //future behavior
       blob.slice(offset, len); //Old behavior
@@ -357,16 +351,15 @@ function createURLFromArray(array){
   return url;
 }
 
-function sendArray(callback){
+function sendArray(callback) {
   var bb = createBlobBuilder();
   bb.append("hello Earthilings we are poops and we will eat your breans");
   var worker = new Worker('decode.js');
-  worker.onmesage = function(e){
+  worker.onmesage = function(e) {
     console.log(e.data);
-  }
+  };
   worker.postMessage(bb.getBlob());
 }
-
 
 function updatePage() {
   var title = getElem("page");
@@ -374,19 +367,18 @@ function updatePage() {
   title.appendChild(document.createTextNode(  (currentImage+1) + "/" + totalImages  ));
   
   getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
-  if (imageFiles[currentImage]){
+  if (imageFiles[currentImage]) {
     setImage(imageFiles[currentImage].dataURI);
-  }else{
+  } else {
     setImage('loading');
   }
 }
 
-
-function setImage(url){
+function setImage(url) {
   var canvas = getElem('mainImage'), 
       x = canvas.getContext('2d');
   document.getElementById('mainText').style.display = 'none';
-  if(url == 'loading'){
+  if (url == 'loading') {
     updateScale(true);
     canvas.width = innerWidth - 100;
     canvas.height = 200;
@@ -394,13 +386,13 @@ function setImage(url){
     x.font = '50px sans-serif';
     x.strokeStyle = 'black';
     x.fillText("Loading Page #"+(currentImage+1), 100, 100)
-  }else{
-    if(document.body.scrollHeight/innerHeight > 1){
+  } else {
+    if (document.body.scrollHeight/innerHeight > 1) {
       document.body.style.overflowY = 'scroll';
     }
     
     var img = new Image();
-    img.onerror = function(){
+    img.onerror = function() {
       canvas.width = innerWidth - 100;
       canvas.height = 300;
       updateScale(true);
@@ -411,42 +403,42 @@ function setImage(url){
       x.fillStyle = 'red';
       x.fillText("Is corrupt or not an image", 100, 200);
       
-      if(/(html|htm)$/.test(imageFiles[currentImage].filename)){
+      if (/(html|htm)$/.test(imageFiles[currentImage].filename)) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
-        xhr.onload = function(){
+        xhr.onload = function() {
           document.getElementById('mainText').style.display = '';
           document.getElementById('mainText').innerHTML = '<iframe style="width:100%;height:700px;border:0" src="data:text/html,'+escape(xhr.responseText)+'"></iframe>';
         }
         xhr.send(null);
-      }else if(!/(jpg|jpeg|png|gif)$/.test(imageFiles[currentImage].filename) && imageFiles[currentImage].data.uncompressedSize < 10*1024){
+      } else if (!/(jpg|jpeg|png|gif)$/.test(imageFiles[currentImage].filename) && imageFiles[currentImage].data.uncompressedSize < 10*1024) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
-        xhr.onload = function(){
+        xhr.onload = function() {
           document.getElementById('mainText').style.display = '';
           document.getElementById('mainText').innerText = xhr.responseText;
-        }
+        };
         xhr.send(null);
       }
     }
-    img.onload = function(){
+    img.onload = function() {
       var h = img.height, 
           w = img.width, 
           sw = w, 
           sh = h;
       rotateTimes =  (4 + rotateTimes) % 4;
       x.save();
-      if(rotateTimes % 2 == 1){ sh = w; sw = h;}
+      if (rotateTimes % 2 == 1) { sh = w; sw = h;}
       canvas.height = sh;
       canvas.width = sw;
       x.translate(sw/2, sh/2);
       x.rotate(Math.PI/2 * rotateTimes);
       x.translate(-w/2, -h/2);
-      if(vflip){
+      if (vflip) {
         x.scale(1, -1)
         x.translate(0, -h);
       }
-      if(hflip){
+      if (hflip) {
         x.scale(-1, 1)
         x.translate(-w, 0);
       }
@@ -459,17 +451,17 @@ function setImage(url){
       canvas.style.display = '';
       document.body.style.overflowY = '';
       x.restore();
-    }
+    };
     img.src = url;
   }
 }
 
-function showPreview(){
-  if(/fullscreen/.test(getElem("header").className)){
+function showPreview() {
+  if (/fullscreen/.test(getElem("header").className)) {
     getElem("header").className += ' preview';
-    setTimeout(function(){
+    setTimeout(function() {
       getElem("header").className += ' previewout';
-      setTimeout(function(){
+      setTimeout(function() {
         getElem("header").className = getElem("header").className.replace(/previewout|preview/g,'');
       }, 1000);
     }, 1337);
@@ -493,8 +485,7 @@ function showNextPage() {
   //getElem("next").focus();
 }
 
-
-function toggleToolbar(){
+function toggleToolbar() {
   var s = /fullscreen/.test(getElem("header").className);
   getElem("header").className = s?'':'fullscreen';
   //getElem("toolbarbutton").innerText = s?'-':'+';
@@ -502,7 +493,7 @@ function toggleToolbar(){
 }
 
 function closeBook() {
-  if(worker) worker.terminate();
+  if (worker) worker.terminate();
   currentImage = 0;
   imageFiles = [];
   imageFilenames = [];
@@ -523,22 +514,22 @@ function closeBook() {
   updatePage();
 }
 
-function updateScale(clear){
+function updateScale(clear) {
   getElem('mainImage').style.width='';
   getElem('mainImage').style.height='';
   getElem('mainImage').style.maxWidth='';
   getElem('mainImage').style.maxHeight='';
   var maxheight = innerHeight - 15;
-  if(!/fullscreen/.test(getElem("header").className)){
+  if (!/fullscreen/.test(getElem("header").className)) {
     maxheight -= 25;
   }
-  if(clear || fitMode == Key.N){
-  }else if(fitMode == Key.B){
+  if (clear || fitMode == Key.N) {
+  } else if (fitMode == Key.B) {
     getElem('mainImage').style.maxWidth = '100%';
     getElem('mainImage').style.maxHeight = maxheight+'px'
-  }else if(fitMode == Key.H){
+  } else if(fitMode == Key.H) {
     getElem('mainImage').style.height = maxheight+'px'
-  }else if(fitMode == Key.W){
+  } else if(fitMode == Key.W) {
     getElem('mainImage').style.width = '100%';
   }
   saveSettings();
@@ -548,14 +539,14 @@ var canKeyNext = true, canKeyPrev = true;
 
 function keyHandler(evt) {
   var code = evt.keyCode;
-  if(code == Key.O){
-      getElem('filechooser').click();
+  if (code == Key.O) {
+    getElem('filechooser').click();
   }
-  if(getComputedStyle(getElem("progress")).display == 'none') return;
+  if (getComputedStyle(getElem("progress")).display == 'none') return;
   canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft)/ document.body.scrollWidth) >= 1;
   canKeyPrev = (scrollX <= 0);
 
-  if(evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
+  if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
   switch(code) {
     case Key.X:
       toggleToolbar();
@@ -575,12 +566,12 @@ function keyHandler(evt) {
       updatePage();
       break;
     case Key.F:
-      if(!hflip && !vflip){
+      if (!hflip && !vflip) {
         hflip = true;
-      }else if(hflip == true){
+      } else if(hflip == true) {
         vflip = true;
         hflip = false;
-      }else if(vflip == true){
+      } else if(vflip == true) {
         vflip = false;
       }
       updatePage();
@@ -618,7 +609,7 @@ function init() {
     loadSettings();
     // add key handler
     document.addEventListener("keydown", keyHandler, false);
-    window.addEventListener("resize", function(){
+    window.addEventListener("resize", function() {
       var f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
       getElem("header").className = f?'fullscreen':'';
       updateScale();
