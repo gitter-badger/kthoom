@@ -20,8 +20,9 @@ function RarVolumeHeader(bstream, bDebug) {
 
   this.debug = bDebug;
 
+  var headPos = bstream.bytePtr;
   // byte 1,2
-  postMessage("Rar Volume Header");
+  postMessage("Rar Volume Header @"+bstream.bytePtr);
   
   this.crc = bstream.readBits(16);
   //console.log(this.crc);
@@ -80,7 +81,6 @@ function RarVolumeHeader(bstream, bDebug) {
   this.headSize = bstream.readBits(16);
   if (bDebug)
     postMessage("  headSize=" + this.headSize);
-  
   switch (this.headType) {
   case MAIN_HEAD:
     this.highPosAv = bstream.readBits(16);
@@ -100,7 +100,7 @@ function RarVolumeHeader(bstream, bDebug) {
     this.method = bstream.readBits(8);
     this.nameSize = bstream.readBits(16);
     this.fileAttr = bstream.readBits(32);
-
+    
     if (this.flags.LHD_LARGE) {
       postMessage("Warning: Reading in LHD_LARGE 64-bit size values");
       this.HighPackSize = bstream.readBits(32);
@@ -109,7 +109,8 @@ function RarVolumeHeader(bstream, bDebug) {
       this.HighPackSize = 0;
       this.HighUnpSize = 0;
       if (this.unpackedSize == 0xffffffff) {
-        //this.HighUnpSize = 
+        this.HighUnpSize = 0x7fffffff
+        this.unpackedSize = 0xffffffff;
       }
     }
     this.fullPackSize = 0;
@@ -152,6 +153,9 @@ function RarVolumeHeader(bstream, bDebug) {
     if (this.flags.LHD_COMMENT) {
       postMessage("Found a LHD_COMMENT");
     }
+    
+    
+    while(headPos + this.headSize > bstream.bytePtr) bstream.readBits(1);
     
     if (this.debug)
       postMessage("Found FILE_HEAD with packSize=" + this.packSize + ", unpackedSize= " + this.unpackedSize + ", hostOS=" + this.hostOS + ", unpVer=" + this.unpVer + ", method=" + this.method + ", filename=" + this.filename);
@@ -683,6 +687,15 @@ function RarInsertOldDist(distance) {
 //this is the real function, the other one is for debugging
 function RarCopyString(length, distance) {
   var destPtr = rBuffer.ptr - distance;
+  if(destPtr < 0){    
+    var l = rOldBuffers.length;
+    while(destPtr < 0){
+      destPtr = rOldBuffers[--l].data.length + destPtr
+    }
+    //TODO: lets hope that it never needs to read beyond file boundaries
+    while(length-- > 0) rBuffer.insertByte(rOldBuffers[l].data[destPtr++]);
+    
+  }
   if (length > distance) {
     while(length-- > 0) rBuffer.insertByte(rBuffer.data[destPtr++]);
   } else {
@@ -690,6 +703,8 @@ function RarCopyString(length, distance) {
   }
   
 }
+
+var rOldBuffers = []
 // v must be a valid RarVolume
 function unpack(v) {
 
@@ -715,6 +730,9 @@ function unpack(v) {
       Unpack29(bstream, Solid);
       break;
   } // switch(method)
+  
+  rOldBuffers.push(rBuffer);
+  //TODO: clear these old buffers when there's over 4MB of history
   return rBuffer.data;
 }
 

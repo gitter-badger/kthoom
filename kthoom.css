@@ -71,12 +71,20 @@ body {
 	color: transparent !important;
 }
 
+#filechooser {
+  right: 0;
+  left: auto;
+}
+.webkit #filechooser {
+	left: 0;
+	right: auto;
+}
 
 #uploader {
 	display: inline;
 	left: 0;
 	overflow: hidden;
-	width: 100px;
+	width: 89px;
 	position: absolute;
 	text-align: left;
 	height: 30px;

@@ -257,7 +257,7 @@ function getFile(evt) {
           setProgressMeter(percentage);
 
           if (localFiles && localFiles.length > 0) {
-            console.log(localFiles[0]);
+            //console.log(localFiles[0]);
             // convert DecompressedFile into a bunch of ImageFiles
             for (var fIndex in localFiles) {
               var f = localFiles[fIndex];
@@ -286,6 +286,7 @@ function getFile(evt) {
           if (progress.isDone) {
             var diff = ((new Date).getTime() - start)/1000;
             console.log("Unzipping done in " + diff + "s");
+            worker.terminate();
           }
         }
       }
@@ -305,22 +306,6 @@ function getFile(evt) {
   }
 }
 
-function createBlobBuilder() {
-  var bb = (typeof BlobBuilder == 'function' ? (new BlobBuilder()) : //Chrome 8
-             (typeof WebKitBlobBuilder == 'function' ? (new WebKitBlobBuilder()) : //Chrome 12
-               (typeof MozBlobBuilder == 'function' ? (new MozBlobBuilder()) : //Firefox 6
-             null)));
-  return bb;
-}
-
-function createURL(blob) {
-  var url = (typeof createObjectURL == 'function' ? createObjectURL(blob) : //Chrome 9?
-              (typeof createBlobURL == 'function' ? createBlobURL(blob) : //Chrome 8
-                ((typeof URL == 'object' && typeof URL.createObjectURL == 'function') ? URL.createObjectURL(blob) : //Chrome 15? Firefox
-                  ((typeof webkitURL == 'object' && typeof webkitURL.createObjectURL == 'function') ? webkitURL.createObjectURL(blob) : //Chrome 10
-                    ''))));
-  return url;
-}
 
 function createURLFromArray(array) {
   var bb, url;
@@ -351,15 +336,6 @@ function createURLFromArray(array) {
   return url;
 }
 
-function sendArray(callback) {
-  var bb = createBlobBuilder();
-  bb.append("hello Earthilings we are poops and we will eat your breans");
-  var worker = new Worker('decode.js');
-  worker.onmesage = function(e) {
-    console.log(e.data);
-  };
-  worker.postMessage(bb.getBlob());
-}
 
 function updatePage() {
   var title = getElem("page");
@@ -605,6 +581,7 @@ function init() {
   }
   else {
     initProgressMeter();
+    document.body.className += /AppleWebKit/.test(navigator.userAgent)?' webkit':'';
     resetFileUploader();
     loadSettings();
     // add key handler

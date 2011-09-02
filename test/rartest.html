@@ -128,7 +128,7 @@ var progress = new ProgressReport();
 <script>
 
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'test.cbr', true);
+  xhr.open('GET', 'wb.cbr', true);
   xhr.responseType = 'arraybuffer';
   xhr.send();
   var logconsole = '';
@@ -139,8 +139,8 @@ var progress = new ProgressReport();
     }
       console.log(a);
     }else{
-      logconsole += a + '\n';
-      //console.log(a);
+      //logconsole += a + '\n';
+      console.log(a);
     }
   }
   gDebug = true;
