@@ -29,7 +29,6 @@ if (window.opera) {
 window.kthoom = {};
 
 // key codes
-// TODO: is this reliable?
 var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, 
 A: 65, B: 66, C: 67, D: 68, E: 69, F: 70, G: 71, H: 72, I: 73, J: 74, K: 75, L: 76, M: 77, 
 N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90};
@@ -182,7 +181,7 @@ function initProgressMeter() {
     console.log(e,l);
     currentImage = page;
     updatePage();
-  }
+  };
 }
 
 function setProgressMeter(pct) {
@@ -300,7 +299,7 @@ function getFile(evt) {
       var fr = new FileReader();
     fr.onload = function() {
       var result = fr.result;
-      worker.postMessage({file: result, debug: true, fileName: filelist[0].fileName});
+      worker.postMessage({file: result, debug: true, filename: filelist[0].name});
     };
     fr.readAsArrayBuffer(blob);
   }
@@ -396,7 +395,7 @@ function setImage(url) {
         };
         xhr.send(null);
       }
-    }
+    };
     img.onload = function() {
       var h = img.height, 
           w = img.width, 
@@ -429,7 +428,7 @@ function setImage(url) {
       x.restore();
     };
     img.src = url;
-  }
+  };
 }
 
 function showPreview() {
@@ -577,7 +576,7 @@ function keyHandler(evt) {
 // attaches a change event listener to the file input control
 function init() {
   if (!window.FileReader) {
-    alert("Sorry, kthoom will not work with your browser because it does not support the File API.  Please try kthoom with Chrome 12+ or Firefox 7+.");
+    alert("Sorry, kthoom will not work with your browser because it does not support the File API.  Please try kthoom with Chrome 12+ or Firefox 7+");
   }
   else {
     initProgressMeter();
