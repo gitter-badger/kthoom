@@ -12,11 +12,11 @@ importScripts('unrar.js');
 importScripts('untar.js');
 
 // this common interface encapsulates a decompressed file
-// both ZipLocalFile and RarLocalFile support these two 
-// two properties: filename and fileData (unpacked bytes)
-var DecompressedFile = function(filename, fileData) {
+// both ZipLocalFile, RarLocalFile and TarLocalFile support  
+// these two properties: filename, imageString.
+var DecompressedFile = function(filename, imageString) {
   this.filename = filename;
-  this.fileData = fileData;
+  this.imageString = imageString;
 };
 
 var ProgressReport = function() {

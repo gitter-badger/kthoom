@@ -271,13 +271,10 @@ ByteStream.prototype.peekString = function( n ) {
   return result;
 };
 
-// returns the next n bytes as a string (or -1 on error)
+// returns the next n bytes as a string
 // and advances the stream pointer n bytes
 ByteStream.prototype.readString = function(n) {
   var strToReturn = this.peekString(n);
   this.ptr += n;
   return strToReturn;
 };
-
-
-

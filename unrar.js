@@ -16,7 +16,7 @@ var MARK_HEAD      = 0x72,
   ENDARC_HEAD      = 0x7b;
 
 // bstream is a bit stream
-function RarVolumeHeader(bstream, bDebug) {
+var RarVolumeHeader = function(bstream, bDebug) {
 
   this.debug = bDebug;
 
@@ -168,8 +168,7 @@ function RarVolumeHeader(bstream, bDebug) {
     bstream.readBytes( this.headSize - 7 );
     break;
   }
-
-}
+};
 
 var BLOCK_LZ = 0,
   BLOCK_PPM = 1;
@@ -737,7 +736,7 @@ function unpack(v) {
 }
 
 // bstream is a bit stream
-function RarLocalFile(bstream, bDebug) {
+var RarLocalFile = function(bstream, bDebug) {
   
   this.header = new RarVolumeHeader(bstream, bDebug);
   this.filename = this.header.filename;
@@ -755,7 +754,7 @@ function RarLocalFile(bstream, bDebug) {
       this.isValid = true;
     }
   }
-}
+};
 
 RarLocalFile.prototype.unrar = function() {
 
@@ -778,8 +777,8 @@ RarLocalFile.prototype.unrar = function() {
   }
 }
 
-function unrar(bstr, bDebug) {
-  var bstream = new BitStream(bstr, false /* rtl */);
+var unrar = function(arrayBuffer, bDebug) {
+  var bstream = new BitStream(arrayBuffer, false /* rtl */);
   
   var header = new RarVolumeHeader(bstream, bDebug);
   if (header.crc == 0x6152 && 
@@ -864,7 +863,7 @@ function unrar(bstr, bDebug) {
     }
   }
   else {
-    postMessage("Unknown file!");
+    untar(arrayBuffer, bDebug);
   }
-}
+};
 

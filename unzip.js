@@ -14,7 +14,7 @@ var zEndOfCentralDirSignature = 0x06064b50;
 var zEndOfCentralDirLocatorSignature = 0x07064b50;
 
 // takes a ByteStream and parses out the local file information
-function ZipLocalFile(bstream, bDebug) {
+var ZipLocalFile = function(bstream, bDebug) {
 	if (typeof bstream != typeof {} || !bstream.readNumber || typeof bstream.readNumber != typeof function(){}) {
 		return null;
 	}
@@ -233,7 +233,7 @@ var unzip = function(arrayBuffer, bDebug) {
 		progress.isDone = true;
 		postMessage(progress);
 	}
-	else { // check for RAR
+	else { // check for RAR (less likely now that we are using the file extension)
 		unrar(arrayBuffer, bDebug);
 	}
 	return progress;
