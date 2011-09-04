@@ -128,25 +128,33 @@ var progress = new ProgressReport();
 <script>
 
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'wb.cbr', true);
+  xhr.open('GET', 'big.zip', true);
   xhr.responseType = 'arraybuffer';
   xhr.send();
   var logconsole = '';
   postMessage = function(a){
     if(a.isValid){
     if( a.localFiles && a.localFiles[0]){
-      document.body.innerHTML += '<img src="'+a.localFiles[0].imageString+'">'
+      //document.body.innerHTML += '<img src="'+a.localFiles[0].imageString+'">'
     }
-      console.log(a);
+      //console.log(a);
     }else{
       //logconsole += a + '\n';
-      console.log(a);
+      //console.log(a);
     }
   }
   gDebug = true;
   xhr.onload = function(){
-    var result = xhr.response;
-  	unrar(result, gDebug);
+     result = xhr.response;
+
+  }
+  
+  function doTest(){
+    var start = (new Date).getTime();
+  	unzip(result, gDebug);
+    var diff = ((new Date).getTime() - start)/1000;
+    console.log("Unzipping done in " + diff + "s");
+
   }
   
   

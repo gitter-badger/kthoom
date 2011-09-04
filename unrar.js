@@ -693,11 +693,11 @@ function RarCopyString(length, distance) {
       destPtr = rOldBuffers[--l].data.length + destPtr
     }
     //TODO: lets hope that it never needs to read beyond file boundaries
-    while(length-- > 0) rBuffer.insertByte(rOldBuffers[l].data[destPtr++]);
+    while(length--) rBuffer.insertByte(rOldBuffers[l].data[destPtr++]);
     
   }
   if (length > distance) {
-    while(length-- > 0) rBuffer.insertByte(rBuffer.data[destPtr++]);
+    while(length--) rBuffer.insertByte(rBuffer.data[destPtr++]);
   } else {
     rBuffer.insertBytes(rBuffer.data.subarray(destPtr, destPtr + length));
   }

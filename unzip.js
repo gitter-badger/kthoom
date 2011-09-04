@@ -473,11 +473,16 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer) {
 				// 
 				// loop for each character
 				var ch = buffer.ptr - distance;
-				var data = buffer.data;
-				blockSize += length;
-				while (length--) {
-					buffer.insertByte(data[ch++]);
+				if(length > distance){
+				  var data = buffer.data;
+				  blockSize += length;
+				  while (length--) {
+					  buffer.insertByte(data[ch++]);
+				  }
+				}else{
+				  buffer.insertBytes(buffer.data.subarray(ch, ch + length))
 				}
+				
 			} // length-distance pair
 		} // length-distance pair or end-of-block
 	} // loop until we reach end of block
