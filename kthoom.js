@@ -70,11 +70,11 @@ function loadSettings() {
 // TODO: investigate if we really need to store as base64 (leave off ;base64 and just
 //       non-safe URL characters are encoded as %xx ?)
 //       This would save 25% on memory since base64-encoded strings are 4/3 the size of the binary
-function ImageFile(filename, imageString, metadata) {
+var ImageFile = function(filename, imageString, metadata) {
   this.filename = filename;
   this.dataURI = imageString;
   this.data = metadata;
-}
+};
 
 // gets the element with the given id
 function getElem(id) {
@@ -266,7 +266,6 @@ function getFile(evt) {
                 imageFiles.push(new ImageFile(f.filename, createURLFromArray(f.imageString), f));
               }
             }
-            
             
             // hide logo
             getElem("logo").setAttribute("style", "display:none");

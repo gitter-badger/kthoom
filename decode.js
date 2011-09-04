@@ -12,11 +12,11 @@ importScripts('unrar.js');
 importScripts('untar.js');
 
 // this common interface encapsulates a decompressed file
-// both ZipLocalFile and RarLocalFile support these two 
-// two properties: filename and fileData (unpacked bytes)
-var DecompressedFile = function(filename, fileData) {
+// both ZipLocalFile, RarLocalFile and TarLocalFile support  
+// these two properties: filename, imageString.
+var DecompressedFile = function(filename, imageString) {
   this.filename = filename;
-  this.fileData = fileData;
+  this.imageString = imageString;
 };
 
 var ProgressReport = function() {
@@ -136,43 +136,11 @@ onmessage = function(event) {
   var file = event.data.file;
   
   var h = new Uint8Array(file, 0, 10);
-  if(h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21){ //Rar!
+  if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { //Rar!
     unrar(file, gDebug);
-  }else if(h[0] == 80 && h[1] == 75){ //PK (Zip)
+  } else if (h[0] == 80 && h[1] == 75) { //PK (Zip)
     unzip(file, gDebug);
-  }else if(h[0] == 117 && h[1] == 115 && h[2] == 116 && h[3] == 97 && h[4] == 114){ //ustar
+  } else { // Try with tar
     untar(file, gDebug);
   }
-
-
-/*
-  var filename = event.data.filename;
-  var extension = filename.split(".")[1];
-  switch (extension) {
-    case 'cbz':
-      unzip(file, gDebug);
-      break;
-    case 'cbr':
-      unrar(file, gDebug);
-      break;
-    case 'cbt':
-      untar(file, gDebug);
-      break;
-  }
-  var fr = new FileReader();
-  fr.onload = function() {
-    var result = fr.result;
-    unzip(result, debug);
-  };
-  fr.readAsArrayBuffer(file);
-
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', file, true);
-  xhr.responseType = 'arraybuffer';
-  xhr.send();
-  xhr.onload = function() {
-    var result = xhr.response;
-  	unzip(result, debug);
-  };
-*/
 };
