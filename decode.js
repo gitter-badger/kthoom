@@ -12,10 +12,11 @@ importScripts('unrar.js');
 importScripts('untar.js');
 
 // this common interface encapsulates a decompressed file
-// both ZipLocalFile, RarLocalFile and TarLocalFile support  
+// ZipLocalFile, RarLocalFile and TarLocalFile support
 // these two properties: filename, imageString.
-var DecompressedFile = function(filename, imageString) {
+var DecompressedFile = function(filename, fileData, imageString) {
   this.filename = filename;
+  this.fileData = fileData;
   this.imageString = imageString;
 };
 
@@ -78,26 +79,6 @@ var byteValueToHexString = function(num) {
 };
 var twoByteValueToHexString = function(num) {
   return nibble[(num>>12)&0xF] + nibble[(num>>8)&0xF] + nibble[(num>>4)&0xF] + nibble[num&0xF];
-};
-
-
-var Buffer = function(numBytes) {
-  if (typeof numBytes != typeof 1 || numBytes <= 0) {
-    throw "Error! Buffer initialized with '" + numBytes + "'";
-  }
-  this.data = new Uint8Array(numBytes);
-  this.ptr = 0;
-};
-	
-Buffer.prototype.insertByte = function(b) {
-  // TODO: throw if byte is invalid?
-  this.data[this.ptr++] = b;
-};
-	
-Buffer.prototype.insertBytes = function(bytes) {
-  // TODO: throw if bytes is invalid?
-  this.data.set(bytes, this.ptr);
-  this.ptr += bytes.length;
 };
 
 function createURLFromArray(array) {

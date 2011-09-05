@@ -72,7 +72,7 @@ var ZipLocalFile = function(bstream, bDebug) {
 	// "This descriptor exists only if bit 3 of the general purpose bit flag is set"
 	// But how do you figure out how big the file data is if you don't know the compressedSize
 	// from the header?!?
-	if ((this.generalPurpose & BIT[3]) != 0) {
+	if ((this.generalPurpose & bitjs.BIT[3]) != 0) {
 		this.crc32 = bstream.readNumber(4);
 		this.compressedSize = bstream.readNumber(4);
 		this.uncompressedSize = bstream.readNumber(4);
@@ -115,7 +115,7 @@ ZipLocalFile.prototype.unzip = function() {
 // returns null on error
 // returns an array of DecompressedFile objects on success
 var unzip = function(arrayBuffer, bDebug) {
-	var bstream = new ByteStream(arrayBuffer);
+	var bstream = new bitjs.io.ByteStream(arrayBuffer);
 	// detect local file header signature or return null
 	if (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
 		var localFiles = [];
@@ -493,15 +493,16 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer) {
 // compression method 8
 // deflate: http://tools.ietf.org/html/rfc1951
 function inflate(compressedData, numDecompressedBytes) {
-	// Bit stream representing the compressed data.
-	var bstream = new BitStream(compressedData.buffer,
-	  false /* rtl */,
-		compressedData.byteOffset,
-		compressedData.byteLength);
-	var buffer = new Buffer(numDecompressedBytes);
-	var numBlocks = 0, blockSize = 0;
-	// block format: http://tools.ietf.org/html/rfc1951#page-9
-	do {
+  // Bit stream representing the compressed data.
+  var bstream = new bitjs.io.BitStream(compressedData.buffer,
+      false /* rtl */,
+      compressedData.byteOffset,
+      compressedData.byteLength);
+  var buffer = new bitjs.io.ByteBuffer(numDecompressedBytes);
+  var numBlocks = 0, blockSize = 0;
+
+  // block format: http://tools.ietf.org/html/rfc1951#page-9
+  do {
 		var bFinal = bstream.readBits(1),
 			bType = bstream.readBits(2);
 		blockSize = 0;
@@ -599,9 +600,9 @@ function inflate(compressedData, numDecompressedBytes) {
 		progress.totalBytesUnzipped += blockSize;
 		postMessage(progress);
 
-	} while (bFinal != 1);
-	// we are done reading blocks if the bFinal bit was set for this block
+  } while (bFinal != 1);
+  // we are done reading blocks if the bFinal bit was set for this block
 	
-	// return the buffer data bytes
-	return buffer.data;
+  // return the buffer data bytes
+  return buffer.data;
 }

@@ -1,16 +1,23 @@
 /*
- * binary.js - provides bit/byte readers
+ * binary.js
+ *
+ * Provides readers for bit/byte streams (reading) and a byte buffer (writing).
  *
  * Licensed under the MIT License
  *
- * Copyright(c) 2010 Jeff Schiller
- *
+ * Copyright(c) 2011 Jeff Schiller
  */
+
+var bitjs = bitjs || {};
+bitjs.io = bitjs.io || {};
+
+(function() {
+
 // mask for getting the Nth bit (zero-based)
-var BIT = [	0x01, 0x02, 0x04, 0x08, 
-			0x10, 0x20, 0x40, 0x80,
-			0x100, 0x200, 0x400, 0x800, 
-			0x1000, 0x2000, 0x4000, 0x8000];
+bitjs.BIT = [	0x01, 0x02, 0x04, 0x08, 
+    0x10, 0x20, 0x40, 0x80,
+    0x100, 0x200, 0x400, 0x800, 
+    0x1000, 0x2000, 0x4000, 0x8000];
 
 // mask for getting N number of bits (0-8)
 var BITMASK = [0, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF ];
@@ -20,10 +27,11 @@ var BITMASK = [0, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF ];
  * This bit stream peeks and consumes bits out of a binary stream.
  *
  * {ArrayBuffer} ab An ArrayBuffer object or a Uint8Array.
+ * {boolean} rtl
  * {Number} opt_offset The offset into the ArrayBuffer
  * {Number} opt_length The length of this BitStream
  */
-function BitStream(ab, rtl, opt_offset, opt_length) {
+bitjs.io.BitStream = function(ab, rtl, opt_offset, opt_length) {
   if (!ab || !ab.toString || ab.toString() !== "[object ArrayBuffer]") {
     throw "Error! BitArray constructed with an invalid ArrayBuffer object";
   }
@@ -41,7 +49,7 @@ function BitStream(ab, rtl, opt_offset, opt_length) {
 // 
 // The bit pointer starts at bit0 of byte0 and moves left until it reaches
 // bit7 of byte0, then jumps to bit0 of byte1, etc.
-BitStream.prototype.peekBits_ltr = function(n, movePointers) {
+bitjs.io.BitStream.prototype.peekBits_ltr = function(n, movePointers) {
   if (n <= 0 || typeof n != typeof 1) {
     return 0;
   }
@@ -97,7 +105,7 @@ BitStream.prototype.peekBits_ltr = function(n, movePointers) {
 // 
 // The bit pointer starts at bit7 of byte0 and moves right until it reaches
 // bit0 of byte0, then goes to bit7 of byte1, etc.
-BitStream.prototype.peekBits_rtl = function(n, movePointers) {
+bitjs.io.BitStream.prototype.peekBits_rtl = function(n, movePointers) {
   if (n <= 0 || typeof n != typeof 1) {
     return 0;
   }
@@ -122,8 +130,6 @@ BitStream.prototype.peekBits_rtl = function(n, movePointers) {
 
     var numBitsLeftInThisByte = (8 - bitPtr);
     if (n >= numBitsLeftInThisByte) {
-      //var mask = (BITMASK[numBitsLeftInThisByte] << bitPtr);
-      //result |= (((bytes[bytePtr] & mask) >> bitPtr) << bitsIn);
       result <<= numBitsLeftInThisByte;
       result |= (BITMASK[numBitsLeftInThisByte] & bytes[bytePtr]);
       bytePtr++;
@@ -131,11 +137,8 @@ BitStream.prototype.peekBits_rtl = function(n, movePointers) {
       n -= numBitsLeftInThisByte;
     }
     else {
-      //((13 & (BITMASK[4] << (8 - 4 - 2))) >> 2)
       result <<= n;
       result |= ((bytes[bytePtr] & (BITMASK[n] << (8 - n - bitPtr))) >> (8 - n - bitPtr));
-      //var mask = (BITMASK[n] << (bitPtr));
-      //result |= (((bytes[bytePtr] & mask) >> (bitPtr)) << bitsIn);
 
       bitPtr += n;
       n = 0;
@@ -151,13 +154,13 @@ BitStream.prototype.peekBits_rtl = function(n, movePointers) {
 };
 
 //some voodoo magic
-BitStream.prototype.getBits = function() {
+bitjs.io.BitStream.prototype.getBits = function() {
   return (((((this.bytes[this.bytePtr] & 0xff) << 16) +
               ((this.bytes[this.bytePtr+1] & 0xff) << 8) +
               ((this.bytes[this.bytePtr+2] & 0xff))) >>> (8-this.bitPtr)) & 0xffff);
 };
 
-BitStream.prototype.readBits = function(n) {
+bitjs.io.BitStream.prototype.readBits = function(n) {
   return this.peekBits(n, true);
 };
 
@@ -165,7 +168,7 @@ BitStream.prototype.readBits = function(n) {
 // is true.
 // Only use this for uncompressed blocks as this throws away remaining bits in
 // the current byte.
-BitStream.prototype.peekBytes = function(n, movePointers) {
+bitjs.io.BitStream.prototype.peekBytes = function(n, movePointers) {
   if (n <= 0 || typeof n != typeof 1) {
     return 0;
   }
@@ -189,7 +192,7 @@ BitStream.prototype.peekBytes = function(n, movePointers) {
   return result;
 };
 
-BitStream.prototype.readBytes = function( n ) {
+bitjs.io.BitStream.prototype.readBytes = function( n ) {
   return this.peekBytes(n, true);
 };
 
@@ -205,7 +208,7 @@ BitStream.prototype.readBytes = function( n ) {
  * {Number} opt_offset The offset into the ArrayBuffer
  * {Number} opt_length The length of this BitStream
  */
-function ByteStream(ab, opt_offset, opt_length) {
+bitjs.io.ByteStream = function(ab, opt_offset, opt_length) {
   var offset = opt_offset || 0;
   var length = opt_length || ab.byteLength;
   this.bytes = new Uint8Array(ab, offset, length);
@@ -214,7 +217,7 @@ function ByteStream(ab, opt_offset, opt_length) {
 
 // peeks at the next n bytes as an unsigned number but does not advance the pointer
 // TODO: This apparently cannot read more than 4 bytes as a number?
-ByteStream.prototype.peekNumber = function( n ) {
+bitjs.io.ByteStream.prototype.peekNumber = function( n ) {
   // TODO: return error if n would go past the end of the stream?
   if (n <= 0 || typeof n != typeof 1)
     return -1;
@@ -232,7 +235,7 @@ ByteStream.prototype.peekNumber = function( n ) {
 
 // returns the next n bytes as an unsigned number (or -1 on error)
 // and advances the stream pointer n bytes
-ByteStream.prototype.readNumber = function( n ) {
+bitjs.io.ByteStream.prototype.readNumber = function( n ) {
   var num = this.peekNumber( n );
   this.ptr += n;
   return num;
@@ -240,7 +243,7 @@ ByteStream.prototype.readNumber = function( n ) {
 
 // This returns n bytes as a sub-array, advancing the pointer if movePointers
 // is true.
-ByteStream.prototype.peekBytes = function(n, movePointers) {
+bitjs.io.ByteStream.prototype.peekBytes = function(n, movePointers) {
   if (n <= 0 || typeof n != typeof 1) {
     return 0;
   }
@@ -254,12 +257,12 @@ ByteStream.prototype.peekBytes = function(n, movePointers) {
   return result;
 };
 
-ByteStream.prototype.readBytes = function( n ) {
+bitjs.io.ByteStream.prototype.readBytes = function( n ) {
   return this.peekBytes(n, true);
 };
 	
 // peeks at the next n bytes as a string but does not advance the pointer
-ByteStream.prototype.peekString = function( n ) {
+bitjs.io.ByteStream.prototype.peekString = function( n ) {
   if (n <= 0 || typeof n != typeof 1) {
     return 0;
   }
@@ -273,8 +276,33 @@ ByteStream.prototype.peekString = function( n ) {
 
 // returns the next n bytes as a string
 // and advances the stream pointer n bytes
-ByteStream.prototype.readString = function(n) {
+bitjs.io.ByteStream.prototype.readString = function(n) {
   var strToReturn = this.peekString(n);
   this.ptr += n;
   return strToReturn;
 };
+
+
+/**
+ * A write-only Byte buffer which using a Uint8 Typed Array as a backing store.
+ */
+bitjs.io.ByteBuffer = function(numBytes) {
+  if (typeof numBytes != typeof 1 || numBytes <= 0) {
+    throw "Error! ByteBuffer initialized with '" + numBytes + "'";
+  }
+  this.data = new Uint8Array(numBytes);
+  this.ptr = 0;
+};
+  
+bitjs.io.ByteBuffer.prototype.insertByte = function(b) {
+  // TODO: throw if byte is invalid?
+  this.data[this.ptr++] = b;
+};
+  
+bitjs.io.ByteBuffer.prototype.insertBytes = function(bytes) {
+  // TODO: throw if bytes is invalid?
+  this.data.set(bytes, this.ptr);
+  this.ptr += bytes.length;
+};
+
+})();

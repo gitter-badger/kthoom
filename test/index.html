@@ -4,6 +4,8 @@
   <link rel="stylesheet" href="qunit/qunit.css" type="text/css"/>  
   <script src="qunit/jquery.js"></script>
   <script type="text/javascript" src="qunit/qunit.js"></script>  
+  <script type="text/javascript" src="../binary.js"></script>
+  <script type="text/javascript" src="../decode.js"></script>
   <script type="text/javascript" src="../unzip.js"></script>
   <script type="text/javascript">
   $(function() {
@@ -52,7 +54,7 @@
 	
 	test("Test ByteStream", function() {
 		expect(9);
-		var bstream = new ByteStream(createBinaryString([65,66,67,68,69,70]));
+		var bstream = new bitjs.io.ByteStream(createBinaryString([65,66,67,68,69,70]));
 		equal(typeof bstream, typeof {});
 		
 		// test peek number, checking endianness
@@ -73,7 +75,7 @@
 	test("Test BitStream", function() {
 		expect(5);
 		
-		var bstream = new BitStream(createBinaryString([0x2D, 0x6E]));
+		var bstream = new bitjs.io.BitStream(createBinaryString([0x2D, 0x6E]));
 		equal(typeof bstream, typeof {});
 		
 		// test peek and read bits

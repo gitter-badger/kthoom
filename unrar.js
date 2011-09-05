@@ -710,9 +710,9 @@ function unpack(v) {
   // TODO: implement what happens when unpVer is < 15
   var Ver = v.header.unpVer <= 15 ? 15 : v.header.unpVer,
     Solid = v.header.LHD_SOLID,
-    bstream = new BitStream(v.fileData.buffer, true /* rtl */, v.fileData.byteOffset, v.fileData.byteLength );
+    bstream = new bitjs.io.BitStream(v.fileData.buffer, true /* rtl */, v.fileData.byteOffset, v.fileData.byteLength );
   
-  rBuffer = new Buffer(v.header.unpackedSize);
+  rBuffer = new bitjs.io.ByteBuffer(v.header.unpackedSize);
 
   postMessage("Unpacking "+v.filename+" RAR v"+Ver);
     
@@ -778,7 +778,7 @@ RarLocalFile.prototype.unrar = function() {
 }
 
 var unrar = function(arrayBuffer, bDebug) {
-  var bstream = new BitStream(arrayBuffer, false /* rtl */);
+  var bstream = new bitjs.io.BitStream(arrayBuffer, false /* rtl */);
   
   var header = new RarVolumeHeader(bstream, bDebug);
   if (header.crc == 0x6152 && 

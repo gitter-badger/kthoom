@@ -84,7 +84,7 @@ var TarLocalFile = function(bstream, bDebug) {
 // returns null on error
 // returns an array of DecompressedFile objects on success
 var untar = function(arrayBuffer, bDebug) {
-  var bstream = new ByteStream(arrayBuffer);
+  var bstream = new bitjs.io.ByteStream(arrayBuffer);
   var localFiles = [];
 
   // While we don't encounter an empty block, keep making TarLocalFiles.
