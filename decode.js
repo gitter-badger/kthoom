@@ -6,7 +6,7 @@
  * Copyright(c) 2010 Jeff Schiller
  *
  */
-importScripts('bitfs/binary.js');
+importScripts('bitjs/binary.js');
 importScripts('unzip.js');
 importScripts('unrar.js');
 importScripts('untar.js');
