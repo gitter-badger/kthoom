@@ -1,5 +1,5 @@
 /*
- * unzip.js - requires binary.js
+ * decode.js - requires binary.js, unzip.js, unrar.js, untar.js
  *
  * Licensed under the MIT License
  *
@@ -7,9 +7,9 @@
  *
  */
 importScripts('bitjs/binary.js');
-importScripts('unzip.js');
-importScripts('unrar.js');
-importScripts('untar.js');
+importScripts('bitjs/unzip.js');
+importScripts('bitjs/unrar.js');
+importScripts('bitjs/untar.js');
 
 // this common interface encapsulates a decompressed file
 // ZipLocalFile, RarLocalFile and TarLocalFile support
