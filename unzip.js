@@ -1,11 +1,15 @@
-
-/* 
-  Reference Documentation:
-
-  * ZIP format: http://www.pkware.com/documents/casestudies/APPNOTE.TXT
-  * DEFLATE format: http://tools.ietf.org/html/rfc1951
-
-*/
+/**
+ * unzip.js
+ *
+ * Copyright(c) 2010 Jeff Schiller
+ * Copyright(c) 2011 antimatter15
+ *
+ * Reference Documentation:
+ *
+ * ZIP format: http://www.pkware.com/documents/casestudies/APPNOTE.TXT
+ * DEFLATE format: http://tools.ietf.org/html/rfc1951
+ */
+ 
 var zLocalFileHeaderSignature = 0x04034b50;
 var zArchiveExtraDataSignature = 0x08064b50;
 var zCentralFileHeaderSignature = 0x02014b50;

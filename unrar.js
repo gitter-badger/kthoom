@@ -1,7 +1,13 @@
-// =======================
-// NOTES on the RAR format
-// Copyright(c) 2011 antimatter15
-// http://kthoom.googlecode.com/hg/docs/unrar.html
+/**
+ * unrar.js
+ *
+ * Copyright(c) 2010 Jeff Schiller
+ * Copyright(c) 2011 antimatter15
+ *
+ * Reference Documentation:
+ *
+ * http://kthoom.googlecode.com/hg/docs/unrar.html
+ */
 
 // Volume Types
 var MARK_HEAD      = 0x72,

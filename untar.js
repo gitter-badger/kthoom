@@ -1,10 +1,12 @@
-
-/* 
-  Reference Documentation:
-
-  * TAR format: http://www.gnu.org/software/automake/manual/tar/Standard.html
-
-*/
+/**
+ * untar.js
+ *
+ * Copyright(c) 2010 Jeff Schiller
+ *
+ * Reference Documentation:
+ *
+ * TAR format: http://www.gnu.org/software/automake/manual/tar/Standard.html
+ */
 
 // Removes all characters from the first zero-byte in the string onwards.
 var readCleanString = function(bstr, numBytes) {
