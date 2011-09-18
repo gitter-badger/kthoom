@@ -5,7 +5,8 @@
  *
  * Licensed under the MIT License
  *
- * Copyright(c) 2011 Jeff Schiller
+ * Copyright(c) 2011 Google Inc.
+ * Copyright(c) 2011 antimatter15
  */
 
 var bitjs = bitjs || {};
@@ -27,7 +28,8 @@ var BITMASK = [0, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF ];
  * This bit stream peeks and consumes bits out of a binary stream.
  *
  * {ArrayBuffer} ab An ArrayBuffer object or a Uint8Array.
- * {boolean} rtl
+ * {boolean} rtl Whether the stream reads bits from the byte starting
+ *     from bit 7 to 0 (true) or bit 0 to 7 (false).
  * {Number} opt_offset The offset into the ArrayBuffer
  * {Number} opt_length The length of this BitStream
  */
@@ -284,7 +286,7 @@ bitjs.io.ByteStream.prototype.readString = function(n) {
 
 
 /**
- * A write-only Byte buffer which using a Uint8 Typed Array as a backing store.
+ * A write-only Byte buffer which uses a Uint8 Typed Array as a backing store.
  */
 bitjs.io.ByteBuffer = function(numBytes) {
   if (typeof numBytes != typeof 1 || numBytes <= 0) {

@@ -206,7 +206,7 @@ function setProgressMeter(pct) {
   var title = getElem("progress_title");
   while (title.firstChild) title.removeChild(title.firstChild);
 
-  title.appendChild(document.createTextNode(pct.toFixed(2) +"% "+imageFiles.length+"/"+totalImages+""));
+  title.appendChild(document.createTextNode(pct.toFixed(2) + "% " + imageFiles.length + "/" + totalImages + ""));
   // fade it out as it approaches finish
   //title.setAttribute("fill-opacity", (pct > 90) ? ((100-pct)*5)/100 : 1);
 
@@ -224,8 +224,6 @@ function setProgressMeter(pct) {
 }
 
 // attempts to read the file that the user has chosen
-// TODO: Pass the filename to the Worker thread and create the FileReader
-// inside the Worker!
 function getFile(evt) {
   var inp = evt.target;
   var filelist = inp.files;
@@ -233,74 +231,63 @@ function getFile(evt) {
     closeBook();
     
     var start = (new Date).getTime();
-    worker = new Worker("decode.js");
 
-    // error handler for worker thread
-    //*
-    worker.onerror = function(error) {
-      console.log("Worker error: " + error.message);
-      throw error;
-    };
-    //*/
-
-    // this is the function that the worker thread uses to post progress/status
-    worker.onmessage = function(event) {
-      // if thread returned a Progress Report, then time to update
-      if (typeof event.data == typeof {}) {
-        var progress = event.data;
-        if (progress.isValid) {
-          //console.log(progress);
-          var localFiles = progress.localFiles;
-          var percentage = progress.totalBytesUnzipped / progress.totalSizeInBytes;
-          totalImages = progress.totalNumFilesInZip;
-          setProgressMeter(percentage);
-
-          if (localFiles && localFiles.length > 0) {
-            //console.log(localFiles[0]);
+    var fr = new FileReader();
+    fr.onload = function() {
+      var ab = fr.result;
+      var h = new Uint8Array(ab, 0, 10);
+      var pathToBitJS = "bitjs/";
+      var unarchiver = null;
+      if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { //Rar!
+        unarchiver = new bitjs.archive.Unrarrer(ab, pathToBitJS);
+      } else if (h[0] == 80 && h[1] == 75) { //PK (Zip)
+        unarchiver = new bitjs.archive.Unzipper(ab, pathToBitJS);
+      } else { // Try with tar
+        unarchiver = new bitjs.archive.Untarrer(ab, pathToBitJS);
+      }
+      // Listen for UnarchiveEvents.
+      if (unarchiver) {
+        unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS,
+          function(e) {
+            var percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
+            totalImages = e.totalFilesInArchive;
+            setProgressMeter(percentage);
+            // display nav
+            lastCompletion = percentage * 100;
+            
+          });
+        unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT,
+          function(e) {
             // convert DecompressedFile into a bunch of ImageFiles
-            for (var fIndex in localFiles) {
-              var f = localFiles[fIndex];
+            if (e.unarchivedFile) {
+              var f = e.unarchivedFile;
               // add any new pages based on the filename
-              if (f.isValid && imageFilenames.indexOf(f.filename) == -1) {
+              if (imageFilenames.indexOf(f.filename) == -1) {
                 imageFilenames.push(f.filename);
-                imageFiles.push(new ImageFile(f.filename, createURLFromArray(f.imageString), f));
+                imageFiles.push(new ImageFile(f.filename, createURLFromArray(f.fileData), f));
               }
             }
             
             // hide logo
             getElem("logo").setAttribute("style", "display:none");
 
-            // display nav
-            lastCompletion = percentage * 100;
-            
             // display first page if we haven't yet
             if (imageFiles.length == currentImage + 1) {
               updatePage();
-            }
-          }
-          else {
-            //getElem("logo").setAttribute("style", "display:block");
-          }
-          if (progress.isDone) {
+            }            
+          });
+        unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH,
+          function(e) {
             var diff = ((new Date).getTime() - start)/1000;
-            console.log("Unzipping done in " + diff + "s");
-            worker.terminate();
-          }
-        }
-      }
-      // A string was returned from the thread, just log it
-      else if (typeof event.data == typeof "") {
-        console.log( event.data );
+            console.log("Unarchiving done in " + diff + "s");
+            
+          })
+        unarchiver.start();
+      } else {
+        alert("Some error");
       }
     };
-    // worker.postMessage
-    var blob = filelist[0];
-      var fr = new FileReader();
-    fr.onload = function() {
-      var result = fr.result;
-      worker.postMessage({file: result, debug: true, filename: filelist[0].name});
-    };
-    fr.readAsArrayBuffer(blob);
+    fr.readAsArrayBuffer(filelist[0]);
   }
 }
 
