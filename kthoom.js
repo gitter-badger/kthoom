@@ -178,7 +178,6 @@ function initProgressMeter() {
   svg.onclick = function(e) {
     for (var x = pdiv, l = 0; x != document.documentElement; x = x.parentNode) l += x.offsetLeft;
     var page = Math.max(1, Math.ceil(((e.clientX - l)/pdiv.offsetWidth) * totalImages)) - 1;
-    console.log(e,l);
     currentImage = page;
     updatePage();
   };
@@ -255,6 +254,10 @@ function getFile(evt) {
             // display nav
             lastCompletion = percentage * 100;
             
+          });
+        unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO,
+          function(e) {
+            console.log(e.msg);
           });
         unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT,
           function(e) {
