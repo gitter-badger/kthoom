@@ -8,6 +8,12 @@
    <stop offset="1" stop-color="#ffff00"/>
   </radialGradient>
  </defs>
+ <style>
+  a:visited {
+    /*This is a hack for Chrome bug http://code.google.com/p/chromium/issues/detail?id=105357*/
+    fill: red;
+  }
+ </style>
  <title>kthoom logo</title>
 <a xlink:href="http://kthoom.googlecode.com/" xlink:title="Go to project page" target="_blank">
  <g>
