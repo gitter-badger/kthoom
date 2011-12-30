@@ -582,3 +582,13 @@ function init() {
   }
 }
 
+//do html5 drag and drop
+document.addEventListener("dragenter", function(e){e.preventDefault();e.stopPropagation()}, false);
+document.addEventListener("dragexit", function(e){e.preventDefault();e.stopPropagation()}, false);
+document.addEventListener("dragover", function(e){e.preventDefault();e.stopPropagation()}, false);
+document.addEventListener("drop", function(e){
+	e.preventDefault();
+	e.stopPropagation();
+	getFile({target:e.dataTransfer});
+}, false);
+
