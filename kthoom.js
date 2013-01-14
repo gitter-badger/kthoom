@@ -66,14 +66,18 @@ function loadSettings() {
 }
 
 
-// stores an image filename and its data: URI
+// Stores an image filename and its data: URI.
 // TODO: investigate if we really need to store as base64 (leave off ;base64 and just
 //       non-safe URL characters are encoded as %xx ?)
 //       This would save 25% on memory since base64-encoded strings are 4/3 the size of the binary
-var ImageFile = function(filename, imageString, metadata) {
-  this.filename = filename;
-  this.dataURI = imageString;
-  this.data = metadata;
+var ImageFile = function(file) {
+  this.filename = file.filename;
+  var fileExtension = file.filename.split('.').pop().toLowerCase();
+  var mimeType = fileExtension == 'png' ? 'image/png' :
+      (fileExtension == 'jpg' || fileExtension == 'jpeg') ? 'image/jpeg' :
+      fileExtension == 'gif' ? 'image/gif' : undefined;
+  this.dataURI = createURLFromArray(file.fileData, mimeType);
+  this.data = file;
 };
 
 // gets the element with the given id
@@ -267,7 +271,7 @@ function getFile(evt) {
               // add any new pages based on the filename
               if (imageFilenames.indexOf(f.filename) == -1) {
                 imageFilenames.push(f.filename);
-                imageFiles.push(new ImageFile(f.filename, createURLFromArray(f.fileData), f));
+                imageFiles.push(new ImageFile(f));
               }
             }
             
@@ -295,31 +299,39 @@ function getFile(evt) {
 }
 
 
-function createURLFromArray(array) {
-  var bb, url;
-  var bb = (typeof BlobBuilder == 'function' ? (new BlobBuilder()) : //Chrome 8
-             (typeof WebKitBlobBuilder == 'function' ? (new WebKitBlobBuilder()) : //Chrome 12
-               (typeof MozBlobBuilder == 'function' ? (new MozBlobBuilder()) : //Firefox 6
-             null)));
-  if (!bb) return false;
-  bb.append(array.buffer);
+var createURLFromArray = function(array, mimeType) {
   var offset = array.byteOffset, len = array.byteLength;
-  var blob = bb.getBlob();
-  
-  if (blob.webkitSlice) { //Chrome 12
-    blob = blob.webkitSlice(offset, offset + len);
-  } else if(blob.mozSlice) { //Firefox 5
-    blob = blob.mozSlice(offset, offset + len);
-  } else if(blob.slice) { //
-    blob = blob.slice(2, 3).length == 1 ? 
-      blob.slice(offset, offset + len) : //future behavior
-      blob.slice(offset, len); //Old behavior
+  var bb, url;
+  var blob;
+
+  // Blob constructor, see http://dev.w3.org/2006/webapi/FileAPI/#dfn-Blob.
+  if (typeof Blob == 'function') {
+    blob = new Blob([array], {type: mimeType});
+  } else {
+    var bb = (typeof BlobBuilder == 'function' ? (new BlobBuilder()) : //Chrome 8
+               (typeof WebKitBlobBuilder == 'function' ? (new WebKitBlobBuilder()) : //Chrome 12
+                 (typeof MozBlobBuilder == 'function' ? (new MozBlobBuilder()) : //Firefox 6
+               null)));
+    if (!bb) return false;
+    bb.append(array.buffer);
+    blob = bb.getBlob();
   }
   
+  if (blob.webkitSlice) { //Chrome 12
+    blob = blob.webkitSlice(offset, offset + len, mimeType);
+  } else if(blob.mozSlice) { //Firefox 5
+    blob = blob.mozSlice(offset, offset + len, mimeType);
+  } else if(blob.slice) { //
+    blob = blob.slice(2, 3).size == 1 ? 
+      blob.slice(offset, offset + len, mimeType) : //future behavior
+      blob.slice(offset, len, mimeType); //Old behavior
+  }
+  
+  // TODO: Simplify this some time in 2013 (Chrome 8 and 9 are ancient history).
   var url = (typeof createObjectURL == 'function' ? createObjectURL(blob) : //Chrome 9?
               (typeof createBlobURL == 'function' ? createBlobURL(blob) : //Chrome 8
-                ((typeof URL == 'object' && typeof URL.createObjectURL == 'function') ? URL.createObjectURL(blob) : //Chrome 15? Firefox
-                  ((typeof webkitURL == 'object' && typeof webkitURL.createObjectURL == 'function') ? webkitURL.createObjectURL(blob) : //Chrome 10
+                (((typeof URL == 'object' || typeof URL == 'function') && typeof URL.createObjectURL == 'function') ? URL.createObjectURL(blob) : //Chrome 15? Firefox
+                  (((typeof webkitURL == 'object' || typeof webkitURL == 'function') && typeof webkitURL.createObjectURL == 'function') ? webkitURL.createObjectURL(blob) : //Chrome 10
                     ''))));
   return url;
 }
