@@ -368,7 +368,7 @@ function setImage(url) {
     }
     
     var img = new Image();
-    img.onerror = function() {
+    img.onerror = function(e) {
       canvas.width = innerWidth - 100;
       canvas.height = 300;
       updateScale(true);
