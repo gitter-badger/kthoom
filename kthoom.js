@@ -31,13 +31,16 @@ window.kthoom = {};
 // key codes
 var Key = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, 
 A: 65, B: 66, C: 67, D: 68, E: 69, F: 70, G: 71, H: 72, I: 73, J: 74, K: 75, L: 76, M: 77, 
-N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90};
+N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90,
+LEFT_SQUARE_BRACKET: 219, RIGHT_SQUARE_BRACKET: 221};
 
 // global variables
-var worker;
-var currentImage = 0,
-  imageFiles = [],
-  imageFilenames = [];
+var unarchiver = null;
+var allBooks = [];
+var currentBookNum;
+var currentImage = 0;
+var imageFiles = [];
+var imageFilenames = [];
 var totalImages = 0;
 var lastCompletion = 0;
 
@@ -91,8 +94,8 @@ function getElem(id) {
 }
 
 function resetFileUploader() {
-  getElem("uploader").innerHTML = '<input id="filechooser" type="file"/>';
-  getElem("filechooser").addEventListener("change", getFile, false);
+  getElem("uploader").innerHTML = '<input id="filechooser" type="file" multiple />';
+  getElem("filechooser").addEventListener("change", getFiles, false);
 }
 
 function initProgressMeter() {
@@ -226,21 +229,25 @@ function setProgressMeter(pct) {
   }
 }
 
-// attempts to read the file that the user has chosen
-function getFile(evt) {
+// Attempts to read the files that the user has chosen.
+function getFiles(evt) {
   var inp = evt.target;
   var filelist = inp.files;
-  if (filelist.length == 1) {
-    closeBook();
-    
-    var start = (new Date).getTime();
+  allBooks = inp.files;
 
-    var fr = new FileReader();
-    fr.onload = function() {
+  closeBook();
+  currentBookNum = 0;
+  loadSingleBook(filelist[0]);
+}
+
+function loadSingleBook(filename) {
+  var start = (new Date).getTime();
+
+  var fr = new FileReader();
+  fr.onload = function() {
       var ab = fr.result;
       var h = new Uint8Array(ab, 0, 10);
       var pathToBitJS = "bitjs/";
-      var unarchiver = null;
       if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { //Rar!
         unarchiver = new bitjs.archive.Unrarrer(ab, pathToBitJS);
       } else if (h[0] == 80 && h[1] == 75) { //PK (Zip)
@@ -294,8 +301,7 @@ function getFile(evt) {
         alert("Some error");
       }
     };
-    fr.readAsArrayBuffer(filelist[0]);
-  }
+  fr.readAsArrayBuffer(filename);
 }
 
 
@@ -444,9 +450,35 @@ function showPreview() {
   }
 }
 
+function loadPrevBook() {
+  if (currentBookNum > 0) {
+    closeBook();
+    loadSingleBook(allBooks[--currentBookNum]);
+  }
+}
+
+function loadNextBook() {
+  if (currentBookNum < allBooks.length - 1) {
+    closeBook();
+    loadSingleBook(allBooks[++currentBookNum]);
+  }
+}
+
 function showPrevPage() {
   currentImage--;
-  if (currentImage < 0) currentImage = imageFiles.length - 1;
+
+  if (currentImage < 0) {
+    if (allBooks.length == 1) {
+      currentImage = imageFiles.length - 1;
+    } else if (currentBookNum > 0) {
+      loadPrevBook();
+    } else {
+      // Freeze on the current page.
+      currentImage++;
+      return;
+    }
+  }
+
   updatePage();
   //showPreview();
   //getElem("prev").focus();
@@ -455,7 +487,18 @@ function showPrevPage() {
 function showNextPage() {
   currentImage++;
   
-  if (currentImage >= Math.max(totalImages, imageFiles.length)) currentImage = 0;
+  if (currentImage >= Math.max(totalImages, imageFiles.length)) {
+    if (allBooks.length == 1) {
+      currentImage = 0;
+    } else if (currentBookNum < allBooks.length - 1) {
+      loadNextBook();
+    } else {
+      // Freeze on the current page.
+      currentImage--;
+      return;
+    }
+  }
+
   updatePage();
   //showPreview();
   //getElem("next").focus();
@@ -469,7 +512,11 @@ function toggleToolbar() {
 }
 
 function closeBook() {
-  if (worker) worker.terminate();
+  // Terminate any async work the current unarchiver is doing.
+  if (unarchiver) {
+    unarchiver.stop();
+    unarchiver = null;
+  }
   currentImage = 0;
   imageFiles = [];
   imageFilenames = [];
@@ -528,10 +575,16 @@ function keyHandler(evt) {
       toggleToolbar();
       break;
     case Key.LEFT:
-      if(canKeyPrev) showPrevPage();
+      if (canKeyPrev) showPrevPage();
       break;
     case Key.RIGHT:
-      if(canKeyNext) showNextPage();
+      if (canKeyNext) showNextPage();
+      break;
+    case Key.LEFT_SQUARE_BRACKET:
+      if (currentBookNum > 0) loadPrevBook();
+      break;
+    case Key.RIGHT_SQUARE_BRACKET:
+      if (currentBookNum < allBooks.length - 1) loadNextBook();
       break;
     case Key.L:
       rotateTimes--;
@@ -601,6 +654,6 @@ document.addEventListener("dragover", function(e){e.preventDefault();e.stopPropa
 document.addEventListener("drop", function(e){
 	e.preventDefault();
 	e.stopPropagation();
-	getFile({target:e.dataTransfer});
+	getFiles({target:e.dataTransfer});
 }, false);
 
