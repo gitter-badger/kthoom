@@ -13,6 +13,46 @@ body {
 	text-align: center;
 }
 
+#overlay {
+  background-color: rgba(50, 50, 50, 0.9);
+  border-radius: 1em;
+  bottom: 50px;
+  color: yellow;
+  font-size: 1.2em;
+  left: 100px;
+  overflow: scroll;
+  padding: 25px 50px 25px 50px;
+  position: absolute;
+  right: 100px;
+  top: 50px;
+}
+
+#overlay h1 {
+  font-size: 1.5em;
+  text-align: center;
+}
+
+.helplist {
+  width: 100%;
+}
+
+.helplist dt, .helplist dd {
+  padding-left: 2em;
+  vertical-align: middle;
+}
+
+.helplist dt {
+  color: orange;
+  float: left;
+  font-weight: bold;
+  width: 15%;
+}
+
+.helplist dd {
+  margin-bottom: 0.5em;
+  width: 80%;
+}
+
 #nav {
 	display: inline;
 	position: absolute;
