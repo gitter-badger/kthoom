@@ -30,6 +30,7 @@ window.kthoom = {};
 
 // key codes
 var Key = {
+    ESCAPE: 27,
     LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, 
     A: 65, B: 66, C: 67, D: 68, E: 69, F: 70, G: 71, H: 72, I: 73, J: 74, K: 75, L: 76, M: 77, 
     N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90,
@@ -569,7 +570,10 @@ function keyHandler(evt) {
   // If the overlay is shown, the only keystroke we handle is closing it.
   var overlayStyle = getElem('overlay').style;
   var overlayShown = (overlayStyle.display != 'none');
-  if (overlayShown && code != Key.QUESTION_MARK) {
+  if (overlayShown) {
+    if (code == Key.QUESTION_MARK || code == Key.ESCAPE) {
+      overlayStyle.display = 'none';
+    }
     return;
   }
 
@@ -577,7 +581,7 @@ function keyHandler(evt) {
   if (code == Key.O) {
     getElem('filechooser').click();
   } else if (code == Key.QUESTION_MARK) {
-    overlayStyle.display = overlayShown ? 'none' : 'block';
+    overlayStyle.display = 'block';
   }
 
   if (getComputedStyle(getElem("progress")).display == 'none') return;
