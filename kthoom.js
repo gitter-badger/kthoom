@@ -267,8 +267,7 @@ function loadSingleBook(filename) {
             totalImages = e.totalFilesInArchive;
             setProgressMeter(percentage);
             // display nav
-            lastCompletion = percentage * 100;
-            
+            lastCompletion = percentage * 100;         
           });
         unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO,
           function(e) {
@@ -297,8 +296,7 @@ function loadSingleBook(filename) {
         unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH,
           function(e) {
             var diff = ((new Date).getTime() - start)/1000;
-            console.log("Unarchiving done in " + diff + "s");
-            
+            console.log("Unarchiving done in " + diff + "s");            
           })
         unarchiver.start();
       } else {

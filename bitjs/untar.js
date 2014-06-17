@@ -132,29 +132,9 @@ var untar = function(arrayBuffer) {
 
   // got all local files, now sort them
   localFiles.sort(function(a,b) {
-      var aname = a.filename;
-      var bname = b.filename;
+      var aname = a.filename.toLowerCase();
+      var bname = b.filename.toLowerCase();
       return aname > bname ? 1 : -1;
-
-      // extract the number at the end of both filenames
-      /*
-      var aname = a.filename;
-      var bname = b.filename;
-      var aindex = aname.length, bindex = bname.length;
-
-      // Find the last number character from the back of the filename.
-      while (aname[aindex-1] < '0' || aname[aindex-1] > '9') --aindex;
-      while (bname[bindex-1] < '0' || bname[bindex-1] > '9') --bindex;
-
-      // Find the first number character from the back of the filename
-      while (aname[aindex-1] >= '0' && aname[aindex-1] <= '9') --aindex;
-      while (bname[bindex-1] >= '0' && bname[bindex-1] <= '9') --bindex;
-
-      // parse them into numbers and return comparison
-      var anum = parseInt(aname.substr(aindex), 10),
-          bnum = parseInt(bname.substr(bindex), 10);
-      return anum - bnum;
-      */
   });
 
   // report # files and total length
