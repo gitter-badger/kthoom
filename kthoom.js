@@ -359,8 +359,8 @@ function updatePage() {
 }
 
 function setImage(url) {
-  var canvas = getElem('mainImage'), 
-      x = canvas.getContext('2d');
+  var canvas = getElem('mainImage');
+  var x = canvas.getContext('2d');
   document.getElementById('mainText').style.display = 'none';
   if (url == 'loading') {
     updateScale(true);
@@ -540,22 +540,23 @@ function closeBook() {
 }
 
 function updateScale(clear) {
-  getElem('mainImage').style.width='';
-  getElem('mainImage').style.height='';
-  getElem('mainImage').style.maxWidth='';
-  getElem('mainImage').style.maxHeight='';
+  var mainImageStyle = getElem('mainImage').style;
+  mainImageStyle.width='';
+  mainImageStyle.height='';
+  mainImageStyle.maxWidth='';
+  mainImageStyle.maxHeight='';
   var maxheight = innerHeight - 15;
-  if (!/fullscreen/.test(getElem("header").className)) {
+  if (!/fullscreen/.test(getElem('header').className)) {
     maxheight -= 25;
   }
   if (clear || fitMode == Key.N) {
   } else if (fitMode == Key.B) {
-    getElem('mainImage').style.maxWidth = '100%';
-    getElem('mainImage').style.maxHeight = maxheight+'px'
+    mainImageStyle.maxWidth = '100%';
+    mainImageStyle.maxHeight = maxheight+'px'
   } else if(fitMode == Key.H) {
-    getElem('mainImage').style.height = maxheight+'px'
+    mainImageStyle.height = maxheight+'px'
   } else if(fitMode == Key.W) {
-    getElem('mainImage').style.width = '100%';
+    mainImageStyle.width = '100%';
   }
   saveSettings();
 }
@@ -582,7 +583,7 @@ function keyHandler(evt) {
     overlayStyle.display = 'block';
   }
 
-  if (getComputedStyle(getElem("progress")).display == 'none') return;
+  if (getComputedStyle(getElem('progress')).display == 'none') return;
   canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft)/ document.body.scrollWidth) >= 1;
   canKeyPrev = (scrollX <= 0);
 
@@ -644,33 +645,32 @@ function keyHandler(evt) {
   }
 }
 
-// attaches a change event listener to the file input control
 function init() {
   if (!window.FileReader) {
     alert("Sorry, kthoom will not work with your browser because it does not support the File API.  Please try kthoom with Chrome 12+ or Firefox 7+");
-  }
-  else {
+  } else {
     initProgressMeter();
     document.body.className += /AppleWebKit/.test(navigator.userAgent)?' webkit':'';
     resetFileUploader();
     loadSettings();
-    // add key handler
-    document.addEventListener("keydown", keyHandler, false);
-    window.addEventListener("resize", function() {
+    document.addEventListener('keydown', keyHandler, false);
+    window.addEventListener('resize', function() {
       var f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
-      getElem("header").className = f?'fullscreen':'';
+      getElem('header').className = f ? 'fullscreen' : '';
       updateScale();
+    }, false);
+    getElem('mainImage').addEventListener('click', function() {
+      showNextPage();
     }, false);
   }
 }
 
-//do html5 drag and drop
-document.addEventListener("dragenter", function(e){e.preventDefault();e.stopPropagation()}, false);
-document.addEventListener("dragexit", function(e){e.preventDefault();e.stopPropagation()}, false);
-document.addEventListener("dragover", function(e){e.preventDefault();e.stopPropagation()}, false);
-document.addEventListener("drop", function(e){
+// Do html5 drag and drop.
+document.addEventListener('dragenter', function(e){e.preventDefault();e.stopPropagation()}, false);
+document.addEventListener('dragexit', function(e){e.preventDefault();e.stopPropagation()}, false);
+document.addEventListener('dragover', function(e){e.preventDefault();e.stopPropagation()}, false);
+document.addEventListener('drop', function(e){
 	e.preventDefault();
 	e.stopPropagation();
 	getFiles({target:e.dataTransfer});
 }, false);
-
