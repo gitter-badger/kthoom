@@ -31,23 +31,28 @@ window.kthoom = {};
 // key codes
 var Key = {
     ESCAPE: 27,
-    LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, 
+    LEFT: 37,
+    UP: 38,
+    RIGHT: 39,
+    DOWN: 40, 
     A: 65, B: 66, C: 67, D: 68, E: 69, F: 70, G: 71, H: 72, I: 73, J: 74, K: 75, L: 76, M: 77, 
     N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90,
     QUESTION_MARK: 191,
     LEFT_SQUARE_BRACKET: 219,
-    RIGHT_SQUARE_BRACKET: 221};
+    RIGHT_SQUARE_BRACKET: 221
+};
 
 // global variables
 var unarchiver = null;
-var allBooks = [];
-var currentBookNum;
 var currentImage = 0;
 var imageFiles = [];
 var imageFilenames = [];
 var totalImages = 0;
 var lastCompletion = 0;
-
+var library = {
+  allBooks: [],
+  currentBookNum: 0,
+};
   
 var rotateTimes = 0, hflip = false, vflip = false, fitMode = Key.B;
 
@@ -235,12 +240,11 @@ function setProgressMeter(pct) {
 
 // Attempts to read the files that the user has chosen.
 function getFiles(evt) {
-  var inp = evt.target;
-  var filelist = inp.files;
-  allBooks = inp.files;
+  var filelist = evt.target.files;
+  library.allBooks = filelist;
+  library.currentBookNum = 0;
 
   closeBook();
-  currentBookNum = 0;
   loadSingleBook(filelist[0]);
 }
 
@@ -453,16 +457,18 @@ function showPreview() {
 }
 
 function loadPrevBook() {
-  if (currentBookNum > 0) {
+  if (library.currentBookNum > 0) {
     closeBook();
-    loadSingleBook(allBooks[--currentBookNum]);
+    library.currentBookNum--;
+    loadSingleBook(library.allBooks[library.currentBookNum]);
   }
 }
 
 function loadNextBook() {
-  if (currentBookNum < allBooks.length - 1) {
+  if (library.currentBookNum < library.allBooks.length - 1) {
     closeBook();
-    loadSingleBook(allBooks[++currentBookNum]);
+    library.currentBookNum++;
+    loadSingleBook(library.allBooks[library.currentBookNum]);
   }
 }
 
@@ -470,9 +476,9 @@ function showPrevPage() {
   currentImage--;
 
   if (currentImage < 0) {
-    if (allBooks.length == 1) {
+    if (library.allBooks.length == 1) {
       currentImage = imageFiles.length - 1;
-    } else if (currentBookNum > 0) {
+    } else if (library.currentBookNum > 0) {
       loadPrevBook();
     } else {
       // Freeze on the current page.
@@ -490,9 +496,9 @@ function showNextPage() {
   currentImage++;
   
   if (currentImage >= Math.max(totalImages, imageFiles.length)) {
-    if (allBooks.length == 1) {
+    if (library.allBooks.length == 1) {
       currentImage = 0;
-    } else if (currentBookNum < allBooks.length - 1) {
+    } else if (library.currentBookNum < library.allBooks.length - 1) {
       loadNextBook();
     } else {
       // Freeze on the current page.
@@ -507,10 +513,18 @@ function showNextPage() {
 }
 
 function toggleToolbar() {
-  var s = /fullscreen/.test(getElem("header").className);
-  getElem("header").className = s?'':'fullscreen';
+  var headerDiv = getElem('header');
+  var fullscreen = /fullscreen/.test(headDiv.className);
+  headerDiv.className = (fullscreen ? '' : 'fullscreen');
   //getElem("toolbarbutton").innerText = s?'-':'+';
   updateScale();
+}
+
+// Shows/hides the library.
+function toggleLibrary() {
+  var libraryDiv = getElem('library');
+  var opened = /opened/.test(libraryDiv.className);
+  libraryDiv.className = (opened ? '' : 'opened');
 }
 
 function closeBook() {
@@ -599,10 +613,14 @@ function keyHandler(evt) {
       if (canKeyNext) showNextPage();
       break;
     case Key.LEFT_SQUARE_BRACKET:
-      if (currentBookNum > 0) loadPrevBook();
+      if (library.currentBookNum > 0) {
+        loadPrevBook();
+      }
       break;
     case Key.RIGHT_SQUARE_BRACKET:
-      if (currentBookNum < allBooks.length - 1) loadNextBook();
+      if (library.currentBookNum < library.allBooks.length - 1) {
+        loadNextBook();
+      }
       break;
     case Key.L:
       rotateTimes--;
@@ -661,6 +679,9 @@ function init() {
     }, false);
     getElem('mainImage').addEventListener('click', function() {
       showNextPage();
+    }, false);
+    getElem('libraryTab').addEventListener('click', function() {
+      toggleLibrary();
     }, false);
   }
 }
