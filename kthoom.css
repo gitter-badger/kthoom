@@ -183,6 +183,8 @@ body {
   bottom: 30px;
   color: grey;
   cursor: pointer;
+  display: -ms-flex;
+  display: -webkit-flex;
   display: flex;
   margin-right: -298px;
   opacity: 0.8;
@@ -197,6 +199,8 @@ body {
 }
 
 #libraryTab {
+  -ms-align-self: center;
+  -webkit-align-self: center;
   align-self: center;
   background-color: black;
   border-color: inherit;
@@ -205,8 +209,9 @@ body {
   border-width: 1px;
   border-right: none;
   color: inherit;
+  font-family: Cambria;
   font-size: 40px;
-  height: 53px;
+  height: 50px;
   margin-right: -1px;
   width: 30px;
   z-index: 100;
