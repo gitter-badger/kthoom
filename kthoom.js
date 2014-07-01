@@ -127,7 +127,7 @@ function initProgressMeter() {
   rect.setAttribute("fill", "#cc2929");
   
   var poly = document.createElementNS(svgns, "polygon");
-  poly.setAttribute("fill", "#c9cc29");
+  poly.setAttribute("fill", "yellow");
   poly.setAttribute("points", "15,0 30,0 15,20 0,20");
 
   patt.appendChild(rect);
@@ -246,6 +246,12 @@ function getFiles(evt) {
 
   closeBook();
   loadSingleBook(filelist[0]);
+
+  // Only show library if we have more than one book.
+  if (filelist.length > 1) {
+    showLibrary(true);
+    updateLibrary();
+  }
 }
 
 function loadSingleBook(filename) {
@@ -255,7 +261,7 @@ function loadSingleBook(filename) {
   fr.onload = function() {
       var ab = fr.result;
       var h = new Uint8Array(ab, 0, 10);
-      var pathToBitJS = "bitjs/";
+      var pathToBitJS = 'bitjs/';
       if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { //Rar!
         unarchiver = new bitjs.archive.Unrarrer(ab, pathToBitJS);
       } else if (h[0] == 80 && h[1] == 75) { //PK (Zip)
@@ -290,7 +296,7 @@ function loadSingleBook(filename) {
             }
             
             // hide logo
-            getElem("logo").setAttribute("style", "display:none");
+            getElem('logo').setAttribute('style', 'display:none');
 
             // display first page if we haven't yet
             if (imageFiles.length == currentImage + 1) {
@@ -300,11 +306,11 @@ function loadSingleBook(filename) {
         unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH,
           function(e) {
             var diff = ((new Date).getTime() - start)/1000;
-            console.log("Unarchiving done in " + diff + "s");            
+            console.log('Unarchiving done in ' + diff + 's');
           })
         unarchiver.start();
       } else {
-        alert("Some error");
+        alert('Some error');
       }
     };
   fr.readAsArrayBuffer(filename);
@@ -456,19 +462,23 @@ function showPreview() {
   }
 }
 
+function openBook(bookNum) {
+  if (bookNum >= 0 && bookNum < library.allBooks.length) {
+    closeBook();
+    library.currentBookNum = bookNum;
+    loadSingleBook(library.allBooks[library.currentBookNum]);
+  }
+}
+
 function loadPrevBook() {
   if (library.currentBookNum > 0) {
-    closeBook();
-    library.currentBookNum--;
-    loadSingleBook(library.allBooks[library.currentBookNum]);
+    openBook(library.currentBookNum - 1);
   }
 }
 
 function loadNextBook() {
   if (library.currentBookNum < library.allBooks.length - 1) {
-    closeBook();
-    library.currentBookNum++;
-    loadSingleBook(library.allBooks[library.currentBookNum]);
+    openBook(library.currentBookNum + 1);
   }
 }
 
@@ -521,10 +531,41 @@ function toggleToolbar() {
 }
 
 // Shows/hides the library.
-function toggleLibrary() {
+function showLibrary(show) {
+  var libraryDiv = getElem('library');
+  libraryDiv.style.visibility = (show ? 'visible' : 'hidden');
+}
+
+// Opens/closes the library.
+function toggleLibraryOpen() {
   var libraryDiv = getElem('library');
   var opened = /opened/.test(libraryDiv.className);
   libraryDiv.className = (opened ? '' : 'opened');
+}
+
+// Fills the library with the book names.
+function updateLibrary() {
+  var libDiv = getElem('libraryContents');
+  // Clear out the library.
+  libDiv.innerHTML = '';
+  if (library.allBooks.length > 0) {
+    for (var i = 0; i < library.allBooks.length; ++i) {
+      var book = library.allBooks[i];
+      var bookDiv = document.createElement('div');
+      bookDiv.classList.add('libraryBook');
+      if (library.currentBookNum == i) {
+        bookDiv.classList.add('current');
+      }
+      bookDiv.dataset.index = i;
+      bookDiv.innerHTML = book.name;
+      bookDiv.addEventListener('click', function(evt) {
+        // Trigger a re-render of the library.
+        openBook(evt.target.dataset.index);
+        updateLibrary();
+      });
+      libDiv.appendChild(bookDiv);
+    }
+  }
 }
 
 function closeBook() {
@@ -681,7 +722,7 @@ function init() {
       showNextPage();
     }, false);
     getElem('libraryTab').addEventListener('click', function() {
-      toggleLibrary();
+      toggleLibraryOpen();
     }, false);
   }
 }

@@ -11,7 +11,7 @@ body {
   overflow: hidden;
 	right: 5px;
 	text-align: center;
-  top: 10px;
+  top: 5px;
 }
 
 #overlay {
@@ -70,10 +70,8 @@ body {
 	top: -5px;
 }
 
-
 #header {
   height: 30px;
-  margin-top: -5px;
 }
 
 #progress {
@@ -86,11 +84,9 @@ body {
 	text-align: right;
 }
 
-
 #logo {
   margin-top: 20px;
 }
-
 
 .hide {
 	display: none !important;
@@ -172,12 +168,6 @@ body {
   opacity: 0;
 }
 
-/**
- * TODO:
- * - vertically center tab
- * - only show library when a library is loaded
- */
-
 #library {
   border-color: grey;
   bottom: 30px;
@@ -186,8 +176,8 @@ body {
   display: -ms-flex;
   display: -webkit-flex;
   display: flex;
-  margin-right: -298px;
-  opacity: 0.8;
+  margin-right: -316px;
+  opacity: 0.875;
   position: absolute;
   right: 0px;
   top: 30px;
@@ -196,6 +186,7 @@ body {
   -ms-user-select: none;
   -webkit-transition: margin-right .2s;
   transition: margin-right .2s;
+  visibility: hidden;
 }
 
 #libraryTab {
@@ -225,6 +216,10 @@ body {
   border-width: 1px;
   color: inherit;
   height: 100%;
+  overflow: scroll;
+  padding: 10px;
+  text-align: left;
+  white-space: nowrap;
   width: 300px;
   z-index: 1;
 }
@@ -233,4 +228,24 @@ body {
   border-color: yellow;
   color: yellow;
   margin-right: 0;
+}
+
+.libraryBook {
+  border-bottom: solid 1px grey;
+  border-top: solid 1px black;
+  overflow: hidden;
+  padding: 4px;
+  text-overflow: ellipsis;
+}
+
+.libraryBook:hover {
+  background-color: #444;
+  border-bottom: solid 1px yellow;
+  border-top: solid 1px yellow;
+}
+
+.libraryBook.current {
+  background-color: #cc2929;
+  border-bottom: solid 1px yellow;
+  border-top: solid 1px yellow;
 }
