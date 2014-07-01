@@ -96,39 +96,39 @@ var ImageFile = function(file) {
 function getElem(id) {
   if (document.documentElement.querySelector) {
     // querySelector lookup
-    return document.body.querySelector('#'+id);
+    return document.body.querySelector('#' + id);
   }  
   // getElementById lookup
   return document.getElementById(id);
 }
 
 function resetFileUploader() {
-  getElem("uploader").innerHTML = '<input id="filechooser" type="file" multiple />';
-  getElem("filechooser").addEventListener("change", getFiles, false);
+  getElem('uploader').innerHTML = '<input id="filechooser" type="file" multiple />';
+  getElem('filechooser').addEventListener('change', getFiles, false);
 }
 
 function initProgressMeter() {
-  var svgns = "http://www.w3.org/2000/svg";
-  var pdiv = document.getElementById("progress");
-  var svg = document.createElementNS(svgns, "svg");
+  var svgns = 'http://www.w3.org/2000/svg';
+  var pdiv = document.getElementById('progress');
+  var svg = document.createElementNS(svgns, 'svg');
   svg.style.width = '100%';
   
-  var defs = document.createElementNS(svgns, "defs");
+  var defs = document.createElementNS(svgns, 'defs');
 
-  var patt = document.createElementNS(svgns, "pattern");
-  patt.id = "progress_pattern";
-  patt.setAttribute("width", "30");
-  patt.setAttribute("height", "20");
-  patt.setAttribute("patternUnits", "userSpaceOnUse");
+  var patt = document.createElementNS(svgns, 'pattern');
+  patt.id = 'progress_pattern';
+  patt.setAttribute('width', '30');
+  patt.setAttribute('height', '20');
+  patt.setAttribute('patternUnits', 'userSpaceOnUse');
 
-  var rect = document.createElementNS(svgns, "rect");
-  rect.setAttribute("width", "100%");
-  rect.setAttribute("height", "100%");
-  rect.setAttribute("fill", "#cc2929");
+  var rect = document.createElementNS(svgns, 'rect');
+  rect.setAttribute('width', '100%');
+  rect.setAttribute('height', '100%');
+  rect.setAttribute('fill', '#cc2929');
   
-  var poly = document.createElementNS(svgns, "polygon");
-  poly.setAttribute("fill", "yellow");
-  poly.setAttribute("points", "15,0 30,0 15,20 0,20");
+  var poly = document.createElementNS(svgns, 'polygon');
+  poly.setAttribute('fill', 'yellow');
+  poly.setAttribute('points', '15,0 30,0 15,20 0,20');
 
   patt.appendChild(rect);
   patt.appendChild(poly);
@@ -136,55 +136,55 @@ function initProgressMeter() {
   
   svg.appendChild(defs);
   
-  var g = document.createElementNS(svgns, "g");
+  var g = document.createElementNS(svgns, 'g');
   
-  var outline = document.createElementNS(svgns, "rect");
-  outline.setAttribute("y", "1");
-  outline.setAttribute("width", "100%");
-  outline.setAttribute("height", "15");
-  outline.setAttribute("fill", "#777");
-  outline.setAttribute("stroke", "white");
-  outline.setAttribute("rx", "5");
-  outline.setAttribute("ry", "5");
+  var outline = document.createElementNS(svgns, 'rect');
+  outline.setAttribute('y', '1');
+  outline.setAttribute('width', '100%');
+  outline.setAttribute('height', '15');
+  outline.setAttribute('fill', '#777');
+  outline.setAttribute('stroke', 'white');
+  outline.setAttribute('rx', '5');
+  outline.setAttribute('ry', '5');
   g.appendChild(outline);
 
-  var title = document.createElementNS(svgns, "text");
-  title.id = "progress_title";
-  title.appendChild(document.createTextNode("0%"));
-  title.setAttribute("y", "13");
-  title.setAttribute("x", "99.5%");
-  title.setAttribute("fill", "white");
-  title.setAttribute("font-size", "12px");
-  title.setAttribute("text-anchor", "end");
+  var title = document.createElementNS(svgns, 'text');
+  title.id = 'progress_title';
+  title.appendChild(document.createTextNode('0%'));
+  title.setAttribute('y', '13');
+  title.setAttribute('x', '99.5%');
+  title.setAttribute('fill', 'white');
+  title.setAttribute('font-size', '12px');
+  title.setAttribute('text-anchor', 'end');
   g.appendChild(title);
 
-  var meter = document.createElementNS(svgns, "rect");
-  meter.id = "meter";
-  meter.setAttribute("width", "0%");
-  meter.setAttribute("height", "17");
-  meter.setAttribute("fill", "url(#progress_pattern)");
-  meter.setAttribute("rx", "5");
-  meter.setAttribute("ry", "5");
+  var meter = document.createElementNS(svgns, 'rect');
+  meter.id = 'meter';
+  meter.setAttribute('width', '0%');
+  meter.setAttribute('height', '17');
+  meter.setAttribute('fill', 'url(#progress_pattern)');
+  meter.setAttribute('rx', '5');
+  meter.setAttribute('ry', '5');
   
-  var meter2 = document.createElementNS(svgns, "rect");
-  meter2.id = "meter2";
-  meter2.setAttribute("width", "0%");
-  meter2.setAttribute("height", "17");
-  meter2.setAttribute("opacity", "0.8");
-  meter2.setAttribute("fill", "#007fff");
-  meter2.setAttribute("rx", "5");
-  meter2.setAttribute("ry", "5");
+  var meter2 = document.createElementNS(svgns, 'rect');
+  meter2.id = 'meter2';
+  meter2.setAttribute('width', '0%');
+  meter2.setAttribute('height', '17');
+  meter2.setAttribute('opacity', '0.8');
+  meter2.setAttribute('fill', '#007fff');
+  meter2.setAttribute('rx', '5');
+  meter2.setAttribute('ry', '5');
   
   g.appendChild(meter);
   g.appendChild(meter2);
   
-  var page = document.createElementNS(svgns, "text");
-  page.id = "page";
-  page.appendChild(document.createTextNode("0/0"));
-  page.setAttribute("y", "13");
-  page.setAttribute("x", "0.5%");
-  page.setAttribute("fill", "white");
-  page.setAttribute("font-size", "12px");
+  var page = document.createElementNS(svgns, 'text');
+  page.id = 'page';
+  page.appendChild(document.createTextNode('0/0'));
+  page.setAttribute('y', '13');
+  page.setAttribute('x', '0.5%');
+  page.setAttribute('fill', 'white');
+  page.setAttribute('font-size', '12px');
   g.appendChild(page);
   
   
@@ -209,32 +209,33 @@ function setProgressMeter(pct) {
   //console.log(smartpct);
   
    // + Math.min((pct - lastCompletion), 100/totalImages * 0.9 + (pct - lastCompletion - 100/totalImages)/2, 100/totalImages);
-  var oldval = parseFloat(getElem("meter").getAttribute('width'));
+  var oldval = parseFloat(getElem('meter').getAttribute('width'));
   if (isNaN(oldval)) oldval = 0;
   var weight = 0.5;
   smartpct = (weight * smartpct + (1-weight) * oldval);
   if (pct == 100) smartpct = 100;
     
   if (!isNaN(smartpct)) {
-    getElem("meter").setAttribute("width", smartpct + '%');
+    getElem('meter').setAttribute('width', smartpct + '%');
   }
-  var title = getElem("progress_title");
+  var title = getElem('progress_title');
   while (title.firstChild) title.removeChild(title.firstChild);
 
-  title.appendChild(document.createTextNode(pct.toFixed(2) + "% " + imageFiles.length + "/" + totalImages + ""));
+  title.appendChild(document.createTextNode(pct.toFixed(2) + '% ' + imageFiles.length + '/' + totalImages + ''));
   // fade it out as it approaches finish
-  //title.setAttribute("fill-opacity", (pct > 90) ? ((100-pct)*5)/100 : 1);
+  //title.setAttribute('fill-opacity', (pct > 90) ? ((100-pct)*5)/100 : 1);
 
-  getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
+  getElem('meter2').setAttribute('width',
+      100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
   
-  var title = getElem("page");
+  var title = getElem('page');
   while (title.firstChild) title.removeChild(title.firstChild);
-  title.appendChild(document.createTextNode(  (currentImage+1) + "/" + totalImages  ));
+  title.appendChild(document.createTextNode( (currentImage+1) + '/' + totalImages ));
   
   
   if (pct > 0) {
-    getElem("nav").className = "";
-    getElem("progress").className = "";
+    getElem('nav').className = '';
+    getElem('progress').className = '';
   }
 }
 
@@ -372,7 +373,7 @@ function setImage(url) {
     x.fillStyle = 'red';
     x.font = '50px sans-serif';
     x.strokeStyle = 'black';
-    x.fillText("Loading Page #"+(currentImage+1), 100, 100)
+    x.fillText('Loading Page #' + (currentImage + 1), 100, 100)
   } else {
     if (document.body.scrollHeight/innerHeight > 1) {
       document.body.style.overflowY = 'scroll';
@@ -386,9 +387,10 @@ function setImage(url) {
       x.fillStyle = 'orange';
       x.font = '50px sans-serif';
       x.strokeStyle = 'black';
-      x.fillText("Page #"+(currentImage+1)+" ("+imageFiles[currentImage].filename+")", 100, 100)
+      x.fillText('Page #' + (currentImage+1) + ' (' +
+          imageFiles[currentImage].filename + ')', 100, 100)
       x.fillStyle = 'red';
-      x.fillText("Is corrupt or not an image", 100, 200);
+      x.fillText('Is corrupt or not an image', 100, 200);
       
       if (/(html|htm)$/.test(imageFiles[currentImage].filename)) {
         var xhr = new XMLHttpRequest();
@@ -444,12 +446,13 @@ function setImage(url) {
 }
 
 function showPreview() {
-  if (/fullscreen/.test(getElem("header").className)) {
-    getElem("header").className += ' preview';
+  if (/fullscreen/.test(getElem('header').className)) {
+    getElem('header').className += ' preview';
     setTimeout(function() {
-      getElem("header").className += ' previewout';
+      getElem('header').className += ' previewout';
       setTimeout(function() {
-        getElem("header").className = getElem("header").className.replace(/previewout|preview/g,'');
+        getElem('header').className = getElem('header').className.replace(
+            /previewout|preview/g, '');
       }, 1000);
     }, 1337);
   }
@@ -492,7 +495,7 @@ function showPrevPage() {
 
   updatePage();
   //showPreview();
-  //getElem("prev").focus();
+  //getElem('prev').focus();
 }
 
 function showNextPage() {
@@ -512,14 +515,14 @@ function showNextPage() {
 
   updatePage();
   //showPreview();
-  //getElem("next").focus();
+  //getElem('next').focus();
 }
 
 function toggleToolbar() {
   var headerDiv = getElem('header');
   var fullscreen = /fullscreen/.test(headDiv.className);
   headerDiv.className = (fullscreen ? '' : 'fullscreen');
-  //getElem("toolbarbutton").innerText = s?'-':'+';
+  //getElem('toolbarbutton).innerText = s?'-':'+';
   updateScale();
 }
 
@@ -577,12 +580,12 @@ function closeBook() {
   resetFileUploader();
   
   // display logo
-  getElem("logo").setAttribute("style", "display:block");
+  getElem('logo').setAttribute('style', 'display:block');
   
-  getElem("nav").className = "hide";
-  getElem("progress").className = "hide";
+  getElem('nav').className = 'hide';
+  getElem('progress').className = 'hide';
   
-  getElem("meter").setAttribute("width", '0%');
+  getElem('meter').setAttribute('width', '0%');
   
   setProgressMeter(0);
   updatePage();
@@ -590,10 +593,10 @@ function closeBook() {
 
 function updateScale(clear) {
   var mainImageStyle = getElem('mainImage').style;
-  mainImageStyle.width='';
-  mainImageStyle.height='';
-  mainImageStyle.maxWidth='';
-  mainImageStyle.maxHeight='';
+  mainImageStyle.width = '';
+  mainImageStyle.height = '';
+  mainImageStyle.maxWidth = '';
+  mainImageStyle.maxHeight = '';
   var maxheight = innerHeight - 15;
   if (!/fullscreen/.test(getElem('header').className)) {
     maxheight -= 25;
@@ -601,10 +604,10 @@ function updateScale(clear) {
   if (clear || fitMode == Key.N) {
   } else if (fitMode == Key.B) {
     mainImageStyle.maxWidth = '100%';
-    mainImageStyle.maxHeight = maxheight+'px'
-  } else if(fitMode == Key.H) {
-    mainImageStyle.height = maxheight+'px'
-  } else if(fitMode == Key.W) {
+    mainImageStyle.maxHeight = maxheight + 'px';
+  } else if (fitMode == Key.H) {
+    mainImageStyle.height = maxheight + 'px';
+  } else if (fitMode == Key.W) {
     mainImageStyle.width = '100%';
   }
   saveSettings();
@@ -693,17 +696,17 @@ function keyHandler(evt) {
       updateScale();
       break;
     default:
-      //console.log("KeyCode = " + code);
+      //console.log('KeyCode = ' + code);
       break;
   }
 }
 
 function init() {
   if (!window.FileReader) {
-    alert("Sorry, kthoom will not work with your browser because it does not support the File API.  Please try kthoom with Chrome 12+ or Firefox 7+");
+    alert('Sorry, kthoom will not work with your browser because it does not support the File API.  Please try kthoom with Chrome 12+ or Firefox 7+');
   } else {
     initProgressMeter();
-    document.body.className += /AppleWebKit/.test(navigator.userAgent)?' webkit':'';
+    document.body.className += /AppleWebKit/.test(navigator.userAgent) ? ' webkit' : '';
     resetFileUploader();
     loadSettings();
     document.addEventListener('keydown', keyHandler, false);
