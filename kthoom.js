@@ -462,7 +462,7 @@ function showPreview() {
   }
 }
 
-function openBook(bookNum) {
+function loadBook(bookNum) {
   if (bookNum >= 0 && bookNum < library.allBooks.length) {
     closeBook();
     library.currentBookNum = bookNum;
@@ -472,13 +472,13 @@ function openBook(bookNum) {
 
 function loadPrevBook() {
   if (library.currentBookNum > 0) {
-    openBook(library.currentBookNum - 1);
+    loadBook(library.currentBookNum - 1);
   }
 }
 
 function loadNextBook() {
   if (library.currentBookNum < library.allBooks.length - 1) {
-    openBook(library.currentBookNum + 1);
+    loadBook(library.currentBookNum + 1);
   }
 }
 
@@ -560,7 +560,8 @@ function updateLibrary() {
       bookDiv.innerHTML = book.name;
       bookDiv.addEventListener('click', function(evt) {
         // Trigger a re-render of the library.
-        openBook(evt.target.dataset.index);
+        var index = parseInt(evt.target.dataset.index, 10);
+        loadBook(index);
         updateLibrary();
       });
       libDiv.appendChild(bookDiv);
