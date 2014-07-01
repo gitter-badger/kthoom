@@ -113,7 +113,6 @@ body {
 }
 
 #filechooser {
-  right: 0;
   left: auto;
 }
 .webkit #filechooser {
