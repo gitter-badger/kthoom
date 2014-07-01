@@ -322,45 +322,38 @@ var createURLFromArray = function(array, mimeType) {
   var bb, url;
   var blob;
 
+  // TODO: Move all this browser support testing to a common place
+  //     and do it just once.
+
   // Blob constructor, see http://dev.w3.org/2006/webapi/FileAPI/#dfn-Blob.
   if (typeof Blob == 'function') {
     blob = new Blob([array], {type: mimeType});
   } else {
-    var bb = (typeof BlobBuilder == 'function' ? (new BlobBuilder()) : //Chrome 8
-               (typeof WebKitBlobBuilder == 'function' ? (new WebKitBlobBuilder()) : //Chrome 12
-                 (typeof MozBlobBuilder == 'function' ? (new MozBlobBuilder()) : //Firefox 6
-               null)));
-    if (!bb) return false;
-    bb.append(array.buffer);
-    blob = bb.getBlob();
+    throw 'Browser support for Blobs is missing.'
   }
-  
-  if (blob.webkitSlice) { //Chrome 12
-    blob = blob.webkitSlice(offset, offset + len, mimeType);
-  } else if(blob.mozSlice) { //Firefox 5
-    blob = blob.mozSlice(offset, offset + len, mimeType);
-  } else if(blob.slice) { //
-    blob = blob.slice(2, 3).size == 1 ? 
-      blob.slice(offset, offset + len, mimeType) : //future behavior
-      blob.slice(offset, len, mimeType); //Old behavior
+
+  if (blob.slice) {
+    blob = blob.slice(offset, offset + len, mimeType);
+  } else {
+    throw 'Browser support for Blobs is missing.'
   }
-  
-  // TODO: Simplify this some time in 2013 (Chrome 8 and 9 are ancient history).
-  var url = (typeof createObjectURL == 'function' ? createObjectURL(blob) : //Chrome 9?
-              (typeof createBlobURL == 'function' ? createBlobURL(blob) : //Chrome 8
-                (((typeof URL == 'object' || typeof URL == 'function') && typeof URL.createObjectURL == 'function') ? URL.createObjectURL(blob) : //Chrome 15? Firefox
-                  (((typeof webkitURL == 'object' || typeof webkitURL == 'function') && typeof webkitURL.createObjectURL == 'function') ? webkitURL.createObjectURL(blob) : //Chrome 10
-                    ''))));
-  return url;
+
+  if ((typeof URL != 'function' && typeof URL != 'object') ||
+      typeof URL.createObjectURL != 'function') {
+    throw 'Browser support for Object URLs is missing';
+  }
+
+  return URL.createObjectURL(blob);
 }
 
 
 function updatePage() {
-  var title = getElem("page");
+  var title = getElem('page');
   while (title.firstChild) title.removeChild(title.firstChild);
-  title.appendChild(document.createTextNode(  (currentImage+1) + "/" + totalImages  ));
+  title.appendChild(document.createTextNode( (currentImage+1) + '/' + totalImages ));
   
-  getElem("meter2").setAttribute("width", 100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
+  getElem('meter2').setAttribute('width',
+      100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
   if (imageFiles[currentImage]) {
     setImage(imageFiles[currentImage].dataURI);
   } else {
