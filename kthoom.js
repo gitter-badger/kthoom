@@ -26,10 +26,22 @@ if (window.opera) {
   window.console.dir = function(str) {};
 }
 
-window.kthoom = {};
+// gets the element with the given id
+function getElem(id) {
+  if (document.documentElement.querySelector) {
+    // querySelector lookup
+    return document.body.querySelector('#' + id);
+  }  
+  // getElementById lookup
+  return document.getElementById(id);
+}
+
+if (window.kthoom == undefined) {
+  window.kthoom = {};
+}
 
 // key codes
-var Key = {
+kthoom.Key = {
     ESCAPE: 27,
     LEFT: 37,
     UP: 38,
@@ -54,9 +66,10 @@ var library = {
   currentBookNum: 0,
 };
   
-var rotateTimes = 0, hflip = false, vflip = false, fitMode = Key.B;
+var rotateTimes = 0, hflip = false, vflip = false, fitMode = kthoom.Key.B;
+var canKeyNext = true, canKeyPrev = true;
 
-function saveSettings() {
+kthoom.saveSettings = function() {
   localStorage.kthoom_settings = JSON.stringify({
     rotateTimes: rotateTimes,
     hflip: hflip,
@@ -65,7 +78,7 @@ function saveSettings() {
   });
 }
 
-function loadSettings() {
+kthoom.loadSettings = function() {
   try {
     if (localStorage.kthoom_settings.length < 10) return;
     var s = JSON.parse(localStorage.kthoom_settings);
@@ -77,12 +90,11 @@ function loadSettings() {
   }
 }
 
-
 // Stores an image filename and its data: URI.
 // TODO: investigate if we really need to store as base64 (leave off ;base64 and just
 //       non-safe URL characters are encoded as %xx ?)
 //       This would save 25% on memory since base64-encoded strings are 4/3 the size of the binary
-var ImageFile = function(file) {
+kthoom.ImageFile = function(file) {
   this.filename = file.filename;
   var fileExtension = file.filename.split('.').pop().toLowerCase();
   var mimeType = fileExtension == 'png' ? 'image/png' :
@@ -92,19 +104,10 @@ var ImageFile = function(file) {
   this.data = file;
 };
 
-// gets the element with the given id
-function getElem(id) {
-  if (document.documentElement.querySelector) {
-    // querySelector lookup
-    return document.body.querySelector('#' + id);
-  }  
-  // getElementById lookup
-  return document.getElementById(id);
-}
-
 function resetFileUploader() {
-  getElem('uploader').innerHTML = '<input id="filechooser" type="file" multiple />';
-  getElem('filechooser').addEventListener('change', getFiles, false);
+  getElem('uploader').innerHTML = 
+      '<div><input id="filechooser" type="file" multiple /></div>';
+  getElem('filechooser').addEventListener('change', getLocalFiles, false);
 }
 
 function initProgressMeter() {
@@ -240,7 +243,7 @@ function setProgressMeter(pct) {
 }
 
 // Attempts to read the files that the user has chosen.
-function getFiles(evt) {
+function getLocalFiles(evt) {
   var filelist = evt.target.files;
   library.allBooks = filelist;
   library.currentBookNum = 0;
@@ -255,68 +258,70 @@ function getFiles(evt) {
   }
 }
 
-function loadSingleBook(filename) {
+function loadFromArrayBuffer(ab) {
   var start = (new Date).getTime();
+  var h = new Uint8Array(ab, 0, 10);
+  var pathToBitJS = 'bitjs/';
+  if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { //Rar!
+    unarchiver = new bitjs.archive.Unrarrer(ab, pathToBitJS);
+  } else if (h[0] == 80 && h[1] == 75) { //PK (Zip)
+    unarchiver = new bitjs.archive.Unzipper(ab, pathToBitJS);
+  } else { // Try with tar
+    unarchiver = new bitjs.archive.Untarrer(ab, pathToBitJS);
+  }
+  // Listen for UnarchiveEvents.
+  if (unarchiver) {
+    unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS,
+      function(e) {
+        var percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
+        totalImages = e.totalFilesInArchive;
+        setProgressMeter(percentage);
+        // display nav
+        lastCompletion = percentage * 100;         
+      });
+    unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO,
+      function(e) {
+        console.log(e.msg);
+      });
+    unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT,
+      function(e) {
+        // convert DecompressedFile into a bunch of ImageFiles
+        if (e.unarchivedFile) {
+          var f = e.unarchivedFile;
+          // add any new pages based on the filename
+          if (imageFilenames.indexOf(f.filename) == -1) {
+            imageFilenames.push(f.filename);
+            imageFiles.push(new kthoom.ImageFile(f));
+          }
+        }
+        
+        // hide logo
+        getElem('logo').setAttribute('style', 'display:none');
 
+        // display first page if we haven't yet
+        if (imageFiles.length == currentImage + 1) {
+          updatePage();
+        }            
+      });
+    unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH,
+      function(e) {
+        var diff = ((new Date).getTime() - start)/1000;
+        console.log('Unarchiving done in ' + diff + 's');
+      })
+    unarchiver.start();
+  } else {
+    alert('Some error');
+  }
+}
+
+function loadSingleBook(filename) {
   var fr = new FileReader();
   fr.onload = function() {
       var ab = fr.result;
-      var h = new Uint8Array(ab, 0, 10);
-      var pathToBitJS = 'bitjs/';
-      if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { //Rar!
-        unarchiver = new bitjs.archive.Unrarrer(ab, pathToBitJS);
-      } else if (h[0] == 80 && h[1] == 75) { //PK (Zip)
-        unarchiver = new bitjs.archive.Unzipper(ab, pathToBitJS);
-      } else { // Try with tar
-        unarchiver = new bitjs.archive.Untarrer(ab, pathToBitJS);
-      }
-      // Listen for UnarchiveEvents.
-      if (unarchiver) {
-        unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS,
-          function(e) {
-            var percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
-            totalImages = e.totalFilesInArchive;
-            setProgressMeter(percentage);
-            // display nav
-            lastCompletion = percentage * 100;         
-          });
-        unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO,
-          function(e) {
-            console.log(e.msg);
-          });
-        unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT,
-          function(e) {
-            // convert DecompressedFile into a bunch of ImageFiles
-            if (e.unarchivedFile) {
-              var f = e.unarchivedFile;
-              // add any new pages based on the filename
-              if (imageFilenames.indexOf(f.filename) == -1) {
-                imageFilenames.push(f.filename);
-                imageFiles.push(new ImageFile(f));
-              }
-            }
-            
-            // hide logo
-            getElem('logo').setAttribute('style', 'display:none');
-
-            // display first page if we haven't yet
-            if (imageFiles.length == currentImage + 1) {
-              updatePage();
-            }            
-          });
-        unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH,
-          function(e) {
-            var diff = ((new Date).getTime() - start)/1000;
-            console.log('Unarchiving done in ' + diff + 's');
-          })
-        unarchiver.start();
-      } else {
-        alert('Some error');
-      }
-    };
+      loadFromArrayBuffer(ab);
+  };
   fr.readAsArrayBuffer(filename);
 }
-
 
 var createURLFromArray = function(array, mimeType) {
   var offset = array.byteOffset, len = array.byteLength;
@@ -601,19 +606,17 @@ function updateScale(clear) {
   if (!/fullscreen/.test(getElem('header').className)) {
     maxheight -= 25;
   }
-  if (clear || fitMode == Key.N) {
-  } else if (fitMode == Key.B) {
+  if (clear || fitMode == kthoom.Key.N) {
+  } else if (fitMode == kthoom.Key.B) {
     mainImageStyle.maxWidth = '100%';
     mainImageStyle.maxHeight = maxheight + 'px';
-  } else if (fitMode == Key.H) {
+  } else if (fitMode == kthoom.Key.H) {
     mainImageStyle.height = maxheight + 'px';
-  } else if (fitMode == Key.W) {
+  } else if (fitMode == kthoom.Key.W) {
     mainImageStyle.width = '100%';
   }
-  saveSettings();
+  kthoom.saveSettings();
 }
-
-var canKeyNext = true, canKeyPrev = true;
 
 function keyHandler(evt) {
   var code = evt.keyCode;
@@ -622,16 +625,16 @@ function keyHandler(evt) {
   var overlayStyle = getElem('overlay').style;
   var overlayShown = (overlayStyle.display != 'none');
   if (overlayShown) {
-    if (code == Key.QUESTION_MARK || code == Key.ESCAPE) {
+    if (code == kthoom.Key.QUESTION_MARK || code == kthoom.Key.ESCAPE) {
       overlayStyle.display = 'none';
     }
     return;
   }
 
   // Handle keystrokes that do not depend on whether a document is loaded.
-  if (code == Key.O) {
+  if (code == kthoom.Key.O) {
     getElem('filechooser').click();
-  } else if (code == Key.QUESTION_MARK) {
+  } else if (code == kthoom.Key.QUESTION_MARK) {
     overlayStyle.display = 'block';
   }
 
@@ -641,34 +644,34 @@ function keyHandler(evt) {
 
   if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
   switch(code) {
-    case Key.X:
+    case kthoom.Key.X:
       toggleToolbar();
       break;
-    case Key.LEFT:
+    case kthoom.Key.LEFT:
       if (canKeyPrev) showPrevPage();
       break;
-    case Key.RIGHT:
+    case kthoom.Key.RIGHT:
       if (canKeyNext) showNextPage();
       break;
-    case Key.LEFT_SQUARE_BRACKET:
+    case kthoom.Key.LEFT_SQUARE_BRACKET:
       if (library.currentBookNum > 0) {
         loadPrevBook();
       }
       break;
-    case Key.RIGHT_SQUARE_BRACKET:
+    case kthoom.Key.RIGHT_SQUARE_BRACKET:
       if (library.currentBookNum < library.allBooks.length - 1) {
         loadNextBook();
       }
       break;
-    case Key.L:
+    case kthoom.Key.L:
       rotateTimes--;
       updatePage();
       break;
-    case Key.R:
+    case kthoom.Key.R:
       rotateTimes++;
       updatePage();
       break;
-    case Key.F:
+    case kthoom.Key.F:
       if (!hflip && !vflip) {
         hflip = true;
       } else if(hflip == true) {
@@ -679,20 +682,20 @@ function keyHandler(evt) {
       }
       updatePage();
       break;
-    case Key.W:
-      fitMode = Key.W;
+    case kthoom.Key.W:
+      fitMode = kthoom.Key.W;
       updateScale();
       break;
-    case Key.H:
-      fitMode = Key.H;
+    case kthoom.Key.H:
+      fitMode = kthoom.Key.H;
       updateScale();
       break;
-    case Key.B:
-      fitMode = Key.B;
+    case kthoom.Key.B:
+      fitMode = kthoom.Key.B;
       updateScale();
       break;
-    case Key.N:
-      fitMode = Key.N;
+    case kthoom.Key.N:
+      fitMode = kthoom.Key.N;
       updateScale();
       break;
     default:
@@ -708,7 +711,7 @@ function init() {
     initProgressMeter();
     document.body.className += /AppleWebKit/.test(navigator.userAgent) ? ' webkit' : '';
     resetFileUploader();
-    loadSettings();
+    kthoom.loadSettings();
     document.addEventListener('keydown', keyHandler, false);
     window.addEventListener('resize', function() {
       var f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
@@ -731,5 +734,5 @@ document.addEventListener('dragover', function(e){e.preventDefault();e.stopPropa
 document.addEventListener('drop', function(e){
 	e.preventDefault();
 	e.stopPropagation();
-	getFiles({target:e.dataTransfer});
+	getLocalFiles({target:e.dataTransfer});
 }, false);
