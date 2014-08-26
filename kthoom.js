@@ -104,13 +104,18 @@ kthoom.ImageFile = function(file) {
   this.data = file;
 };
 
-function resetFileUploader() {
-  getElem('uploader').innerHTML = 
-      '<div><input id="filechooser" type="file" multiple /></div>';
-  getElem('filechooser').addEventListener('change', getLocalFiles, false);
+kthoom.resetFileUploader = function() {
+  getElem('menu').addEventListener('click', function(evt) {
+    var elem = evt.currentTarget;
+    elem.classList.toggle('opened');
+  });
+  getElem('menu-open-local-files').addEventListener('change',
+      getLocalFiles, false);
+  getElem('menu-open-google-drive').addEventListener('click',
+      kthoom.google.doDrive, false);
 }
 
-function initProgressMeter() {
+kthoom.initProgressMeter = function() {
   var svgns = 'http://www.w3.org/2000/svg';
   var pdiv = document.getElementById('progress');
   var svg = document.createElementNS(svgns, 'svg');
@@ -202,14 +207,13 @@ function initProgressMeter() {
   };
 }
 
-function setProgressMeter(pct) {
+kthoom.setProgressMeter = function(pct, opt_label) {
   var pct = (pct*100);
   var part = 1/totalImages;
   var remain = ((pct - lastCompletion)/100)/part;
   var fract = Math.min(1, remain);
   var smartpct = ((imageFiles.length/totalImages) + fract * part )* 100;
   if (totalImages == 0) smartpct = pct;
-  //console.log(smartpct);
   
    // + Math.min((pct - lastCompletion), 100/totalImages * 0.9 + (pct - lastCompletion - 100/totalImages)/2, 100/totalImages);
   var oldval = parseFloat(getElem('meter').getAttribute('width'));
@@ -224,7 +228,11 @@ function setProgressMeter(pct) {
   var title = getElem('progress_title');
   while (title.firstChild) title.removeChild(title.firstChild);
 
-  title.appendChild(document.createTextNode(pct.toFixed(2) + '% ' + imageFiles.length + '/' + totalImages + ''));
+  var labelText = pct.toFixed(2) + '% ' + imageFiles.length + '/' + totalImages + '';
+  if (opt_label) {
+    labelText = opt_label + ' ' + labelText;
+  }
+  title.appendChild(document.createTextNode(labelText));
   // fade it out as it approaches finish
   //title.setAttribute('fill-opacity', (pct > 90) ? ((100-pct)*5)/100 : 1);
 
@@ -275,7 +283,7 @@ function loadFromArrayBuffer(ab) {
       function(e) {
         var percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
         totalImages = e.totalFilesInArchive;
-        setProgressMeter(percentage);
+        kthoom.setProgressMeter(percentage, 'Unzipping');
         // display nav
         lastCompletion = percentage * 100;         
       });
@@ -581,8 +589,6 @@ function closeBook() {
   imageFilenames = [];
   totalImages = 0;
   lastCompletion = 0;
-  // clear file upload
-  resetFileUploader();
   
   // display logo
   getElem('logo').setAttribute('style', 'display:block');
@@ -592,7 +598,7 @@ function closeBook() {
   
   getElem('meter').setAttribute('width', '0%');
   
-  setProgressMeter(0);
+  kthoom.setProgressMeter(0);
   updatePage();
 }
 
@@ -626,6 +632,7 @@ function keyHandler(evt) {
   var overlayShown = (overlayStyle.display != 'none');
   if (overlayShown) {
     if (code == kthoom.Key.QUESTION_MARK || code == kthoom.Key.ESCAPE) {
+      getElem('menu').classList.remove('opened');
       overlayStyle.display = 'none';
     }
     return;
@@ -633,7 +640,10 @@ function keyHandler(evt) {
 
   // Handle keystrokes that do not depend on whether a document is loaded.
   if (code == kthoom.Key.O) {
-    getElem('filechooser').click();
+    getElem('menu-open-local-files-input').click();
+    getElem('menu').classList.remove('opened');
+  } else if (code == kthoom.Key.G) {
+    kthoom.google.doDrive();
   } else if (code == kthoom.Key.QUESTION_MARK) {
     overlayStyle.display = 'block';
   }
@@ -708,9 +718,9 @@ function init() {
   if (!window.FileReader) {
     alert('Sorry, kthoom will not work with your browser because it does not support the File API.  Please try kthoom with Chrome 12+ or Firefox 7+');
   } else {
-    initProgressMeter();
+    kthoom.initProgressMeter();
     document.body.className += /AppleWebKit/.test(navigator.userAgent) ? ' webkit' : '';
-    resetFileUploader();
+    kthoom.resetFileUploader();
     kthoom.loadSettings();
     document.addEventListener('keydown', keyHandler, false);
     window.addEventListener('resize', function() {
@@ -732,7 +742,7 @@ document.addEventListener('dragenter', function(e){e.preventDefault();e.stopProp
 document.addEventListener('dragexit', function(e){e.preventDefault();e.stopPropagation()}, false);
 document.addEventListener('dragover', function(e){e.preventDefault();e.stopPropagation()}, false);
 document.addEventListener('drop', function(e){
-	e.preventDefault();
-	e.stopPropagation();
-	getLocalFiles({target:e.dataTransfer});
+  e.preventDefault();
+  e.stopPropagation();
+  getLocalFiles({target:e.dataTransfer});
 }, false);
