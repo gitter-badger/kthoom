@@ -54,6 +54,9 @@ kthoom.Key = {
     RIGHT_SQUARE_BRACKET: 221
 };
 
+// The rotation orientation of the comic.
+kthoom.rotateTimes = 0;
+
 // global variables
 var unarchiver = null;
 var currentImage = 0;
@@ -66,12 +69,12 @@ var library = {
   currentBookNum: 0,
 };
   
-var rotateTimes = 0, hflip = false, vflip = false, fitMode = kthoom.Key.B;
+var hflip = false, vflip = false, fitMode = kthoom.Key.B;
 var canKeyNext = true, canKeyPrev = true;
 
 kthoom.saveSettings = function() {
   localStorage.kthoom_settings = JSON.stringify({
-    rotateTimes: rotateTimes,
+    rotateTimes: kthoom.rotateTimes,
     hflip: hflip,
     vflip: vflip,
     fitMode: fitMode
@@ -82,7 +85,7 @@ kthoom.loadSettings = function() {
   try {
     if (localStorage.kthoom_settings.length < 10) return;
     var s = JSON.parse(localStorage.kthoom_settings);
-    rotateTimes = s.rotateTimes;
+    kthoom.rotateTimes = s.rotateTimes;
     hflip = s.hflip;
     vflip = s.vflip;
     fitMode = s.fitMode;
@@ -120,6 +123,7 @@ kthoom.initProgressMeter = function() {
   var pdiv = document.getElementById('progress');
   var svg = document.createElementNS(svgns, 'svg');
   svg.style.width = '100%';
+  svg.style.height = '100%';
   
   var defs = document.createElementNS(svgns, 'defs');
 
@@ -428,13 +432,13 @@ function setImage(url) {
           w = img.width, 
           sw = w, 
           sh = h;
-      rotateTimes =  (4 + rotateTimes) % 4;
+      kthoom.rotateTimes =  (4 + kthoom.rotateTimes) % 4;
       x.save();
-      if (rotateTimes % 2 == 1) { sh = w; sw = h;}
+      if (kthoom.rotateTimes % 2 == 1) { sh = w; sw = h;}
       canvas.height = sh;
       canvas.width = sw;
       x.translate(sw/2, sh/2);
-      x.rotate(Math.PI/2 * rotateTimes);
+      x.rotate(Math.PI/2 * kthoom.rotateTimes);
       x.translate(-w/2, -h/2);
       if (vflip) {
         x.scale(1, -1)
@@ -674,11 +678,17 @@ function keyHandler(evt) {
       }
       break;
     case kthoom.Key.L:
-      rotateTimes--;
+      kthoom.rotateTimes--;
+      if (kthoom.rotateTimes < 0) {
+        kthoom.rotateTimes = 3;
+      }
       updatePage();
       break;
     case kthoom.Key.R:
-      rotateTimes++;
+      kthoom.rotateTimes++;
+      if (kthoom.rotateTimes > 3) {
+        kthoom.rotateTimes = 0;
+      }
       updatePage();
       break;
     case kthoom.Key.F:
@@ -728,8 +738,40 @@ function init() {
       getElem('header').className = f ? 'fullscreen' : '';
       updateScale();
     }, false);
-    getElem('mainImage').addEventListener('click', function() {
-      showNextPage();
+    getElem('mainImage').addEventListener('click', function(evt) {
+      // Firefox does not support offsetX/Y so we have to manually calculate
+      // where the user clicked in the image.
+      var mainContentWidth = getElem('mainContent').clientWidth;
+      var mainContentHeight = getElem('mainContent').clientHeight;
+      var comicWidth = evt.target.clientWidth;
+      var comicHeight = evt.target.clientHeight;
+      var offsetX = (mainContentWidth - comicWidth) / 2;
+      var offsetY = (mainContentHeight - comicHeight) / 2;
+      var clickX = !!evt.offsetX ? evt.offsetX : (evt.clientX - offsetX);
+      var clickY = !!evt.offsetY ? evt.offsetY : (evt.clientY - offsetY);
+
+      // Determine if the user clicked/tapped the left side or the
+      // right side of the page.
+      var clickedPrev = false;
+      switch (kthoom.rotateTimes) {
+        case 0:
+          clickedPrev = clickX < (comicWidth / 2);
+          break;
+        case 1:
+          clickedPrev = clickY < (comicHeight / 2);
+          break;
+        case 2:
+          clickedPrev = clickX > (comicWidth / 2);
+          break;
+        case 3:
+          clickedPrev = clickY > (comicHeight / 2);
+          break;
+      }
+      if (clickedPrev) {
+        showPrevPage();
+      } else {
+        showNextPage();
+      }
     }, false);
     getElem('libraryTab').addEventListener('click', function() {
       toggleLibraryOpen();
