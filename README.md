@@ -11,6 +11,8 @@ IE10 preview 4 (maybe, can someone confirm?)
 ## Demo
 Try it out [here](http://kthoom.googlecode.com/hg/index.html).
 
+Get free public domain comics http://comicrack.cyolito.com/links
+
 File Support
 .cbz (zip)
 .cbr (rar)
@@ -33,3 +35,4 @@ You can tell kthoom to open" as many books as you like in the Choose Files dialo
 NOTE: kthoom loads in local compressed files and decompresses them in the browser, which means that kthoom has an implementation of unzip, unrar and untar in JavaScript. Portions of this code have been migrated to its own library: BitJS, a more general purpose library to deal with binary file data in the browser.
 
 See the RAR format documentation for an in-progress working document of the RAR format.
+
