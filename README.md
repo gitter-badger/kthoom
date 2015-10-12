@@ -11,8 +11,6 @@ IE10 preview 4 (maybe, can someone confirm?)
 ## Demo
 Try it out [here](http://kthoom.googlecode.com/hg/index.html).
 
-Get free public domain comics http://comicrack.cyolito.com/links
-
 File Support
 .cbz (zip)
 .cbr (rar)
