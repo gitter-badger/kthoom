@@ -14,10 +14,12 @@ kthoom.google = {
   oathToken: undefined,
 
   boot: function() {
-    gapi.client.setApiKey(kthoom.google.apiKey);
-    window.setTimeout(function() {
-        kthoom.google.authorize(true /* immediate */, function() {});
-    }, 1);
+    if (typeof gapi !== "undefined") {
+      gapi.client.setApiKey(kthoom.google.apiKey);
+      window.setTimeout(function() {
+          kthoom.google.authorize(true /* immediate */, function() {});
+      }, 1);
+    }
   },
 
   authorize: function(immediate, callbackFn) {
