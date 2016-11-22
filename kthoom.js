@@ -480,6 +480,7 @@ function loadBook(bookNum) {
     closeBook();
     library.currentBookNum = bookNum;
     loadSingleBook(library.allBooks[library.currentBookNum]);
+    updateLibrary();
   }
 }
 
@@ -575,7 +576,6 @@ function updateLibrary() {
         // Trigger a re-render of the library.
         var index = parseInt(evt.target.dataset.index, 10);
         loadBook(index);
-        updateLibrary();
       });
       libDiv.appendChild(bookDiv);
     }
