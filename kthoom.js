@@ -276,11 +276,15 @@ function loadFromArrayBuffer(ab) {
   var pathToBitJS = 'bitjs/';
   if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { //Rar!
     unarchiver = new bitjs.archive.Unrarrer(ab, pathToBitJS);
-  } else if (h[0] == 80 && h[1] == 75) { //PK (Zip)
+  } else if (h[0] == 80 && h[1] == 75) { // PK (Zip)
     unarchiver = new bitjs.archive.Unzipper(ab, pathToBitJS);
+  } else if (h[0] == 255 && h[1] == 216) { // JPEG
+    kthoom.setProgressMeter(1);
+    return;
   } else { // Try with tar
     unarchiver = new bitjs.archive.Untarrer(ab, pathToBitJS);
   }
+
   // Listen for UnarchiveEvents.
   if (unarchiver) {
     unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS,
@@ -653,7 +657,7 @@ function keyHandler(evt) {
   }
 
   if (getComputedStyle(getElem('progress')).display == 'none') return;
-  canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft)/ document.body.scrollWidth) >= 1;
+  canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
   canKeyPrev = (scrollX <= 0);
 
   if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
