@@ -61,6 +61,72 @@ var MARK_HEAD      = 0x72,
   NEWSUB_HEAD      = 0x7a,
   ENDARC_HEAD      = 0x7b;
 
+// ============================================================================================== //
+
+/**
+ * CRC Implementation.
+ */
+var CRCTab = new Array(256).fill(0);
+
+function InitCRC() {
+  for (var i = 0; i < 256; ++i) {
+    var c = i;
+    for (var j = 0; j < 8; ++j) {
+      // Read http://stackoverflow.com/questions/6798111/bitwise-operations-on-32-bit-unsigned-ints
+      // for the bitwise operator issue (JS interprets operands as 32-bit signed
+      // integers and we need to deal with unsigned ones here).
+      c = ((c & 1) ? ((c >>> 1) ^ 0xEDB88320) : (c >>> 1)) >>> 0;
+    }
+    CRCTab[i] = c;
+  }
+}
+
+/**
+ * @param {number} startCRC
+ * @param {Uint8Array} arr
+ * @return {number}
+ */
+function CRC(startCRC, arr) {
+  if (CRCTab[1] == 0) {
+    InitCRC();
+  }
+
+/*
+#if defined(LITTLE_ENDIAN) && defined(PRESENT_INT32) && defined(ALLOW_NOT_ALIGNED_INT)
+  while (Size>0 && ((long)Data & 7))
+  {
+    StartCRC=CRCTab[(byte)(StartCRC^Data[0])]^(StartCRC>>8);
+    Size--;
+    Data++;
+  }
+  while (Size>=8)
+  {
+    StartCRC^=*(uint32 *)Data;
+    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
+    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
+    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
+    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
+    StartCRC^=*(uint32 *)(Data+4);
+    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
+    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
+    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
+    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
+    Data+=8;
+    Size-=8;
+  }
+#endif
+*/
+
+  for (var i = 0; i < arr.length; ++i) {
+    var byte = ((startCRC ^ arr[i]) >>> 0) & 0xff;
+    startCRC = (CRCTab[byte] ^ (startCRC >>> 8)) >>> 0;
+  }
+
+  return startCRC;
+}
+
+// ============================================================================================== //
+
 // bstream is a bit stream
 var RarVolumeHeader = function(bstream) {
 
