@@ -125,6 +125,354 @@ function CRC(startCRC, arr) {
   return startCRC;
 }
 
+/**
+ * RarVM Implementation.
+ */
+var VM_MEMSIZE = 0x40000;
+var VM_MEMMASK = (VM_MEMSIZE - 1);
+var VM_GLOBALMEMADDR = 0x3C000;
+var VM_GLOBALMEMSIZE = 0x2000;
+var VM_FIXEDGLOBALSIZE = 64;
+var MAXWINSIZE = 0x400000;
+var MAXWINMASK = (MAXWINSIZE - 1);
+
+/**
+ */
+var VM_Commands = {
+  VM_MOV: 0,
+  VM_CMP: 1,
+  VM_ADD: 2,
+  VM_SUB: 3,
+  VM_JZ: 4,
+  VM_JNZ: 5,
+  VM_INC: 6,
+  VM_DEC: 7,
+  VM_JMP: 8,
+  VM_XOR: 9,
+  VM_AND: 10,
+  VM_OR: 11,
+  VM_TEST: 12,
+  VM_JS: 13,
+  VM_JNS: 14,
+  VM_JB: 15,
+  VM_JBE: 16,
+  VM_JA: 17,
+  VM_JAE: 18,
+  VM_PUSH: 19,
+  VM_POP: 20,
+  VM_CALL: 21,
+  VM_RET: 22,
+  VM_NOT: 23,
+  VM_SHL: 24,
+  VM_SHR: 25,
+  VM_SAR: 26,
+  VM_NEG: 27,
+  VM_PUSHA: 28,
+  VM_POPA: 29,
+  VM_PUSHF: 30,
+  VM_POPF: 31,
+  VM_MOVZX: 32,
+  VM_MOVSX: 33,
+  VM_XCHG: 34,
+  VM_MUL: 35,
+  VM_DIV: 36,
+  VM_ADC: 37,
+  VM_SBB: 38,
+  VM_PRINT: 39,
+
+/*
+#ifdef VM_OPTIMIZE
+  VM_MOVB, VM_MOVD, VM_CMPB, VM_CMPD,
+
+  VM_ADDB, VM_ADDD, VM_SUBB, VM_SUBD, VM_INCB, VM_INCD, VM_DECB, VM_DECD,
+  VM_NEGB, VM_NEGD,
+#endif
+*/
+
+  // TODO: This enum value would be much larger if VM_OPTIMIZE.
+  VM_STANDARD: 40,
+};
+
+/**
+ */
+var VM_StandardFilters = {
+  VMSF_NONE: 0,
+  VMSF_E8: 1,
+  VMSF_E8E9: 2,
+  VMSF_ITANIUM: 3,
+  VMSF_RGB: 4,
+  VMSF_AUDIO: 5,
+  VMSF_DELTA: 6,
+  VMSF_UPCASE: 7,
+};
+
+/**
+ */
+var VM_Flags = {
+  VM_FC: 1,
+  VM_FZ: 2,
+  VM_FS: 0x80000000,
+};
+
+/**
+ */
+var VM_OpType = {
+  VM_OPREG: 0,
+  VM_OPINT: 1,
+  VM_OPREGMEM: 2,
+  VM_OPNONE: 3,
+};
+
+/**
+ * Finds the key that maps to a given value in an object.
+ * @param {Object} obj
+ * @param {number} val
+ * @return {string} The key/enum value as a string.
+ */
+function findKeyForValue(obj, val) {
+  for (var key in obj) {
+    if (obj[key] === val) {
+      return key;
+    }
+  }
+  return null;
+}
+
+function getDebugString(obj, val) {
+  var s = 'Unknown.';
+  if (obj === VM_Commands) {
+    s = 'VM_Commands.';
+  } else if (obj === VM_StandardFilters) {
+    s = 'VM_StandardFilters.';
+  } else if (obj === VM_Flags) {
+    s = 'VM_OpType.';
+  } else if (obj === VM_OpType) {
+    s = 'VM_OpType.';
+  }
+
+  return s + findKeyForValue(obj, val);
+}
+
+/**
+ * @struct
+ * @constructor
+ */
+var VM_PreparedOperand = function() {
+  /** @type {VM_OpType} */
+  this.Type;
+
+  /** @type {number} */
+  this.Data = 0;
+
+  /** @type {number} */
+  this.Base = 0;
+
+  // TODO: In C++ this is a uint*
+  /** @type {Array<number>} */
+  this.Addr = null;
+};
+
+/** @return {string} */
+VM_PreparedOperand.prototype.toString = function() {
+  if (this.Type === null) {
+    return 'Error: Type was null in VM_PreparedOperand';
+  }
+  return '{ '
+      + 'Type: ' + getDebugString(VM_OpType, this.Type)
+      + ', Data: ' + this.Data
+      + ', Base: ' + this.Base
+      + ' }';
+};
+
+/**
+ * @struct
+ * @constructor
+ */
+var VM_PreparedCommand = function() {
+  /** @type {VM_Commands} */
+  this.OpCode;
+
+  /** @type {boolean} */
+  this.ByteMode = false;
+
+  /** @type {VM_PreparedOperand} */
+  this.Op1 = new VM_PreparedOperand();
+
+  /** @type {VM_PreparedOperand} */
+  this.Op2 = new VM_PreparedOperand();
+};
+
+/** @return {string} */
+VM_PreparedCommand.prototype.toString = function(indent) {
+  if (this.OpCode === null) {
+    return 'Error: OpCode was null in VM_PreparedCommand';
+  }
+  indent = indent || '';
+  return indent + '{\n'
+      + indent + '  OpCode: ' + getDebugString(VM_Commands, this.OpCode) + ',\n'
+      + indent + '  ByteMode: ' + this.ByteMode + ',\n'
+      + indent + '  Op1: ' + this.Op1.toString() + ',\n'
+      + indent + '  Op2: ' + this.Op2.toString() + ',\n'
+      + indent + '}';
+};
+
+/**
+ * @struct
+ * @constructor
+ */
+var VM_PreparedProgram = function() {
+  /** @type {Array<VM_PreparedCommand>} */
+  this.Cmd = [];
+
+  /** @type {VM_PreparedCommand} */
+  this.AltCmd = null;
+
+  /** @type {number} */
+  // TODO: Should this just be the length property on the Cmd list?
+  //this.CmdCount = 0;
+
+  /** @type {Uint8Array} */
+  this.GlobalData = new Uint8Array();
+
+  /** @type {Uint8Array} */
+  this.StaticData = new Uint8Array(); // static data contained in DB operators
+
+  /** @type {new Uint8Array()} */
+  this.InitR = new Uint8Array(7);
+
+  /**
+   * A pointer to bytes
+   * @type {Uint8Array}
+   */
+  this.FilteredData = null;
+
+  /** @type {number} */
+  this.FilteredDataSize = 0;
+};
+
+/** @return {string} */
+VM_PreparedProgram.prototype.toString = function() {
+  var s = '{\n  Cmd: [\n';
+  for (var i = 0; i < this.Cmd.length; ++i) {
+    s += this.Cmd[i].toString('  ') + ',\n';
+  }
+  s += '],\n';
+  // TODO: Dump GlobalData, StaticData, InitR?
+  s += ' }\n';
+  return s;
+};
+
+/**
+ * @struct
+ * @constructor
+ */
+var UnpackFilter = function() {
+  /** @type {number} */
+  this.BlockStart = 0;
+
+  /** @type {number} */
+  this.BlockLength = 0;
+
+  /** @type {number} */
+  this.ExecCount = 0;
+
+  /** @type {boolean} */
+  this.NextWindow = false;
+
+  // position of parent filter in Filters array used as prototype for filter
+  // in PrgStack array. Not defined for filters in Filters array.
+  /** @type {number} */
+  this.ParentFilter = null;
+
+  /** @type {VM_PreparedProgram} */
+  this.Prg = new VM_PreparedProgram();
+};
+
+var VMCF_OP0       =  0;
+var VMCF_OP1       =  1;
+var VMCF_OP2       =  2;
+var VMCF_OPMASK    =  3;
+var VMCF_BYTEMODE  =  4;
+var VMCF_JUMP      =  8;
+var VMCF_PROC      = 16;
+var VMCF_USEFLAGS  = 32;
+var VMCF_CHFLAGS   = 64;
+
+var VM_CmdFlags = [
+  /* VM_MOV   */ VMCF_OP2 | VMCF_BYTEMODE                                ,
+  /* VM_CMP   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_ADD   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_SUB   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_JZ    */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
+  /* VM_JNZ   */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
+  /* VM_INC   */ VMCF_OP1 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_DEC   */ VMCF_OP1 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_JMP   */ VMCF_OP1 | VMCF_JUMP                                    ,
+  /* VM_XOR   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_AND   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_OR    */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_TEST  */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_JS    */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
+  /* VM_JNS   */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
+  /* VM_JB    */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
+  /* VM_JBE   */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
+  /* VM_JA    */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
+  /* VM_JAE   */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
+  /* VM_PUSH  */ VMCF_OP1                                                ,
+  /* VM_POP   */ VMCF_OP1                                                ,
+  /* VM_CALL  */ VMCF_OP1 | VMCF_PROC                                    ,
+  /* VM_RET   */ VMCF_OP0 | VMCF_PROC                                    ,
+  /* VM_NOT   */ VMCF_OP1 | VMCF_BYTEMODE                                ,
+  /* VM_SHL   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_SHR   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_SAR   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_NEG   */ VMCF_OP1 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
+  /* VM_PUSHA */ VMCF_OP0                                                ,
+  /* VM_POPA  */ VMCF_OP0                                                ,
+  /* VM_PUSHF */ VMCF_OP0 | VMCF_USEFLAGS                                ,
+  /* VM_POPF  */ VMCF_OP0 | VMCF_CHFLAGS                                 ,
+  /* VM_MOVZX */ VMCF_OP2                                                ,
+  /* VM_MOVSX */ VMCF_OP2                                                ,
+  /* VM_XCHG  */ VMCF_OP2 | VMCF_BYTEMODE                                ,
+  /* VM_MUL   */ VMCF_OP2 | VMCF_BYTEMODE                                ,
+  /* VM_DIV   */ VMCF_OP2 | VMCF_BYTEMODE                                ,
+  /* VM_ADC   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_USEFLAGS | VMCF_CHFLAGS ,
+  /* VM_SBB   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_USEFLAGS | VMCF_CHFLAGS ,
+  /* VM_PRINT */ VMCF_OP0                                                ,
+];
+
+
+/**
+ * @param {number} length
+ * @param {number} crc
+ * @param {VM_StandardFilters} type
+ * @struct
+ * @constructor
+ */
+var StandardFilterSignature = function(length, crc, type) {
+  /** @type {number} */
+  this.Length = length;
+
+  /** @type {number} */
+  this.CRC = crc;
+
+  /** @type {VM_StandardFilters} */
+  this.Type = type;
+};
+
+/**
+ * @type {Array<StandardFilterSignature>}
+ */
+var StdList = [
+  new StandardFilterSignature(53, 0xad576887, VM_StandardFilters.VMSF_E8),
+  new StandardFilterSignature(57, 0x3cd7e57e, VM_StandardFilters.VMSF_E8E9),
+  new StandardFilterSignature(120, 0x3769893f, VM_StandardFilters.VMSF_ITANIUM),
+  new StandardFilterSignature(29, 0x0e06077d, VM_StandardFilters.VMSF_DELTA),
+  new StandardFilterSignature(149, 0x1c2c5dc8, VM_StandardFilters.VMSF_RGB),
+  new StandardFilterSignature(216, 0xbc85e701, VM_StandardFilters.VMSF_AUDIO),
+  new StandardFilterSignature(40, 0x46b9c560, VM_StandardFilters.VMSF_UPCASE),
+];
+
 // ============================================================================================== //
 
 // bstream is a bit stream
