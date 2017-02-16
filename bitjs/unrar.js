@@ -327,10 +327,6 @@ var VM_PreparedProgram = function() {
   /** @type {VM_PreparedCommand} */
   this.AltCmd = null;
 
-  /** @type {number} */
-  // TODO: Should this just be the length property on the Cmd list?
-  //this.CmdCount = 0;
-
   /** @type {Uint8Array} */
   this.GlobalData = new Uint8Array();
 
@@ -472,6 +468,288 @@ var StdList = [
   new StandardFilterSignature(216, 0xbc85e701, VM_StandardFilters.VMSF_AUDIO),
   new StandardFilterSignature(40, 0x46b9c560, VM_StandardFilters.VMSF_UPCASE),
 ];
+
+
+/**
+ * Should inherit from bitjs.io.BitStream.
+ * @constructor
+ */
+var RarVM = function() {
+  /** @private {Uint8Array} */
+  this.mem_ = null;
+
+  /** @private {Array<number>} */
+  this.R = new Array(8);
+
+  // TODO: Use Flags?
+};
+
+/**
+ * Initializes the memory of the VM.
+ */
+RarVM.prototype.init = function() {
+  if (!this.mem_) {
+    this.mem_ = new Uint8Array(VM_MEMSIZE);
+  }
+};
+
+/**
+ * @param {Uint8Array} code
+ * @return {VM_StandardFilters}
+ */
+RarVM.prototype.isStandardFilter = function(code) {
+  var codeCRC = (CRC(0xffffffff, code, code.length) ^ 0xffffffff) >>> 0;
+  for (var i = 0; i < StdList.length; ++i) {
+    if (StdList[i].CRC == codeCRC && StdList[i].Length == code.length)
+      return StdList[i].Type;
+  }
+
+  return VM_StandardFilters.VMSF_NONE;
+};
+
+/**
+ * @param {VM_PreparedOperand} op
+ * @param {boolean} byteMode
+ * @param {bitjs.io.BitStream} bstream A rtl bit stream.
+ */
+RarVM.prototype.decodeArg = function(op, byteMode, bstream) {
+  var data = bstream.peekBits(16);
+  if (data & 0x8000) {
+    op.Type = VM_OpType.VM_OPREG;        // Operand is register (R[0]..R[7])
+    bstream.readBits(1);                 // 1 flag bit and...
+    op.Data = bstream.readBits(3);       // ... 3 register number bits
+    op.Addr = [this.R[op.Data]] // TODO &R[Op.Data] // Register address
+  } else {
+    if ((data & 0xc000) == 0) {
+      op.Type = VM_OpType.VM_OPINT; // Operand is integer
+      bstream.readBits(2); // 2 flag bits
+      if (byteMode) {
+        op.Data = bstream.readBits(8);         // Byte integer.
+      } else {
+        op.Data = RarVM.readData(bstream);     // 32 bit integer.
+      }
+    } else {
+      // Operand is data addressed by register data, base address or both.
+      op.Type = VM_OpType.VM_OPREGMEM;
+      if ((data & 0x2000) == 0) {
+        bstream.readBits(3); // 3 flag bits
+        // Base address is zero, just use the address from register.
+        op.Data = bstream.readBits(3); // (Data>>10)&7
+        op.Addr = [this.R[op.Data]]; // TODO &R[op.Data]
+        op.Base = 0;
+      } else {
+        bstream.readBits(4); // 4 flag bits
+        if ((data & 0x1000) == 0) {
+          // Use both register and base address.
+          op.Data = bstream.readBits(3);
+          op.Addr = [this.R[op.Data]]; // TODO &R[op.Data]
+        } else {
+          // Use base address only. Access memory by fixed address.
+          op.Data = 0;
+        }
+        op.Base = RarVM.readData(bstream); // Read base address.
+      }
+    }
+  }
+};
+
+/**
+ * @param {Uint8Array} code
+ * @param {VM_PreparedProgram} prg
+ */
+RarVM.prototype.prepare = function(code, prg) {
+  var codeSize = code.length;
+
+  //InitBitInput();
+  //memcpy(InBuf,Code,Min(CodeSize,BitInput::MAX_SIZE));
+  var bstream = new bitjs.io.BitStream(code.buffer, true /* rtl */);
+
+  // Calculate the single byte XOR checksum to check validity of VM code.
+  var xorSum=0;
+  for (var i = 1; i < codeSize; ++i) {
+    xorSum ^= code[i];
+  }
+
+  bstream.readBits(8);
+
+  prg.Cmd = [];  // TODO: Is this right?  I don't see it being done in rarvm.cpp.
+
+  // VM code is valid if equal.
+  if (xorSum == code[0]) {
+    var filterType = this.isStandardFilter(code);
+    if (filterType != VM_StandardFilters.VMSF_NONE) {
+      // VM code is found among standard filters.
+      var curCmd = new VM_PreparedCommand();
+      prg.Cmd.push(curCmd);
+
+      curCmd.OpCode = VM_Commands.VM_STANDARD;
+      curCmd.Op1.Data = filterType;
+      // TODO: Addr=&CurCmd->Op1.Data
+      curCmd.Op1.Addr = [curCmd.Op1.Data];
+      curCmd.Op2.Addr = [null]; // &CurCmd->Op2.Data;
+      curCmd.Op1.Type = VM_OpType.VM_OPNONE;
+      curCmd.Op2.Type = VM_OpType.VM_OPNONE;
+      codeSize = 0;
+    }
+
+    var dataFlag = bstream.readBits(1);
+
+    // Read static data contained in DB operators. This data cannot be
+    // changed, it is a part of VM code, not a filter parameter.
+
+    if (dataFlag & 0x8000) {
+      var dataSize = RarVM.readData(bstream) + 1;
+      // TODO: This accesses the byte pointer of the bstream directly.  Is that ok?
+      for (var i = 0; i < bstream.bytePtr < codeSize && i < dataSize; ++i) {
+        // Append a byte to the program's static data.
+        var newStaticData = new Uint8Array(prg.StaticData.length + 1);
+        newStaticData.set(prg.StaticData);
+        newStaticData[newStaticData.length - 1] = bstream.readBits(8);
+        prg.StaticData = newStaticData;
+      }
+    }
+
+    while (bstream.bytePtr < codeSize) {
+      var curCmd = new VM_PreparedCommand();
+      prg.Cmd.push(curCmd); // Prg->Cmd.Add(1)
+      var flag = bstream.peekBits(1);
+      if (!flag) { // (Data&0x8000)==0
+        curCmd.OpCode = bstream.readBits(4);
+      } else {
+        curCmd.OpCode = (bstream.readBits(6) - 24);
+      }
+
+      if (VM_CmdFlags[curCmd.OpCode] & VMCF_BYTEMODE) {
+        curCmd.ByteMode = (bstream.readBits(1) != 0);
+      } else {
+        curCmd.ByteMode = 0;
+      }
+      curCmd.Op1.Type = VM_OpType.VM_OPNONE;
+      curCmd.Op2.Type = VM_OpType.VM_OPNONE;
+      var opNum = (VM_CmdFlags[curCmd.OpCode] & VMCF_OPMASK);
+      curCmd.Op1.Addr = null;
+      curCmd.Op2.Addr = null;
+      if (opNum > 0) {
+        this.decodeArg(curCmd.Op1, curCmd.ByteMode, bstream); // reading the first operand
+        if (opNum == 2) {
+          this.decodeArg(curCmd.Op2, curCmd.ByteMode, bstream); // reading the second operand
+        } else {
+          if (curCmd.Op1.Type == VM_OpType.VM_OPINT && (VM_CmdFlags[curCmd.OpCode] & (VMCF_JUMP|VMCF_PROC))) {
+            // Calculating jump distance.
+            var distance = curCmd.Op1.Data;
+            if (distance >= 256) {
+              distance -= 256;
+            } else {
+              if (distance >= 136) {
+                distance -= 264;
+              } else {
+                if (distance >= 16) {
+                  distance -= 8;
+                } else {
+                  if (distance >= 8) {
+                    distance -= 16;
+                  }
+                }
+              }
+              distance += prg.Cmd.length;
+            }
+            curCmd.Op1.Data = distance;
+          }
+        }
+      } // if (OpNum>0)
+    } // while ((uint)InAddr<CodeSize)
+  } // if (XorSum==Code[0])
+
+  var curCmd = new VM_PreparedCommand();
+  prg.Cmd.push(curCmd);
+  curCmd.OpCode = VM_Commands.VM_RET;
+  // TODO: Addr=&CurCmd->Op1.Data
+  curCmd.Op1.Addr = [curCmd.Op1.Data];
+  curCmd.Op2.Addr = [curCmd.Op2.Data];
+  curCmd.Op1.Type = VM_OpType.VM_OPNONE;
+  curCmd.Op2.Type = VM_OpType.VM_OPNONE;
+
+  // If operand 'Addr' field has not been set by DecodeArg calls above,
+  // let's set it to point to operand 'Data' field. It is necessary for
+  // VM_OPINT type operands (usual integers) or maybe if something was
+  // not set properly for other operands. 'Addr' field is required
+  // for quicker addressing of operand data.
+  for (var i = 0; i < prg.Cmd.length; ++i) {
+    var cmd = prg.Cmd[i];
+    if (cmd.Op1.Addr == null) {
+      cmd.Op1.Addr = [cmd.Op1.Data];
+    }
+    if (cmd.Op2.Addr == null) {
+      cmd.Op2.Addr = [cmd.Op2.Data];
+    }
+  }
+
+/*
+#ifdef VM_OPTIMIZE
+  if (CodeSize!=0)
+    Optimize(Prg);
+#endif
+  */
+};
+
+/**
+ * @param {Uint8Array} arr
+ * @param {number} value
+ * @param {number=} offset Optional starting byte / offset into the array
+ *     (if not specified, starts at the 0th index)
+ */
+RarVM.prototype.setLowEndianValue = function(arr, value, offset) {
+  var i = offset || 0;
+  arr[i]     = value & 0xff;
+  arr[i + 1] = (value >>> 8) & 0xff;
+  arr[i + 2] = (value >>> 16) & 0xff;
+  arr[i + 3] = (value >>> 24) & 0xff;
+};
+
+/**
+ * Static function that reads in the next set of bits for the VM
+ * (might return 4, 8, 16 or 32 bits).
+ * @param {bitjs.io.BitStream} bstream A RTL bit stream.
+ * @return {number} The value of the bits read.
+ */
+RarVM.readData = function(bstream) {
+  // Read in the first 2 bits.
+  var flags = bstream.readBits(2);
+  switch (flags) { // Data&0xc000
+    // Return the next 4 bits.
+    case 0:
+      return bstream.readBits(4); // (Data>>10)&0xf
+
+    case 1: // 0x4000
+      // 0x3c00 => 0011 1100 0000 0000
+      if (bstream.peekBits(4) == 0) { // (Data&0x3c00)==0
+        // Skip the 4 zero bits.
+        bstream.readBits(4);
+        // Read in the next 8 and pad with 1s to 32 bits.
+        return (0xffffff00 | bstream.readBits(8)) >>> 0; // ((Data>>2)&0xff)
+      }
+
+      // Else, read in the next 8.
+      return bstream.readBits(8);
+
+    // Read in the next 16.
+    case 2: // 0x8000
+      return bstream.readBits(16);
+
+    // case 3
+    default:
+      return (bstream.readBits(16) << 16) | bstream.readBits(16);
+  }
+};
+
+
+var VM = new RarVM();
+var Filters = [];
+var PrgStack = [];
+var OldFilterLengths = [];
+var LastFilter = 0;
+// TODO: What is this for?
+var WrPtr = 0;
 
 // ============================================================================================== //
 
