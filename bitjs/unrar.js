@@ -1641,27 +1641,30 @@ function RarInsertOldDist(distance) {
 }
 
 /**
- * @param {number} length
- * @param {number} distance
+ * Copies len bytes from distance bytes ago in the buffer to the end of the
+ * current byte buffer.
+ * @param {number} length How many bytes to copy.
+ * @param {number} distance How far back in the buffer from the current write
+ *     pointer to start copying from.
  */
-function RarCopyString(length, distance) {
-  var destPtr = rBuffer.ptr - distance;
-  if (destPtr < 0) {
+function RarCopyString(len, distance) {
+  var srcPtr = rBuffer.ptr - distance;
+  if (srcPtr < 0) {
     var l = rOldBuffers.length;
-    while (destPtr < 0) {
-      destPtr = rOldBuffers[--l].data.length + destPtr;
+    while (srcPtr < 0) {
+      srcPtr = rOldBuffers[--l].data.length + srcPtr;
     }
     // TODO: lets hope that it never needs to read beyond file boundaries
-    while (length--) {
-      rBuffer.insertByte(rOldBuffers[l].data[destPtr++]);
+    while (len--) {
+      rBuffer.insertByte(rOldBuffers[l].data[srcPtr++]);
     }
   }
-  if (length > distance) {
-    while (length--) {
-      rBuffer.insertByte(rBuffer.data[destPtr++]);
+  if (len > distance) {
+    while (len--) {
+      rBuffer.insertByte(rBuffer.data[srcPtr++]);
     }
   } else {
-    rBuffer.insertBytes(rBuffer.data.subarray(destPtr, destPtr + length));
+    rBuffer.insertBytes(rBuffer.data.subarray(srcPtr, srcPtr + len));
   }
 }
 
