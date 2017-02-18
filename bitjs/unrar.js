@@ -13,6 +13,7 @@
 importScripts('io/bitstream.js');
 importScripts('io/bytebuffer.js');
 importScripts('archive.js');
+importScripts('rarvm.js');
 
 // Progress variables.
 var currentFilename = "";
@@ -60,1040 +61,6 @@ var MARK_HEAD      = 0x72,
   SIGN_HEAD      = 0x79,
   NEWSUB_HEAD      = 0x7a,
   ENDARC_HEAD      = 0x7b;
-
-// ============================================================================================== //
-
-/**
- * CRC Implementation.
- */
-var CRCTab = new Array(256).fill(0);
-
-function InitCRC() {
-  for (var i = 0; i < 256; ++i) {
-    var c = i;
-    for (var j = 0; j < 8; ++j) {
-      // Read http://stackoverflow.com/questions/6798111/bitwise-operations-on-32-bit-unsigned-ints
-      // for the bitwise operator issue (JS interprets operands as 32-bit signed
-      // integers and we need to deal with unsigned ones here).
-      c = ((c & 1) ? ((c >>> 1) ^ 0xEDB88320) : (c >>> 1)) >>> 0;
-    }
-    CRCTab[i] = c;
-  }
-}
-
-/**
- * @param {number} startCRC
- * @param {Uint8Array} arr
- * @return {number}
- */
-function CRC(startCRC, arr) {
-  if (CRCTab[1] == 0) {
-    InitCRC();
-  }
-
-/*
-#if defined(LITTLE_ENDIAN) && defined(PRESENT_INT32) && defined(ALLOW_NOT_ALIGNED_INT)
-  while (Size>0 && ((long)Data & 7))
-  {
-    StartCRC=CRCTab[(byte)(StartCRC^Data[0])]^(StartCRC>>8);
-    Size--;
-    Data++;
-  }
-  while (Size>=8)
-  {
-    StartCRC^=*(uint32 *)Data;
-    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
-    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
-    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
-    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
-    StartCRC^=*(uint32 *)(Data+4);
-    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
-    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
-    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
-    StartCRC=CRCTab[(byte)StartCRC]^(StartCRC>>8);
-    Data+=8;
-    Size-=8;
-  }
-#endif
-*/
-
-  for (var i = 0; i < arr.length; ++i) {
-    var byte = ((startCRC ^ arr[i]) >>> 0) & 0xff;
-    startCRC = (CRCTab[byte] ^ (startCRC >>> 8)) >>> 0;
-  }
-
-  return startCRC;
-}
-
-// ============================================================================================== //
-
-/**
- * RarVM Implementation.
- */
-var VM_MEMSIZE = 0x40000;
-var VM_MEMMASK = (VM_MEMSIZE - 1);
-var VM_GLOBALMEMADDR = 0x3C000;
-var VM_GLOBALMEMSIZE = 0x2000;
-var VM_FIXEDGLOBALSIZE = 64;
-var MAXWINSIZE = 0x400000;
-var MAXWINMASK = (MAXWINSIZE - 1);
-
-/**
- */
-var VM_Commands = {
-  VM_MOV: 0,
-  VM_CMP: 1,
-  VM_ADD: 2,
-  VM_SUB: 3,
-  VM_JZ: 4,
-  VM_JNZ: 5,
-  VM_INC: 6,
-  VM_DEC: 7,
-  VM_JMP: 8,
-  VM_XOR: 9,
-  VM_AND: 10,
-  VM_OR: 11,
-  VM_TEST: 12,
-  VM_JS: 13,
-  VM_JNS: 14,
-  VM_JB: 15,
-  VM_JBE: 16,
-  VM_JA: 17,
-  VM_JAE: 18,
-  VM_PUSH: 19,
-  VM_POP: 20,
-  VM_CALL: 21,
-  VM_RET: 22,
-  VM_NOT: 23,
-  VM_SHL: 24,
-  VM_SHR: 25,
-  VM_SAR: 26,
-  VM_NEG: 27,
-  VM_PUSHA: 28,
-  VM_POPA: 29,
-  VM_PUSHF: 30,
-  VM_POPF: 31,
-  VM_MOVZX: 32,
-  VM_MOVSX: 33,
-  VM_XCHG: 34,
-  VM_MUL: 35,
-  VM_DIV: 36,
-  VM_ADC: 37,
-  VM_SBB: 38,
-  VM_PRINT: 39,
-
-/*
-#ifdef VM_OPTIMIZE
-  VM_MOVB, VM_MOVD, VM_CMPB, VM_CMPD,
-
-  VM_ADDB, VM_ADDD, VM_SUBB, VM_SUBD, VM_INCB, VM_INCD, VM_DECB, VM_DECD,
-  VM_NEGB, VM_NEGD,
-#endif
-*/
-
-  // TODO: This enum value would be much larger if VM_OPTIMIZE.
-  VM_STANDARD: 40,
-};
-
-/**
- */
-var VM_StandardFilters = {
-  VMSF_NONE: 0,
-  VMSF_E8: 1,
-  VMSF_E8E9: 2,
-  VMSF_ITANIUM: 3,
-  VMSF_RGB: 4,
-  VMSF_AUDIO: 5,
-  VMSF_DELTA: 6,
-  VMSF_UPCASE: 7,
-};
-
-/**
- */
-var VM_Flags = {
-  VM_FC: 1,
-  VM_FZ: 2,
-  VM_FS: 0x80000000,
-};
-
-/**
- */
-var VM_OpType = {
-  VM_OPREG: 0,
-  VM_OPINT: 1,
-  VM_OPREGMEM: 2,
-  VM_OPNONE: 3,
-};
-
-/**
- * Finds the key that maps to a given value in an object.
- * @param {Object} obj
- * @param {number} val
- * @return {string} The key/enum value as a string.
- */
-function findKeyForValue(obj, val) {
-  for (var key in obj) {
-    if (obj[key] === val) {
-      return key;
-    }
-  }
-  return null;
-}
-
-function getDebugString(obj, val) {
-  var s = 'Unknown.';
-  if (obj === VM_Commands) {
-    s = 'VM_Commands.';
-  } else if (obj === VM_StandardFilters) {
-    s = 'VM_StandardFilters.';
-  } else if (obj === VM_Flags) {
-    s = 'VM_OpType.';
-  } else if (obj === VM_OpType) {
-    s = 'VM_OpType.';
-  }
-
-  return s + findKeyForValue(obj, val);
-}
-
-/**
- * @struct
- * @constructor
- */
-var VM_PreparedOperand = function() {
-  /** @type {VM_OpType} */
-  this.Type;
-
-  /** @type {number} */
-  this.Data = 0;
-
-  /** @type {number} */
-  this.Base = 0;
-
-  // TODO: In C++ this is a uint*
-  /** @type {Array<number>} */
-  this.Addr = null;
-};
-
-/** @return {string} */
-VM_PreparedOperand.prototype.toString = function() {
-  if (this.Type === null) {
-    return 'Error: Type was null in VM_PreparedOperand';
-  }
-  return '{ '
-      + 'Type: ' + getDebugString(VM_OpType, this.Type)
-      + ', Data: ' + this.Data
-      + ', Base: ' + this.Base
-      + ' }';
-};
-
-/**
- * @struct
- * @constructor
- */
-var VM_PreparedCommand = function() {
-  /** @type {VM_Commands} */
-  this.OpCode;
-
-  /** @type {boolean} */
-  this.ByteMode = false;
-
-  /** @type {VM_PreparedOperand} */
-  this.Op1 = new VM_PreparedOperand();
-
-  /** @type {VM_PreparedOperand} */
-  this.Op2 = new VM_PreparedOperand();
-};
-
-/** @return {string} */
-VM_PreparedCommand.prototype.toString = function(indent) {
-  if (this.OpCode === null) {
-    return 'Error: OpCode was null in VM_PreparedCommand';
-  }
-  indent = indent || '';
-  return indent + '{\n'
-      + indent + '  OpCode: ' + getDebugString(VM_Commands, this.OpCode) + ',\n'
-      + indent + '  ByteMode: ' + this.ByteMode + ',\n'
-      + indent + '  Op1: ' + this.Op1.toString() + ',\n'
-      + indent + '  Op2: ' + this.Op2.toString() + ',\n'
-      + indent + '}';
-};
-
-/**
- * @struct
- * @constructor
- */
-var VM_PreparedProgram = function() {
-  /** @type {Array<VM_PreparedCommand>} */
-  this.Cmd = [];
-
-  /** @type {Array<VM_PreparedCommand>} */
-  this.AltCmd = null;
-
-  /** @type {Uint8Array} */
-  this.GlobalData = new Uint8Array();
-
-  /** @type {Uint8Array} */
-  this.StaticData = new Uint8Array(); // static data contained in DB operators
-
-  /** @type {Uint32Array} */
-  this.InitR = new Uint32Array(7);
-
-  /**
-   * A pointer to bytes that have been filtered by a program.
-   * @type {Uint8Array}
-   */
-  this.FilteredData = null;
-};
-
-/** @return {string} */
-VM_PreparedProgram.prototype.toString = function() {
-  var s = '{\n  Cmd: [\n';
-  for (var i = 0; i < this.Cmd.length; ++i) {
-    s += this.Cmd[i].toString('  ') + ',\n';
-  }
-  s += '],\n';
-  // TODO: Dump GlobalData, StaticData, InitR?
-  s += ' }\n';
-  return s;
-};
-
-/**
- * @struct
- * @constructor
- */
-var UnpackFilter = function() {
-  /** @type {number} */
-  this.BlockStart = 0;
-
-  /** @type {number} */
-  this.BlockLength = 0;
-
-  /** @type {number} */
-  this.ExecCount = 0;
-
-  /** @type {boolean} */
-  this.NextWindow = false;
-
-  // position of parent filter in Filters array used as prototype for filter
-  // in PrgStack array. Not defined for filters in Filters array.
-  /** @type {number} */
-  this.ParentFilter = null;
-
-  /** @type {VM_PreparedProgram} */
-  this.Prg = new VM_PreparedProgram();
-};
-
-var VMCF_OP0       =  0;
-var VMCF_OP1       =  1;
-var VMCF_OP2       =  2;
-var VMCF_OPMASK    =  3;
-var VMCF_BYTEMODE  =  4;
-var VMCF_JUMP      =  8;
-var VMCF_PROC      = 16;
-var VMCF_USEFLAGS  = 32;
-var VMCF_CHFLAGS   = 64;
-
-var VM_CmdFlags = [
-  /* VM_MOV   */ VMCF_OP2 | VMCF_BYTEMODE                                ,
-  /* VM_CMP   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_ADD   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_SUB   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_JZ    */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
-  /* VM_JNZ   */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
-  /* VM_INC   */ VMCF_OP1 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_DEC   */ VMCF_OP1 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_JMP   */ VMCF_OP1 | VMCF_JUMP                                    ,
-  /* VM_XOR   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_AND   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_OR    */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_TEST  */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_JS    */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
-  /* VM_JNS   */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
-  /* VM_JB    */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
-  /* VM_JBE   */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
-  /* VM_JA    */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
-  /* VM_JAE   */ VMCF_OP1 | VMCF_JUMP | VMCF_USEFLAGS                    ,
-  /* VM_PUSH  */ VMCF_OP1                                                ,
-  /* VM_POP   */ VMCF_OP1                                                ,
-  /* VM_CALL  */ VMCF_OP1 | VMCF_PROC                                    ,
-  /* VM_RET   */ VMCF_OP0 | VMCF_PROC                                    ,
-  /* VM_NOT   */ VMCF_OP1 | VMCF_BYTEMODE                                ,
-  /* VM_SHL   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_SHR   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_SAR   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_NEG   */ VMCF_OP1 | VMCF_BYTEMODE | VMCF_CHFLAGS                 ,
-  /* VM_PUSHA */ VMCF_OP0                                                ,
-  /* VM_POPA  */ VMCF_OP0                                                ,
-  /* VM_PUSHF */ VMCF_OP0 | VMCF_USEFLAGS                                ,
-  /* VM_POPF  */ VMCF_OP0 | VMCF_CHFLAGS                                 ,
-  /* VM_MOVZX */ VMCF_OP2                                                ,
-  /* VM_MOVSX */ VMCF_OP2                                                ,
-  /* VM_XCHG  */ VMCF_OP2 | VMCF_BYTEMODE                                ,
-  /* VM_MUL   */ VMCF_OP2 | VMCF_BYTEMODE                                ,
-  /* VM_DIV   */ VMCF_OP2 | VMCF_BYTEMODE                                ,
-  /* VM_ADC   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_USEFLAGS | VMCF_CHFLAGS ,
-  /* VM_SBB   */ VMCF_OP2 | VMCF_BYTEMODE | VMCF_USEFLAGS | VMCF_CHFLAGS ,
-  /* VM_PRINT */ VMCF_OP0                                                ,
-];
-
-
-/**
- * @param {number} length
- * @param {number} crc
- * @param {VM_StandardFilters} type
- * @struct
- * @constructor
- */
-var StandardFilterSignature = function(length, crc, type) {
-  /** @type {number} */
-  this.Length = length;
-
-  /** @type {number} */
-  this.CRC = crc;
-
-  /** @type {VM_StandardFilters} */
-  this.Type = type;
-};
-
-/**
- * @type {Array<StandardFilterSignature>}
- */
-var StdList = [
-  new StandardFilterSignature(53, 0xad576887, VM_StandardFilters.VMSF_E8),
-  new StandardFilterSignature(57, 0x3cd7e57e, VM_StandardFilters.VMSF_E8E9),
-  new StandardFilterSignature(120, 0x3769893f, VM_StandardFilters.VMSF_ITANIUM),
-  new StandardFilterSignature(29, 0x0e06077d, VM_StandardFilters.VMSF_DELTA),
-  new StandardFilterSignature(149, 0x1c2c5dc8, VM_StandardFilters.VMSF_RGB),
-  new StandardFilterSignature(216, 0xbc85e701, VM_StandardFilters.VMSF_AUDIO),
-  new StandardFilterSignature(40, 0x46b9c560, VM_StandardFilters.VMSF_UPCASE),
-];
-
-
-/**
- * Should inherit from bitjs.io.BitStream.
- * @constructor
- */
-var RarVM = function() {
-  /** @private {Uint8Array} */
-  this.mem_ = null;
-
-  /** @private {Uint32Array<number>} */
-  this.R_ = new Uint32Array(8);
-
-  /** @private {number} */
-  this.flags_ = 0;
-};
-
-/**
- * Initializes the memory of the VM.
- */
-RarVM.prototype.init = function() {
-  if (!this.mem_) {
-    this.mem_ = new Uint8Array(VM_MEMSIZE);
-  }
-};
-
-/**
- * @param {Uint8Array} code
- * @return {VM_StandardFilters}
- */
-RarVM.prototype.isStandardFilter = function(code) {
-  var codeCRC = (CRC(0xffffffff, code, code.length) ^ 0xffffffff) >>> 0;
-  for (var i = 0; i < StdList.length; ++i) {
-    if (StdList[i].CRC == codeCRC && StdList[i].Length == code.length)
-      return StdList[i].Type;
-  }
-
-  return VM_StandardFilters.VMSF_NONE;
-};
-
-/**
- * @param {VM_PreparedOperand} op
- * @param {boolean} byteMode
- * @param {bitjs.io.BitStream} bstream A rtl bit stream.
- */
-RarVM.prototype.decodeArg = function(op, byteMode, bstream) {
-  var data = bstream.peekBits(16);
-  if (data & 0x8000) {
-    op.Type = VM_OpType.VM_OPREG;        // Operand is register (R[0]..R[7])
-    bstream.readBits(1);                 // 1 flag bit and...
-    op.Data = bstream.readBits(3);       // ... 3 register number bits
-    op.Addr = [this.R_[op.Data]] // TODO &R[Op.Data] // Register address
-  } else {
-    if ((data & 0xc000) == 0) {
-      op.Type = VM_OpType.VM_OPINT; // Operand is integer
-      bstream.readBits(2); // 2 flag bits
-      if (byteMode) {
-        op.Data = bstream.readBits(8);         // Byte integer.
-      } else {
-        op.Data = RarVM.readData(bstream);     // 32 bit integer.
-      }
-    } else {
-      // Operand is data addressed by register data, base address or both.
-      op.Type = VM_OpType.VM_OPREGMEM;
-      if ((data & 0x2000) == 0) {
-        bstream.readBits(3); // 3 flag bits
-        // Base address is zero, just use the address from register.
-        op.Data = bstream.readBits(3); // (Data>>10)&7
-        op.Addr = [this.R_[op.Data]]; // TODO &R[op.Data]
-        op.Base = 0;
-      } else {
-        bstream.readBits(4); // 4 flag bits
-        if ((data & 0x1000) == 0) {
-          // Use both register and base address.
-          op.Data = bstream.readBits(3);
-          op.Addr = [this.R_[op.Data]]; // TODO &R[op.Data]
-        } else {
-          // Use base address only. Access memory by fixed address.
-          op.Data = 0;
-        }
-        op.Base = RarVM.readData(bstream); // Read base address.
-      }
-    }
-  }
-};
-
-/**
- * @param {VM_PreparedProgram} prg
- */
-RarVM.prototype.execute = function(prg) {
-  this.R_.set(prg.InitR);
-
-  var globalSize = Math.min(prg.GlobalData.length, VM_GLOBALMEMSIZE);
-  if (globalSize) {
-    this.mem_.set(prg.GlobalData.subarray(0, globalSize), VM_GLOBALMEMADDR);
-  }
-
-  var staticSize = Math.min(prg.StaticData.length, VM_GLOBALMEMSIZE - globalSize);
-  if (staticSize) {
-    this.mem_.set(prg.StaticData.subarray(0, staticSize), VM_GLOBALMEMADDR + globalSize);
-  }
-
-  this.R_[7] = VM_MEMSIZE;
-  this.flags_ = 0;
-
-  var preparedCodes = prg.AltCmd ? prg.AltCmd : prg.Cmd;
-  if (prg.Cmd.length > 0 && !this.executeCode(preparedCodes)) {
-    // Invalid VM program. Let's replace it with 'return' command.
-    preparedCode.OpCode = VM_Commands.VM_RET;
-  }
-
-  var dataView = new DataView(this.mem_.buffer, VM_GLOBALMEMADDR);
-  var newBlockPos = dataView.getUint32(0x20, true /* little endian */) & VM_MEMMASK;
-  var newBlockSize = dataView.getUint32(0x1c, true /* little endian */) & VM_MEMMASK;
-  if (newBlockPos + newBlockSize >= VM_MEMSIZE) {
-    newBlockPos = newBlockSize = 0;
-  }
-  prg.FilteredData = this.mem_.subarray(newBlockPos, newBlockPos + newBlockSize);
-
-  prg.GlobalData = new Uint8Array(0);
-
-  var dataSize = Math.min(dataView.getUint32(0x30),
-      (VM_GLOBALMEMSIZE - VM_FIXEDGLOBALSIZE));
-  if (dataSize != 0) {
-    var len = dataSize + VM_FIXEDGLOBALSIZE;
-    prg.GlobalData = new Uint8Array(len);
-    prg.GlobalData.set(mem.subarray(VM_GLOBALMEMADDR, VM_GLOBALMEMADDR + len));
-  }
-};
-
-/**
- * @param {Array<VM_PreparedCommand>} preparedCodes
- * @return {boolean}
- */
-RarVM.prototype.executeCode = function(preparedCodes) {
-  var codeIndex = 0;
-  var cmd = preparedCodes[codeIndex];
-  // TODO: Why is this an infinite loop instead of just returning
-  // when a VM_RET is hit?
-  while (1) {
-    switch (cmd.OpCode) {
-      case VM_Commands.VM_RET:
-        if (this.R_[7] >= VM_MEMSIZE) {
-          return true;
-        }
-        //SET_IP(GET_VALUE(false,(uint *)&Mem[R[7] & VM_MEMMASK]));
-        this.R_[7] += 4;
-        continue;
-
-      case VM_Commands.VM_STANDARD:
-        this.executeStandardFilter(cmd.Op1.Data);
-        break;
-    } // switch (cmd.OpCode)
-    codeIndex++;
-    cmd = preparedCodes[codeIndex];
-  }
-};
-
-/**
- * @param {number} filterType
- */
-RarVM.prototype.executeStandardFilter = function(filterType) {
-  switch (filterType) {
-    case VM_StandardFilters.VMSF_DELTA:
-      var dataSize = this.R_[4];
-      var channels = this.R_[0];
-      var srcPos = 0;
-      var border = dataSize * 2;
-
-      //SET_VALUE(false,&Mem[VM_GLOBALMEMADDR+0x20],DataSize);
-      var dataView = new DataView(this.mem_.buffer, VM_GLOBALMEMADDR);
-      dataView.setUint32(0x20, dataSize, true /* little endian */);
-
-      if (dataSize >= VM_GLOBALMEMADDR / 2) {
-        break;
-      }
-
-      // Bytes from same channels are grouped to continual data blocks,
-      // so we need to place them back to their interleaving positions.
-      for (var curChannel = 0; curChannel < channels; ++curChannel) {
-        var prevByte = 0;
-        for (var destPos = dataSize + curChannel; destPos < border; destPos += channels) {
-          prevByte = (prevByte - this.mem_[srcPos++]) & 0xff;
-          this.mem_[destPos] = prevByte;
-        }
-      }
-
-      break;
-  }
-};
-
-/**
- * @param {Uint8Array} code
- * @param {VM_PreparedProgram} prg
- */
-RarVM.prototype.prepare = function(code, prg) {
-  var codeSize = code.length;
-
-  //InitBitInput();
-  //memcpy(InBuf,Code,Min(CodeSize,BitInput::MAX_SIZE));
-  var bstream = new bitjs.io.BitStream(code.buffer, true /* rtl */);
-
-  // Calculate the single byte XOR checksum to check validity of VM code.
-  var xorSum=0;
-  for (var i = 1; i < codeSize; ++i) {
-    xorSum ^= code[i];
-  }
-
-  bstream.readBits(8);
-
-  prg.Cmd = [];  // TODO: Is this right?  I don't see it being done in rarvm.cpp.
-
-  // VM code is valid if equal.
-  if (xorSum == code[0]) {
-    var filterType = this.isStandardFilter(code);
-    if (filterType != VM_StandardFilters.VMSF_NONE) {
-      // VM code is found among standard filters.
-      var curCmd = new VM_PreparedCommand();
-      prg.Cmd.push(curCmd);
-
-      curCmd.OpCode = VM_Commands.VM_STANDARD;
-      curCmd.Op1.Data = filterType;
-      // TODO: Addr=&CurCmd->Op1.Data
-      curCmd.Op1.Addr = [curCmd.Op1.Data];
-      curCmd.Op2.Addr = [null]; // &CurCmd->Op2.Data;
-      curCmd.Op1.Type = VM_OpType.VM_OPNONE;
-      curCmd.Op2.Type = VM_OpType.VM_OPNONE;
-      codeSize = 0;
-    }
-
-    var dataFlag = bstream.readBits(1);
-
-    // Read static data contained in DB operators. This data cannot be
-    // changed, it is a part of VM code, not a filter parameter.
-
-    if (dataFlag & 0x8000) {
-      var dataSize = RarVM.readData(bstream) + 1;
-      // TODO: This accesses the byte pointer of the bstream directly.  Is that ok?
-      for (var i = 0; i < bstream.bytePtr < codeSize && i < dataSize; ++i) {
-        // Append a byte to the program's static data.
-        var newStaticData = new Uint8Array(prg.StaticData.length + 1);
-        newStaticData.set(prg.StaticData);
-        newStaticData[newStaticData.length - 1] = bstream.readBits(8);
-        prg.StaticData = newStaticData;
-      }
-    }
-
-    while (bstream.bytePtr < codeSize) {
-      var curCmd = new VM_PreparedCommand();
-      prg.Cmd.push(curCmd); // Prg->Cmd.Add(1)
-      var flag = bstream.peekBits(1);
-      if (!flag) { // (Data&0x8000)==0
-        curCmd.OpCode = bstream.readBits(4);
-      } else {
-        curCmd.OpCode = (bstream.readBits(6) - 24);
-      }
-
-      if (VM_CmdFlags[curCmd.OpCode] & VMCF_BYTEMODE) {
-        curCmd.ByteMode = (bstream.readBits(1) != 0);
-      } else {
-        curCmd.ByteMode = 0;
-      }
-      curCmd.Op1.Type = VM_OpType.VM_OPNONE;
-      curCmd.Op2.Type = VM_OpType.VM_OPNONE;
-      var opNum = (VM_CmdFlags[curCmd.OpCode] & VMCF_OPMASK);
-      curCmd.Op1.Addr = null;
-      curCmd.Op2.Addr = null;
-      if (opNum > 0) {
-        this.decodeArg(curCmd.Op1, curCmd.ByteMode, bstream); // reading the first operand
-        if (opNum == 2) {
-          this.decodeArg(curCmd.Op2, curCmd.ByteMode, bstream); // reading the second operand
-        } else {
-          if (curCmd.Op1.Type == VM_OpType.VM_OPINT && (VM_CmdFlags[curCmd.OpCode] & (VMCF_JUMP|VMCF_PROC))) {
-            // Calculating jump distance.
-            var distance = curCmd.Op1.Data;
-            if (distance >= 256) {
-              distance -= 256;
-            } else {
-              if (distance >= 136) {
-                distance -= 264;
-              } else {
-                if (distance >= 16) {
-                  distance -= 8;
-                } else {
-                  if (distance >= 8) {
-                    distance -= 16;
-                  }
-                }
-              }
-              distance += prg.Cmd.length;
-            }
-            curCmd.Op1.Data = distance;
-          }
-        }
-      } // if (OpNum>0)
-    } // while ((uint)InAddr<CodeSize)
-  } // if (XorSum==Code[0])
-
-  var curCmd = new VM_PreparedCommand();
-  prg.Cmd.push(curCmd);
-  curCmd.OpCode = VM_Commands.VM_RET;
-  // TODO: Addr=&CurCmd->Op1.Data
-  curCmd.Op1.Addr = [curCmd.Op1.Data];
-  curCmd.Op2.Addr = [curCmd.Op2.Data];
-  curCmd.Op1.Type = VM_OpType.VM_OPNONE;
-  curCmd.Op2.Type = VM_OpType.VM_OPNONE;
-
-  // If operand 'Addr' field has not been set by DecodeArg calls above,
-  // let's set it to point to operand 'Data' field. It is necessary for
-  // VM_OPINT type operands (usual integers) or maybe if something was
-  // not set properly for other operands. 'Addr' field is required
-  // for quicker addressing of operand data.
-  for (var i = 0; i < prg.Cmd.length; ++i) {
-    var cmd = prg.Cmd[i];
-    if (cmd.Op1.Addr == null) {
-      cmd.Op1.Addr = [cmd.Op1.Data];
-    }
-    if (cmd.Op2.Addr == null) {
-      cmd.Op2.Addr = [cmd.Op2.Data];
-    }
-  }
-
-/*
-#ifdef VM_OPTIMIZE
-  if (CodeSize!=0)
-    Optimize(Prg);
-#endif
-  */
-};
-
-/**
- * @param {Uint8Array} arr The byte array to set a value in.
- * @param {number} value The unsigned 32-bit value to set.
- * @param {number} offset Offset into arr to start setting the value, defaults to 0.
- */
-RarVM.prototype.setLowEndianValue = function(arr, value, offset) {
-  var i = offset || 0;
-  arr[i]     = value & 0xff;
-  arr[i + 1] = (value >>> 8) & 0xff;
-  arr[i + 2] = (value >>> 16) & 0xff;
-  arr[i + 3] = (value >>> 24) & 0xff;
-};
-
-/**
- * Sets a number of bytes of the VM memory at the given position from a
- * source buffer of bytes.
- * @param {number} pos The position in the VM memory to start writing to.
- * @param {Uint8Array} buffer The source buffer of bytes.
- * @param {number} dataSize The number of bytes to set.
- */
-RarVM.prototype.setMemory = function(pos, buffer, dataSize) {
-  if (pos < VM_MEMSIZE) {
-    var numBytes = Math.min(dataSize, VM_MEMSIZE - pos);
-    for (var i = 0; i < numBytes; ++i) {
-      this.mem_[pos + i] = buffer[i];
-    }
-  }
-};
-
-/**
- * Static function that reads in the next set of bits for the VM
- * (might return 4, 8, 16 or 32 bits).
- * @param {bitjs.io.BitStream} bstream A RTL bit stream.
- * @return {number} The value of the bits read.
- */
-RarVM.readData = function(bstream) {
-  // Read in the first 2 bits.
-  var flags = bstream.readBits(2);
-  switch (flags) { // Data&0xc000
-    // Return the next 4 bits.
-    case 0:
-      return bstream.readBits(4); // (Data>>10)&0xf
-
-    case 1: // 0x4000
-      // 0x3c00 => 0011 1100 0000 0000
-      if (bstream.peekBits(4) == 0) { // (Data&0x3c00)==0
-        // Skip the 4 zero bits.
-        bstream.readBits(4);
-        // Read in the next 8 and pad with 1s to 32 bits.
-        return (0xffffff00 | bstream.readBits(8)) >>> 0; // ((Data>>2)&0xff)
-      }
-
-      // Else, read in the next 8.
-      return bstream.readBits(8);
-
-    // Read in the next 16.
-    case 2: // 0x8000
-      var val = bstream.getBits();
-      bstream.readBits(16);
-      return val; //bstream.readBits(16);
-
-    // case 3
-    default:
-      return (bstream.readBits(16) << 16) | bstream.readBits(16);
-  }
-};
-
-// ============================================================================================== //
-
-// Unpack code specific to RarVM
-
-var VM = new RarVM();
-
-/**
- * Filters code, one entry per filter.
- * @type {Array<UnpackFilter>}
- */
-var Filters = [];
-
-/**
- * Filters stack, several entrances of same filter are possible.
- * @type {Array<UnpackFilter>}
- */
-var PrgStack = [];
-
-/**
- * Lengths of preceding blocks, one length per filter. Used to reduce
- * size required to write block length if lengths are repeating.
- * @type {Array<number>}
- */
-var OldFilterLengths = [];
-
-var LastFilter = 0;
-
-function InitFilters() {
-  OldFilterLengths = [];
-  LastFilter = 0;
-  Filters = [];
-  PrgStack = [];
-}
-
-
-/**
- * @param {number} firstByte The first byte (flags).
- * @param {Uint8Array} vmCode An array of bytes.
- */
-function RarAddVMCode(firstByte, vmCode) {
-  VM.init();
-  var bstream = new bitjs.io.BitStream(vmCode.buffer, true /* rtl */);
-
-  var filtPos;
-  if (firstByte & 0x80) {
-    filtPos = RarVM.readData(bstream);
-    if (filtPos == 0) {
-      InitFilters();
-    } else {
-      filtPos--;
-    }
-  } else {
-    filtPos = LastFilter;
-  }
-
-  if (filtPos > Filters.length || filtPos > OldFilterLengths.length) {
-    return false;
-  }
-
-  LastFilter = filtPos;
-  var newFilter = (filtPos == Filters.length);
-
-  // new filter for PrgStack
-  var stackFilter = new UnpackFilter();
-  var filter = null;
-  // new filter code, never used before since VM reset
-  if (newFilter) {
-    // too many different filters, corrupt archive
-    if (filtPos > 1024) {
-      return false;
-    }
-
-    filter = new UnpackFilter();
-    Filters.push(filter);
-    stackFilter.ParentFilter = (Filters.length - 1);
-    OldFilterLengths.push(0); // OldFilterLengths.Add(1)
-    filter.ExecCount = 0;
-  } else { // filter was used in the past
-    filter = Filters[filtPos];
-    stackFilter.ParentFilter = filtPos;
-    filter.ExecCount++;
-  }
-
-  var emptyCount = 0;
-  for (var i = 0; i < PrgStack.length; ++i) {
-    PrgStack[i - emptyCount] = PrgStack[i];
-
-    if (PrgStack[i] == null) {
-      emptyCount++;
-    }
-    if (emptyCount > 0) {
-      PrgStack[i] = null;
-    }
-  }
-
-  if (emptyCount == 0) {
-    PrgStack.push(null); //PrgStack.Add(1);
-    emptyCount = 1;
-  }
-
-  var stackPos = PrgStack.length - emptyCount;
-  PrgStack[stackPos] = stackFilter;
-  stackFilter.ExecCount = filter.ExecCount;
-
-  var blockStart = RarVM.readData(bstream);
-  if (firstByte & 0x40) {
-    blockStart += 258;
-  }
-  stackFilter.BlockStart = (blockStart + rBuffer.ptr) & MAXWINMASK;
-
-  if (firstByte & 0x20) {
-    stackFilter.BlockLength = RarVM.readData(bstream);
-  } else {
-    stackFilter.BlockLength = filtPos < OldFilterLengths.length
-        ? OldFilterLengths[filtPos]
-        : 0;
-  }
-  stackFilter.NextWindow = (wBuffer.ptr != rBuffer.ptr) &&
-      (((wBuffer.ptr - rBuffer.ptr) & MAXWINMASK) <= blockStart);
-
-  OldFilterLengths[filtPos] = stackFilter.BlockLength;
-
-  for (var i = 0; i < 7; ++i) {
-    stackFilter.Prg.InitR[i] = 0;
-  }
-  stackFilter.Prg.InitR[3] = VM_GLOBALMEMADDR;
-  stackFilter.Prg.InitR[4] = stackFilter.BlockLength;
-  stackFilter.Prg.InitR[5] = stackFilter.ExecCount;
-
-  // set registers to optional parameters if any
-  if (firstByte & 0x10) {
-    var initMask = bstream.readBits(7);
-    for (var i = 0; i < 7; ++i) {
-      if (initMask & (1 << i)) {
-        stackFilter.Prg.InitR[i] = RarVM.readData(bstream);
-      }
-    }
-  }
-
-  if (newFilter) {
-    var vmCodeSize = RarVM.readData(bstream);
-    if (vmCodeSize >= 0x10000 || vmCodeSize == 0) {
-      return false;
-    }
-    var vmCode = new Uint8Array(vmCodeSize);
-    for (var i = 0; i < vmCodeSize; ++i) {
-      //if (Inp.Overflow(3))
-      //  return(false);
-      vmCode[i] = bstream.readBits(8);
-    }
-    VM.prepare(vmCode, filter.Prg);
-  }
-  stackFilter.Prg.Cmd = filter.Prg.Cmd;
-  stackFilter.Prg.AltCmd = filter.Prg.Cmd;
-
-  var staticDataSize = filter.Prg.StaticData.length;
-  if (staticDataSize > 0 && staticDataSize < VM_GLOBALMEMSIZE) {
-    // read statically defined data contained in DB commands
-    for (var i = 0; i < staticDataSize; ++i) {
-      stackFilter.Prg.StaticData[i] = filter.Prg.StaticData[i];
-    }
-  }
-
-  if (stackFilter.Prg.GlobalData.length < VM_FIXEDGLOBALSIZE) {
-    stackFilter.Prg.GlobalData = new Uint8Array(VM_FIXEDGLOBALSIZE);
-  }
-
-  var globalData = stackFilter.Prg.GlobalData;
-  for (var i = 0; i < 7; ++i) {
-    VM.setLowEndianValue(globalData, stackFilter.Prg.InitR[i], i * 4);
-  }
-
-  VM.setLowEndianValue(globalData, stackFilter.BlockLength, 0x1c);
-  VM.setLowEndianValue(globalData, 0, 0x20);
-  VM.setLowEndianValue(globalData, stackFilter.ExecCount, 0x2c);
-  for (var i = 0; i < 16; ++i) {
-    globalData[0x30 + i] = 0;
-  }
-
-  // put data block passed as parameter if any
-  if (firstByte & 8) {
-    //if (Inp.Overflow(3))
-    //  return(false);
-    var dataSize = RarVM.readData(bstream);
-    if (dataSize > (VM_GLOBALMEMSIZE - VM_FIXEDGLOBALSIZE)) {
-      return(false);
-    }
-
-    var curSize = stackFilter.Prg.GlobalData.length;
-    if (curSize < dataSize + VM_FIXEDGLOBALSIZE) {
-      // Resize global data and update the stackFilter and local variable.
-      var numBytesToAdd = dataSize + VM_FIXEDGLOBALSIZE - curSize;
-      var newGlobalData = new Uint8Array(globalData.length + numBytesToAdd);
-      newGlobalData.set(globalData);
-
-      stackFilter.Prg.GlobalData = newGlobalData;
-      globalData = newGlobalData;
-    }
-    //byte *GlobalData=&StackFilter->Prg.GlobalData[VM_FIXEDGLOBALSIZE];
-    for (var i = 0; i < dataSize; ++i) {
-      //if (Inp.Overflow(3))
-      //  return(false);
-      globalData[VM_FIXEDGLOBALSIZE + i] = bstream.readBits(8);
-    }
-  }
-
-  return true;
-}
-
-
-/**
- * @param {!bitjs.io.BitStream} bstream
- */
-function RarReadVMCode(bstream) {
-  var firstByte = bstream.readBits(8);
-  var length = (firstByte & 7) + 1;
-  if (length == 7) {
-    length = bstream.readBits(8) + 7;
-  } else if (length == 8) {
-    length = bstream.readBits(16);
-  }
-
-  // Read all bytes of VM code into an array.
-  var vmCode = new Uint8Array(length);
-  for (var i = 0; i < length; i++) {
-    // Do something here with checking readbuf.
-    vmCode[i] = bstream.readBits(8);
-  }
-  return RarAddVMCode(firstByte, vmCode);
-}
 
 // ============================================================================================== //
 
@@ -1639,6 +606,235 @@ var rOldDist = [0,0,0,0];
 var lastDist;
 var lastLength;
 
+// ============================================================================================== //
+
+// Unpack code specific to RarVM
+var VM = new RarVM();
+
+/**
+ * Filters code, one entry per filter.
+ * @type {Array<UnpackFilter>}
+ */
+var Filters = [];
+
+/**
+ * Filters stack, several entrances of same filter are possible.
+ * @type {Array<UnpackFilter>}
+ */
+var PrgStack = [];
+
+/**
+ * Lengths of preceding blocks, one length per filter. Used to reduce
+ * size required to write block length if lengths are repeating.
+ * @type {Array<number>}
+ */
+var OldFilterLengths = [];
+
+var LastFilter = 0;
+
+function InitFilters() {
+  OldFilterLengths = [];
+  LastFilter = 0;
+  Filters = [];
+  PrgStack = [];
+}
+
+
+/**
+ * @param {number} firstByte The first byte (flags).
+ * @param {Uint8Array} vmCode An array of bytes.
+ */
+function RarAddVMCode(firstByte, vmCode) {
+  VM.init();
+  var bstream = new bitjs.io.BitStream(vmCode.buffer, true /* rtl */);
+
+  var filtPos;
+  if (firstByte & 0x80) {
+    filtPos = RarVM.readData(bstream);
+    if (filtPos == 0) {
+      InitFilters();
+    } else {
+      filtPos--;
+    }
+  } else {
+    filtPos = LastFilter;
+  }
+
+  if (filtPos > Filters.length || filtPos > OldFilterLengths.length) {
+    return false;
+  }
+
+  LastFilter = filtPos;
+  var newFilter = (filtPos == Filters.length);
+
+  // new filter for PrgStack
+  var stackFilter = new UnpackFilter();
+  var filter = null;
+  // new filter code, never used before since VM reset
+  if (newFilter) {
+    // too many different filters, corrupt archive
+    if (filtPos > 1024) {
+      return false;
+    }
+
+    filter = new UnpackFilter();
+    Filters.push(filter);
+    stackFilter.ParentFilter = (Filters.length - 1);
+    OldFilterLengths.push(0); // OldFilterLengths.Add(1)
+    filter.ExecCount = 0;
+  } else { // filter was used in the past
+    filter = Filters[filtPos];
+    stackFilter.ParentFilter = filtPos;
+    filter.ExecCount++;
+  }
+
+  var emptyCount = 0;
+  for (var i = 0; i < PrgStack.length; ++i) {
+    PrgStack[i - emptyCount] = PrgStack[i];
+
+    if (PrgStack[i] == null) {
+      emptyCount++;
+    }
+    if (emptyCount > 0) {
+      PrgStack[i] = null;
+    }
+  }
+
+  if (emptyCount == 0) {
+    PrgStack.push(null); //PrgStack.Add(1);
+    emptyCount = 1;
+  }
+
+  var stackPos = PrgStack.length - emptyCount;
+  PrgStack[stackPos] = stackFilter;
+  stackFilter.ExecCount = filter.ExecCount;
+
+  var blockStart = RarVM.readData(bstream);
+  if (firstByte & 0x40) {
+    blockStart += 258;
+  }
+  stackFilter.BlockStart = (blockStart + rBuffer.ptr) & MAXWINMASK;
+
+  if (firstByte & 0x20) {
+    stackFilter.BlockLength = RarVM.readData(bstream);
+  } else {
+    stackFilter.BlockLength = filtPos < OldFilterLengths.length
+        ? OldFilterLengths[filtPos]
+        : 0;
+  }
+  stackFilter.NextWindow = (wBuffer.ptr != rBuffer.ptr) &&
+      (((wBuffer.ptr - rBuffer.ptr) & MAXWINMASK) <= blockStart);
+
+  OldFilterLengths[filtPos] = stackFilter.BlockLength;
+
+  for (var i = 0; i < 7; ++i) {
+    stackFilter.Prg.InitR[i] = 0;
+  }
+  stackFilter.Prg.InitR[3] = VM_GLOBALMEMADDR;
+  stackFilter.Prg.InitR[4] = stackFilter.BlockLength;
+  stackFilter.Prg.InitR[5] = stackFilter.ExecCount;
+
+  // set registers to optional parameters if any
+  if (firstByte & 0x10) {
+    var initMask = bstream.readBits(7);
+    for (var i = 0; i < 7; ++i) {
+      if (initMask & (1 << i)) {
+        stackFilter.Prg.InitR[i] = RarVM.readData(bstream);
+      }
+    }
+  }
+
+  if (newFilter) {
+    var vmCodeSize = RarVM.readData(bstream);
+    if (vmCodeSize >= 0x10000 || vmCodeSize == 0) {
+      return false;
+    }
+    var vmCode = new Uint8Array(vmCodeSize);
+    for (var i = 0; i < vmCodeSize; ++i) {
+      //if (Inp.Overflow(3))
+      //  return(false);
+      vmCode[i] = bstream.readBits(8);
+    }
+    VM.prepare(vmCode, filter.Prg);
+  }
+  stackFilter.Prg.Cmd = filter.Prg.Cmd;
+  stackFilter.Prg.AltCmd = filter.Prg.Cmd;
+
+  var staticDataSize = filter.Prg.StaticData.length;
+  if (staticDataSize > 0 && staticDataSize < VM_GLOBALMEMSIZE) {
+    // read statically defined data contained in DB commands
+    for (var i = 0; i < staticDataSize; ++i) {
+      stackFilter.Prg.StaticData[i] = filter.Prg.StaticData[i];
+    }
+  }
+
+  if (stackFilter.Prg.GlobalData.length < VM_FIXEDGLOBALSIZE) {
+    stackFilter.Prg.GlobalData = new Uint8Array(VM_FIXEDGLOBALSIZE);
+  }
+
+  var globalData = stackFilter.Prg.GlobalData;
+  for (var i = 0; i < 7; ++i) {
+    VM.setLowEndianValue(globalData, stackFilter.Prg.InitR[i], i * 4);
+  }
+
+  VM.setLowEndianValue(globalData, stackFilter.BlockLength, 0x1c);
+  VM.setLowEndianValue(globalData, 0, 0x20);
+  VM.setLowEndianValue(globalData, stackFilter.ExecCount, 0x2c);
+  for (var i = 0; i < 16; ++i) {
+    globalData[0x30 + i] = 0;
+  }
+
+  // put data block passed as parameter if any
+  if (firstByte & 8) {
+    //if (Inp.Overflow(3))
+    //  return(false);
+    var dataSize = RarVM.readData(bstream);
+    if (dataSize > (VM_GLOBALMEMSIZE - VM_FIXEDGLOBALSIZE)) {
+      return(false);
+    }
+
+    var curSize = stackFilter.Prg.GlobalData.length;
+    if (curSize < dataSize + VM_FIXEDGLOBALSIZE) {
+      // Resize global data and update the stackFilter and local variable.
+      var numBytesToAdd = dataSize + VM_FIXEDGLOBALSIZE - curSize;
+      var newGlobalData = new Uint8Array(globalData.length + numBytesToAdd);
+      newGlobalData.set(globalData);
+
+      stackFilter.Prg.GlobalData = newGlobalData;
+      globalData = newGlobalData;
+    }
+    //byte *GlobalData=&StackFilter->Prg.GlobalData[VM_FIXEDGLOBALSIZE];
+    for (var i = 0; i < dataSize; ++i) {
+      //if (Inp.Overflow(3))
+      //  return(false);
+      globalData[VM_FIXEDGLOBALSIZE + i] = bstream.readBits(8);
+    }
+  }
+
+  return true;
+}
+
+
+/**
+ * @param {!bitjs.io.BitStream} bstream
+ */
+function RarReadVMCode(bstream) {
+  var firstByte = bstream.readBits(8);
+  var length = (firstByte & 7) + 1;
+  if (length == 7) {
+    length = bstream.readBits(8) + 7;
+  } else if (length == 8) {
+    length = bstream.readBits(16);
+  }
+
+  // Read all bytes of VM code into an array.
+  var vmCode = new Uint8Array(length);
+  for (var i = 0; i < length; i++) {
+    // Do something here with checking readbuf.
+    vmCode[i] = bstream.readBits(8);
+  }
+  return RarAddVMCode(firstByte, vmCode);
+}
 
 /**
  * Unpacks the bit stream into rBuffer using the Unpack29 algorithm.
