@@ -330,13 +330,16 @@ function loadFromArrayBuffer(ab) {
   }
 }
 
-function loadSingleBook(filename) {
+/**
+ * @param {File} file
+ */
+function loadSingleBook(file) {
   var fr = new FileReader();
   fr.onload = function() {
       var ab = fr.result;
       loadFromArrayBuffer(ab);
   };
-  fr.readAsArrayBuffer(filename);
+  fr.readAsArrayBuffer(file);
 }
 
 var createURLFromArray = function(array, mimeType) {
