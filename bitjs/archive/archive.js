@@ -326,7 +326,7 @@ bitjs.archive.Unzipper = function(arrayBuffer, opt_pathToBitJS) {
   bitjs.base(this, arrayBuffer, opt_pathToBitJS);
 };
 bitjs.inherits(bitjs.archive.Unzipper, bitjs.archive.Unarchiver);
-bitjs.archive.Unzipper.prototype.getScriptFileName = function() { return 'unzip.js' };
+bitjs.archive.Unzipper.prototype.getScriptFileName = function() { return 'archive/unzip.js' };
 
 /**
  * Unrarrer
@@ -337,7 +337,7 @@ bitjs.archive.Unrarrer = function(arrayBuffer, opt_pathToBitJS) {
   bitjs.base(this, arrayBuffer, opt_pathToBitJS);
 };
 bitjs.inherits(bitjs.archive.Unrarrer, bitjs.archive.Unarchiver);
-bitjs.archive.Unrarrer.prototype.getScriptFileName = function() { return 'unrar.js' };
+bitjs.archive.Unrarrer.prototype.getScriptFileName = function() { return 'archive/unrar.js' };
 
 /**
  * Untarrer
@@ -348,6 +348,6 @@ bitjs.archive.Untarrer = function(arrayBuffer, opt_pathToBitJS) {
   bitjs.base(this, arrayBuffer, opt_pathToBitJS);
 };
 bitjs.inherits(bitjs.archive.Untarrer, bitjs.archive.Unarchiver);
-bitjs.archive.Untarrer.prototype.getScriptFileName = function() { return 'untar.js' };
+bitjs.archive.Untarrer.prototype.getScriptFileName = function() { return 'archive/untar.js' };
 
 })();
