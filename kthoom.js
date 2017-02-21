@@ -279,7 +279,12 @@ function loadFromArrayBuffer(ab) {
   } else if (h[0] == 80 && h[1] == 75) { // PK (Zip)
     unarchiver = new bitjs.archive.Unzipper(ab, pathToBitJS);
   } else if (h[0] == 255 && h[1] == 216) { // JPEG
-    kthoom.setProgressMeter(1);
+    totalImages = 1;
+    kthoom.setProgressMeter(1, 'Archive Missing');
+    var dataURI = createURLFromArray(new Uint8Array(ab), 'image/jpeg');
+    setImage(dataURI);
+    // hide logo
+    getElem('logo').setAttribute('style', 'display:none');
     return;
   } else { // Try with tar
     unarchiver = new bitjs.archive.Untarrer(ab, pathToBitJS);
