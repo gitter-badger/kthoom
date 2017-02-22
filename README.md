@@ -3,7 +3,7 @@
 Kthoom is a comic book archive reader that runs in the browser using client-side open web technologies such as JavaScript, HTML5, the File API, Web Workers, and Typed Arrays.
 
 ## Demo
-Try it out [here](https://codedread.github.io/kthoom/index.html).
+Try out the [FULL DEMO HERE](https://codedread.github.io/kthoom/index.html).
 
 File Support
 .cbz (zip)
