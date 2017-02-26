@@ -414,12 +414,10 @@ function setImage(url) {
       canvas.height = 300;
       updateScale(true);
       x.fillStyle = 'orange';
-      x.font = '50px sans-serif';
+      x.font = '32px sans-serif';
       x.strokeStyle = 'black';
       x.fillText('Page #' + (currentImage+1) + ' (' +
           imageFiles[currentImage].filename + ')', 100, 100)
-      x.fillStyle = 'red';
-      x.fillText('Is corrupt or not an image', 100, 200);
       
       if (/(html|htm)$/.test(imageFiles[currentImage].filename)) {
         var xhr = new XMLHttpRequest();
@@ -429,14 +427,19 @@ function setImage(url) {
           document.getElementById('mainText').innerHTML = '<iframe style="width:100%;height:700px;border:0" src="data:text/html,'+escape(xhr.responseText)+'"></iframe>';
         }
         xhr.send(null);
-      } else if (!/(jpg|jpeg|png|gif)$/.test(imageFiles[currentImage].filename) && imageFiles[currentImage].data.uncompressedSize < 10*1024) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.onload = function() {
-          document.getElementById('mainText').style.display = '';
-          document.getElementById('mainText').innerText = xhr.responseText;
-        };
-        xhr.send(null);
+      } else if (!/(jpg|jpeg|png|gif)$/.test(imageFiles[currentImage].filename)) {
+        var fileSize = (imageFiles[currentImage].data.fileData.length);
+        if (fileSize < 10*1024) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', url, true);
+          xhr.onload = function() {
+            document.getElementById('mainText').style.display = '';
+            document.getElementById('mainText').innerText = xhr.responseText;
+          };
+          xhr.send(null);
+        } else {
+          x.fillText('Cannot display this type of file', 100, 200);
+        }
       }
     };
     img.onload = function() {
@@ -792,10 +795,10 @@ function init() {
 }
 
 // Do html5 drag and drop.
-document.addEventListener('dragenter', function(e){e.preventDefault();e.stopPropagation()}, false);
-document.addEventListener('dragexit', function(e){e.preventDefault();e.stopPropagation()}, false);
-document.addEventListener('dragover', function(e){e.preventDefault();e.stopPropagation()}, false);
-document.addEventListener('drop', function(e){
+document.addEventListener('dragenter', function(e) { e.preventDefault();e.stopPropagation() }, false);
+document.addEventListener('dragexit', function(e) { e.preventDefault();e.stopPropagation() }, false);
+document.addEventListener('dragover', function(e) { e.preventDefault();e.stopPropagation() }, false);
+document.addEventListener('drop', function(e) {
   e.preventDefault();
   e.stopPropagation();
   getLocalFiles({target:e.dataTransfer});
