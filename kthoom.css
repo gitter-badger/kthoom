@@ -40,6 +40,7 @@ body {
 .helplist dt, .helplist dd {
   padding-left: 2em;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .helplist dt {
@@ -52,6 +53,11 @@ body {
 .helplist dd {
   margin-bottom: 0.5em;
   width: 80%;
+}
+
+.helpCallout {
+  color: #e00;
+  font-weight: bold;
 }
 
 #nav {
