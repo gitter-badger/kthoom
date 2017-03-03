@@ -17,18 +17,29 @@
     </div>
     <div class="foreground">
 	    <div id="header">
-        <div id="menu">
-          <a id="menu-open" class="menuButton" href="#">Open</a>
+        <div id="menu" tabindex="1">
+          <a id="menu-open" class="menuButton" href="#">
+            <svg viewBox="0 0 100 100">
+              <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="30" y2="30"></line>
+              <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="50" y2="50"></line>
+              <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="70" y2="70"></line>
+            </svg>
+          </a>
           <ul class="menuItems">
             <li>
               <a id="menu-open-local-files" href="#">
                 <input id="menu-open-local-files-input" type="file" multiple>
-                Local Files
+                Open from Your Computer
               </a>
             </li>
             <li>
               <a id="menu-open-google-drive" href="#">
-                Google Drive
+                Open from Google Drive
+              </a>
+            </li>
+            <li>
+              <a id="menu-help" href="#">
+                Help (Keyboard Shortcuts)
               </a>
             </li>
           </ul>
@@ -78,7 +89,9 @@
         <dd>Load next book</dd>
 
       	<dt>O</dt>
-        <dd>Open local file(s)</dd>
+        <dd>Open local file(s)
+          <span style="color:#e00;font-weight:bold">(open multiple files by shift-selecting)</span>
+        </dd>
 
         <dt>G</dt>
         <dd>Open a file from Google Drive</dd>

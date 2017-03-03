@@ -107,7 +107,7 @@ kthoom.ImageFile = function(file) {
   this.data = file;
 };
 
-kthoom.resetFileUploader = function() {
+kthoom.initMenu = function() {
   getElem('menu').addEventListener('click', function(evt) {
     var elem = evt.currentTarget;
     elem.classList.toggle('opened');
@@ -116,6 +116,8 @@ kthoom.resetFileUploader = function() {
       getLocalFiles, false);
   getElem('menu-open-google-drive').addEventListener('click',
       kthoom.google.doDrive, false);
+  getElem('menu-help').addEventListener('click',
+      showOrHideHelp, false);
 }
 
 kthoom.initProgressMeter = function() {
@@ -643,17 +645,21 @@ function updateScale(clear) {
   kthoom.saveSettings();
 }
 
+/**
+ * @param {boolean} show Whether to show help.  Defaults to true.
+ */
+function showOrHideHelp(show = true) {
+  //getElem('menu').classList.remove('opened');
+  getElem('overlay').style.display = show ? 'block' : 'none';
+}
+
 function keyHandler(evt) {
   var code = evt.keyCode;
 
   // If the overlay is shown, the only keystroke we handle is closing it.
-  var overlayStyle = getElem('overlay').style;
-  var overlayShown = (overlayStyle.display != 'none');
+  var overlayShown = getElem('overlay').style.display != 'none';
   if (overlayShown) {
-    if (code == kthoom.Key.QUESTION_MARK || code == kthoom.Key.ESCAPE) {
-      getElem('menu').classList.remove('opened');
-      overlayStyle.display = 'none';
-    }
+    showOrHideHelp(false);
     return;
   }
 
@@ -664,7 +670,7 @@ function keyHandler(evt) {
   } else if (code == kthoom.Key.G) {
     kthoom.google.doDrive();
   } else if (code == kthoom.Key.QUESTION_MARK) {
-    overlayStyle.display = 'block';
+    showOrHideHelp(true);
   }
 
   if (getComputedStyle(getElem('progress')).display == 'none') return;
@@ -745,7 +751,7 @@ function init() {
   } else {
     kthoom.initProgressMeter();
     document.body.className += /AppleWebKit/.test(navigator.userAgent) ? ' webkit' : '';
-    kthoom.resetFileUploader();
+    kthoom.initMenu();
     kthoom.loadSettings();
     document.addEventListener('keydown', keyHandler, false);
     window.addEventListener('resize', function() {

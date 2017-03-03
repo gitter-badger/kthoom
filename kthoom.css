@@ -15,7 +15,7 @@ body {
 }
 
 #overlay {
-  background-color: rgba(50, 50, 50, 0.9);
+  background-color: rgba(50, 50, 50, 0.95);
   border-radius: 1em;
   bottom: 50px;
   color: yellow;
@@ -257,9 +257,7 @@ body {
 div#menu {
   display: inline-block;
   color: yellow;
-  margin-top: 3px;
   opacity: 0.875;
-  padding-top: 5px;
   position: absolute;
   text-align: left;
   z-index: 5;
@@ -270,9 +268,10 @@ div#menu {
   border: solid 1px yellow;
   border-radius: 5px;
   color: yellow;
-  margin-top: 10px;
-  padding: 5px;
+  display: block;
   text-decoration: none;
+  width: 30px;
+  height: 30px;
 }
 
 .menuButton:hover {
@@ -280,21 +279,19 @@ div#menu {
 }
 
 .opened .menuButton {
-  border-bottom: none;
-  border-radius: 5px 5px 0 0;
 }
 
 ul.menuItems {
   background-color: black;
   border: solid 1px yellow;
-  border-radius: 0 5px 5px 5px;
+  border-radius: 5px 5px 5px 5px;
   display: none;
   list-style: none;
-  margin-top: 3px;
+  margin-top: 2px;
   opacity: 0.875;
   padding: 5px;
   position: absolute;
-  width: 120px;
+  width: 15em;
   z-index: -1;
 }
 
