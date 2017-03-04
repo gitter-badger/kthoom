@@ -7,20 +7,22 @@ Kthoom is a comic book archive reader that runs in the browser using client-side
 ## Documentation
 
 ### File Support
-.cbz (zip)
-.cbr (rar)
-.cbt (tar)
+
+  * .cbz (zip)
+  * .cbr ([rar](https://codedread.github.io/bitjs/docs/unrar.html))
+  * .cbt (tar)
 
 ### Keyboard Shortcuts
-  * O: Open a file
+  * O: Open files
   * Right/Left: Next/Previous page
   * ]: Next book
   * [: Prev book
   * H/W: Scale to height/width
   * B: Best Fit mode
-  * X: Toggle progress bar visibility
   * R/L: Rotate right/left
+  * X: Toggle progress bar visibility
   * F: Flip one way, then the other, then restore orientation
+  * ?: Bring up Help screen
 
 If kthoom thinks the browser is in full-screen mode, it will hide the progress bar.
 
@@ -28,5 +30,4 @@ You can tell kthoom to open as many books as you like in the Choose Files dialog
 
 ### Binary File Support
 
-NOTE: kthoom loads in local compressed files and decompresses them in the browser, which means that kthoom has an implementation of unzip, unrar and untar in JavaScript. Portions of this code have been migrated to its own library: [BitJS](https://github.com/codedread/bitjs), a more general purpose library to deal with binary file data in the browser.
-
+NOTE: kthoom loads in local compressed files and decompresses them in the browser, which means that kthoom has an implementation of unzip, unrar and untar in JavaScript. This code has been migrated to its own library: [BitJS](https://github.com/codedread/bitjs), a more general purpose library to deal with binary file data in native JavaScript.
