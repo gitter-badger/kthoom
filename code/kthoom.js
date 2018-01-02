@@ -70,6 +70,8 @@ var library = {
 };
   
 var hflip = false, vflip = false, fitMode = kthoom.Key.B;
+var wheelTimer = null;
+var wheelTurnedPageAt = 0;
 var canKeyNext = true, canKeyPrev = true;
 
 kthoom.saveSettings = function() {
@@ -395,6 +397,7 @@ function updatePage() {
 
 function setImage(url) {
   var canvas = getElem('mainImage');
+  var prevImage = getElem('prevImage');
   var x = canvas.getContext('2d');
   document.getElementById('mainText').style.display = 'none';
   if (url == 'loading') {
@@ -475,6 +478,9 @@ function setImage(url) {
       document.body.style.overflowY = '';
       x.restore();
     };
+    if (img.src) {
+      prevImage.setAttribute('src', img.src);
+    }
     img.src = url;
   };
 }
@@ -759,6 +765,70 @@ function init() {
       getElem('header').className = f ? 'fullscreen' : '';
       updateScale();
     }, false);
+    window.addEventListener('wheel', function(evt) {
+      evt.preventDefault();
+
+      // Keep the timer going if it has been started.
+      if (wheelTimer) {
+        clearTimeout(wheelTimer);
+      }
+      // If we haven't received wheel events for some time, reset things.
+      wheelTimer = setTimeout(function() {
+        wheelTimer = null;
+        wheelTurnedPageAt = 0;
+      }, 200);
+
+      // Determine what delta is relevant based on orientation.
+      var delta = (kthoom.rotateTimes %2 == 0 ? evt.deltaX : evt.deltaY);
+
+      var wheelThreshold = 50; // TODO: Tweak this?
+      var wheelThresholdHysteresis = wheelThreshold / 3;
+
+      // If we turned the page, we swallow all other wheel events until the delta
+      // is below the hysteresis threshold.
+      if (wheelTurnedPageAt !== 0) {
+        if (Math.abs(delta) < wheelThresholdHysteresis) {
+          wheelTurnedPageAt = 0;
+        }
+      } else {
+        // If we haven't turned the page yet, see if this delta would turn the page.
+        var turnPageFn = null;
+        switch (kthoom.rotateTimes) {
+          case 0:
+            if (delta > wheelThreshold) {
+              turnPageFn = showNextPage;
+            } else if (delta < -wheelThreshold) {
+              turnPageFn = showPrevPage;
+            }
+            break;
+          case 1:
+            if (delta > wheelThreshold) {
+              turnPageFn = showNextPage;
+            } else if (delta < -wheelThreshold) {
+              turnPageFn = showPrevPage;
+            }
+            break;
+          case 2:
+            if (delta < -wheelThreshold) {
+              turnPageFn = showNextPage;
+            } else if (delta > wheelThreshold) {
+              turnPageFn = showPrevPage;
+            }
+            break;
+          case 3:
+            if (delta < -wheelThreshold) {
+              turnPageFn = showNextPage;
+            } else if (delta > wheelThreshold) {
+              turnPageFn = showPrevPage;
+            }
+            break;
+        }
+        if (turnPageFn) {
+          turnPageFn();
+          wheelTurnedPageAt = delta;
+        }
+      }
+    }, true);
     getElem('mainImage').addEventListener('click', function(evt) {
       // Firefox does not support offsetX/Y so we have to manually calculate
       // where the user clicked in the image.
