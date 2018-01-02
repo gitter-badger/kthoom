@@ -217,6 +217,7 @@ kthoom.initProgressMeter = function() {
 
 kthoom.setProgressMeter = function(pct, opt_label) {
   var pct = (pct*100);
+  if (isNaN(pct)) pct = 1;
   var part = 1/totalImages;
   var remain = ((pct - lastCompletion)/100)/part;
   var fract = Math.min(1, remain);

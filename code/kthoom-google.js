@@ -80,6 +80,7 @@ kthoom.google = {
 
   pickerCallback : function(data) {
     if (data.action == google.picker.Action.PICKED) {
+      var fullSize = data.docs[0].sizeBytes;
       var gRequest = gapi.client.drive.files.get({
           'fileId': data.docs[0].id
       });
@@ -88,12 +89,19 @@ kthoom.google = {
         xhr.open('GET', response.downloadUrl, true);
         xhr.setRequestHeader('Authorization', 'OAuth ' + kthoom.google.oathToken);
         xhr.responseType = 'arraybuffer';
-        xhr.onload = function (event) {
+        xhr.onload = function(event) {
           var arrayBuffer = event.target.response;
           loadFromArrayBuffer(arrayBuffer);
         };
-        xhr.onprogress = function (evt) {
-          kthoom.setProgressMeter(evt.loaded / evt.total, 'Loading');
+        xhr.onprogress = function(evt) {
+          var pct = undefined;
+          if (evt.lengthComputable && evt.total) {
+            pct = evt.loaded / evt.total;
+          } else if (fullSize) {
+            pct = evt.loaded / fullSize;
+          }
+
+          kthoom.setProgressMeter(pct, 'Loading from Google Drive');
         }
         xhr.send(null);
       });
