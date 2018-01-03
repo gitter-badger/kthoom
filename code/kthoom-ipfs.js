@@ -16,7 +16,11 @@ kthoom.ipfs = {
         // Load in the IPFS script API.
         var ipfsScriptEl = document.createElement('script');
         ipfsScriptEl.addEventListener('load', () => {
+<<<<<<< HEAD
           kthoom.setProgressMeter(0.2, 'Creating IPFS node...');
+=======
+          kthoom.setProgressMeter(0.3, 'Creating IPFS node...');
+>>>>>>> f75ba3c838612e77ba99d4c163bcc3bb844f87c1
           var node = window.Ipfs.createNode();
           node.on('start', () => {
             kthoom.ipfs.node_ = node;
