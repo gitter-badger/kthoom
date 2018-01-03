@@ -564,7 +564,7 @@ function showNextPage() {
 
 function toggleToolbar() {
   var headerDiv = getElem('header');
-  var fullscreen = /fullscreen/.test(headDiv.className);
+  var fullscreen = /fullscreen/.test(headerDiv.className);
   headerDiv.className = (fullscreen ? '' : 'fullscreen');
   //getElem('toolbarbutton).innerText = s?'-':'+';
   updateScale();
