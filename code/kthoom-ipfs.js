@@ -23,7 +23,7 @@ kthoom.ipfs = {
             resolve(node);
           });
         });
-        ipfsScriptEl.setAttribute('src', 'https://unpkg.com/ipfs@0.27.5/dist/index.min.js');
+        ipfsScriptEl.setAttribute('src', 'https://unpkg.com/ipfs@0.27.5/dist/index.js');
         document.body.appendChild(ipfsScriptEl);
       });
     }
