@@ -124,7 +124,7 @@ function setImage(url) {
   const x = canvas.getContext('2d');
   document.getElementById('mainText').style.display = 'none';
   if (url == 'loading') {
-    updateScale(true);
+    kthoom.getApp().updateScale(true);
     canvas.width = innerWidth - 100;
     canvas.height = 200;
     x.fillStyle = 'red';
@@ -140,7 +140,7 @@ function setImage(url) {
     img.onerror = function(e) {
       canvas.width = innerWidth - 100;
       canvas.height = 300;
-      updateScale(true);
+      kthoom.getApp().updateScale(true);
       x.fillStyle = 'orange';
       x.font = '32px sans-serif';
       x.strokeStyle = 'black';
@@ -195,7 +195,7 @@ function setImage(url) {
       scrollTo(0,0);
       x.drawImage(img, 0, 0);
       
-      updateScale();
+      kthoom.getApp().updateScale();
         
       canvas.style.display = '';
       document.body.style.overflowY = '';
@@ -291,7 +291,7 @@ function toggleToolbar() {
   const fullscreen = /fullscreen/.test(headerDiv.className);
   headerDiv.className = (fullscreen ? '' : 'fullscreen');
   //getElem('toolbarbutton).innerText = s?'-':'+';
-  updateScale();
+  kthoom.getApp().updateScale();
 }
 kthoom.toggleToolbar = toggleToolbar;
 
@@ -357,166 +357,6 @@ function closeBook() {
   updatePage();
 }
 
-function updateScale(clear) {
-  const mainImageStyle = getElem('mainImage').style;
-  mainImageStyle.width = '';
-  mainImageStyle.height = '';
-  mainImageStyle.maxWidth = '';
-  mainImageStyle.maxHeight = '';
-  let maxheight = innerHeight - 15;
-  if (!/fullscreen/.test(getElem('header').className)) {
-    maxheight -= 25;
-  }
-  if (clear || fitMode == Key.N) {
-  } else if (fitMode == Key.B) {
-    mainImageStyle.maxWidth = '100%';
-    mainImageStyle.maxHeight = maxheight + 'px';
-  } else if (fitMode == Key.H) {
-    mainImageStyle.height = maxheight + 'px';
-  } else if (fitMode == Key.W) {
-    mainImageStyle.width = '100%';
-  }
-  kthoom.getApp().saveSettings();
-}
-
-/**
- * @param {boolean} show Whether to show help.  Defaults to true.
- */
-function showOrHideHelp(show = true) {
-  getElem('overlay').style.display = show ? 'block' : 'none';
-}
-
-function keyHandler(evt) {
-  const code = evt.keyCode;
-
-  // If the overlay is shown, the only keystroke we handle is closing it.
-  const overlayShown = getElem('overlay').style.display != 'none';
-  if (overlayShown) {
-    showOrHideHelp(false);
-    return;
-  }
-
-  // Handle keystrokes that do not depend on whether a document is loaded.
-  if (code == Key.O) {
-    getElem('menu-open-local-files-input').click();
-    getElem('menu').classList.remove('opened');
-  } else if (code == Key.G) {
-    kthoom.google.doDrive();
-  } else if (code == Key.QUESTION_MARK) {
-    showOrHideHelp(true);
-  }
-
-  if (getComputedStyle(getElem('progress')).display == 'none') return;
-  canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
-  canKeyPrev = (scrollX <= 0);
-
-  if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
-  switch(code) {
-    case Key.X:
-      toggleToolbar();
-      break;
-    case Key.LEFT:
-      if (canKeyPrev) showPrevPage();
-      break;
-    case Key.RIGHT:
-      if (canKeyNext) showNextPage();
-      break;
-    case Key.LEFT_SQUARE_BRACKET:
-      if (library.currentBookNum > 0) {
-        loadPrevBook();
-      }
-      break;
-    case Key.RIGHT_SQUARE_BRACKET:
-      if (library.currentBookNum < library.allBooks.length - 1) {
-        loadNextBook();
-      }
-      break;
-    case Key.L:
-      kthoom.rotateTimes--;
-      if (kthoom.rotateTimes < 0) {
-        kthoom.rotateTimes = 3;
-      }
-      updatePage();
-      break;
-    case Key.R:
-      kthoom.rotateTimes++;
-      if (kthoom.rotateTimes > 3) {
-        kthoom.rotateTimes = 0;
-      }
-      updatePage();
-      break;
-    case Key.F:
-      if (!hflip && !vflip) {
-        hflip = true;
-      } else if(hflip == true) {
-        vflip = true;
-        hflip = false;
-      } else if(vflip == true) {
-        vflip = false;
-      }
-      updatePage();
-      break;
-    case Key.W:
-      fitMode = Key.W;
-      updateScale();
-      break;
-    case Key.H:
-      fitMode = Key.H;
-      updateScale();
-      break;
-    case Key.B:
-      fitMode = Key.B;
-      updateScale();
-      break;
-    case Key.N:
-      fitMode = Key.N;
-      updateScale();
-      break;
-    default:
-      break;
-  }
-}
-
-function init() {
-  document.body.className += /AppleWebKit/.test(navigator.userAgent) ? ' webkit' : '';
-  document.addEventListener('keydown', keyHandler, false);
-  window.addEventListener('resize', () => {
-    const f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
-    getElem('header').className = f ? 'fullscreen' : '';
-    updateScale();
-  }, false);
-  getElem('mainImage').addEventListener('click', (evt) => {
-    // Firefox does not support offsetX/Y so we have to manually calculate
-    // where the user clicked in the image.
-    const mainContentWidth = getElem('mainContent').clientWidth;
-    const mainContentHeight = getElem('mainContent').clientHeight;
-    const comicWidth = evt.target.clientWidth;
-    const comicHeight = evt.target.clientHeight;
-    const offsetX = (mainContentWidth - comicWidth) / 2;
-    const offsetY = (mainContentHeight - comicHeight) / 2;
-    const clickX = !!evt.offsetX ? evt.offsetX : (evt.clientX - offsetX);
-    const clickY = !!evt.offsetY ? evt.offsetY : (evt.clientY - offsetY);
-
-    // Determine if the user clicked/tapped the left side or the
-    // right side of the page.
-    let clickedPrev = false;
-    switch (kthoom.rotateTimes) {
-      case 0: clickedPrev = clickX < (comicWidth / 2); break;
-      case 1: clickedPrev = clickY < (comicHeight / 2); break;
-      case 2: clickedPrev = clickX > (comicWidth / 2); break;
-      case 3: clickedPrev = clickY > (comicHeight / 2); break;
-    }
-    if (clickedPrev) {
-      showPrevPage();
-    } else {
-      showNextPage();
-    }
-  }, false);
-  getElem('libraryTab').addEventListener('click', () => toggleLibraryOpen(), false);
-
-  loadHash();
-}
-
 function loadHash() {
   const hashcontent = window.location.hash.substr(1);
   if (hashcontent.lastIndexOf("ipfs", 0) === 0) {
@@ -542,9 +382,8 @@ class KthoomApp {
         resolve();
       }
     }).then(() => {
-      // TODO: Move all of init() into this class.
-      init();
       this.init_();
+      loadHash();
     });
   }
 
@@ -554,6 +393,10 @@ class KthoomApp {
     this.initMenu_();
     this.initDragDrop_();
     this.initSwipe_();
+    this.initClickHandlers_();
+    this.initResizeHandler_();
+
+    document.addEventListener('keydown', (e) => this.keyHandler_(e), false);
 
     this.loadSettings_();
 
@@ -581,7 +424,7 @@ class KthoomApp {
     getElem('menu-open-local-files').addEventListener('change', getLocalFiles, false);
     getElem('menu-open-google-drive').addEventListener('click', kthoom.google.doDrive, false);
     getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow, false);
-    getElem('menu-help').addEventListener('click', showOrHideHelp, false);
+    getElem('menu-help').addEventListener('click', this.showOrHideHelp_, false);
   }
 
   /** @private */
@@ -639,6 +482,47 @@ class KthoomApp {
   }
 
   /** @private */
+  initClickHandlers_() {
+    getElem('mainImage').addEventListener('click', (evt) => {
+      // Firefox does not support offsetX/Y so we have to manually calculate
+      // where the user clicked in the image.
+      const mainContentWidth = getElem('mainContent').clientWidth;
+      const mainContentHeight = getElem('mainContent').clientHeight;
+      const comicWidth = evt.target.clientWidth;
+      const comicHeight = evt.target.clientHeight;
+      const offsetX = (mainContentWidth - comicWidth) / 2;
+      const offsetY = (mainContentHeight - comicHeight) / 2;
+      const clickX = !!evt.offsetX ? evt.offsetX : (evt.clientX - offsetX);
+      const clickY = !!evt.offsetY ? evt.offsetY : (evt.clientY - offsetY);
+
+      // Determine if the user clicked/tapped the left side or the
+      // right side of the page.
+      let clickedPrev = false;
+      switch (kthoom.rotateTimes) {
+        case 0: clickedPrev = clickX < (comicWidth / 2); break;
+        case 1: clickedPrev = clickY < (comicHeight / 2); break;
+        case 2: clickedPrev = clickX > (comicWidth / 2); break;
+        case 3: clickedPrev = clickY > (comicHeight / 2); break;
+      }
+      if (clickedPrev) {
+        showPrevPage();
+      } else {
+        showNextPage();
+      }
+    }, false);
+    getElem('libraryTab').addEventListener('click', () => toggleLibraryOpen(), false);
+  }
+
+  /** @private */
+  initResizeHandler_() {
+    window.addEventListener('resize', () => {
+      const f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
+      getElem('header').className = f ? 'fullscreen' : '';
+      this.updateScale();
+    }, false);
+  }
+
+  /** @private */
   loadSettings_() {
     try {
       if (localStorage[LOCAL_STORAGE_KEY].length < 10) return;
@@ -648,6 +532,116 @@ class KthoomApp {
       vflip = s.vflip;
       fitMode = s.fitMode;
     } catch(err) {}
+  }
+
+  /** @private */
+  keyHandler_(evt) {
+    const code = evt.keyCode;
+
+    // If the overlay is shown, the only keystroke we handle is closing it.
+    const overlayShown = getElem('overlay').style.display != 'none';
+    if (overlayShown) {
+      this.showOrHideHelp_(false);
+      return;
+    }
+
+    // Handle keystrokes that do not depend on whether a document is loaded.
+    if (code == Key.O) {
+      getElem('menu-open-local-files-input').click();
+      getElem('menu').classList.remove('opened');
+    } else if (code == Key.G) {
+      kthoom.google.doDrive();
+    } else if (code == Key.QUESTION_MARK) {
+      this.showOrHideHelp_(true);
+    }
+
+    if (getComputedStyle(getElem('progress')).display == 'none') return;
+    canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
+    canKeyPrev = (scrollX <= 0);
+
+    if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
+    switch(code) {
+      case Key.X:
+        toggleToolbar();
+        break;
+      case Key.LEFT:
+        if (canKeyPrev) showPrevPage();
+        break;
+      case Key.RIGHT:
+        if (canKeyNext) showNextPage();
+        break;
+      case Key.LEFT_SQUARE_BRACKET:
+        if (library.currentBookNum > 0) {
+          loadPrevBook();
+        }
+        break;
+      case Key.RIGHT_SQUARE_BRACKET:
+        if (library.currentBookNum < library.allBooks.length - 1) {
+          loadNextBook();
+        }
+        break;
+      case Key.L:
+        kthoom.rotateTimes--;
+        if (kthoom.rotateTimes < 0) {
+          kthoom.rotateTimes = 3;
+        }
+        updatePage();
+        break;
+      case Key.R:
+        kthoom.rotateTimes++;
+        if (kthoom.rotateTimes > 3) {
+          kthoom.rotateTimes = 0;
+        }
+        updatePage();
+        break;
+      case Key.F:
+        if (!hflip && !vflip) {
+          hflip = true;
+        } else if(hflip == true) {
+          vflip = true;
+          hflip = false;
+        } else if(vflip == true) {
+          vflip = false;
+        }
+        updatePage();
+        break;
+      case Key.W: case Key.H: case Key.B: case Key.N:
+        fitMode = code;
+        this.updateScale();
+        break;
+      default:
+        break;
+    }
+  }
+
+  /**
+   * @param {boolean} show Whether to show help.  Defaults to true.
+   * @private
+   */
+  showOrHideHelp_(show = true) {
+    getElem('overlay').style.display = show ? 'block' : 'none';
+  }
+
+  updateScale(clear = false) {
+    const mainImageStyle = getElem('mainImage').style;
+    mainImageStyle.width = '';
+    mainImageStyle.height = '';
+    mainImageStyle.maxWidth = '';
+    mainImageStyle.maxHeight = '';
+    let maxheight = innerHeight - 15;
+    if (!/fullscreen/.test(getElem('header').className)) {
+      maxheight -= 25;
+    }
+    if (clear || fitMode == Key.N) {
+    } else if (fitMode == Key.B) {
+      mainImageStyle.maxWidth = '100%';
+      mainImageStyle.maxHeight = maxheight + 'px';
+    } else if (fitMode == Key.H) {
+      mainImageStyle.height = maxheight + 'px';
+    } else if (fitMode == Key.W) {
+      mainImageStyle.width = '100%';
+    }
+    this.saveSettings();
   }
 
   initialized() { return this.initializedPromise_; }
@@ -724,17 +718,15 @@ class KthoomApp {
 
     // Listen for UnarchiveEvents.
     if (unarchiver) {
-      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS,
-        (e) => {
+      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS, (e) => {
           const percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
           totalImages = e.totalFilesInArchive;
           this.setProgressMeter(percentage, 'Unzipping');
           // display nav
           lastCompletion = percentage * 100;
-        });
+      });
       unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO, (e) => console.log(e.msg));
-      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT,
-        (e) => {
+      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT, (e) => {
           // convert DecompressedFile into a bunch of ImageFiles
           if (e.unarchivedFile) {
             const f = e.unarchivedFile;
@@ -752,12 +744,11 @@ class KthoomApp {
           if (imageFiles.length == currentImage + 1) {
             updatePage();
           }
-        });
-      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH,
-        (e) => {
+      });
+      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, (e) => {
           const diff = ((new Date).getTime() - start)/1000;
           console.log('Unarchiving done in ' + diff + 's');
-        })
+      });
       unarchiver.start();
     } else {
       alert('Some error');
