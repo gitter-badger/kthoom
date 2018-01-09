@@ -4,15 +4,36 @@
     <title>kthoom Comic Reader</title>
     <link rel="stylesheet" href="code/kthoom.css" type="text/css"/>
     <link rel="icon" type="image/png" href="images/logo.png"/>
+
+    <!-- Needed for Traceur, the nomodule attribute is needed so that Traceur is only used by browsers
+         that don't support ES6 modules natively.  We can completely remove these two scripts once
+         all browsers support ES6 modules natively. -->
+    <script nomodule src="code/traceur/traceur.js"></script>
+    <script nomodule>
+      var options = new traceur.util.Options();
+      options.asyncFunctions = true;
+      var pathname = document.location.pathname;
+      if (pathname.indexOf('index.html') != -1) {
+        pathname = pathname.substr(0, pathname.indexOf('index.html'));
+      }
+      // Traceur's script location is different than native browsers.  I hacked this option so that
+      // we can use either Traceur or native browser parsing of modules.
+      options.scriptBaseURL = pathname + 'code/';
+      new traceur.WebPageTranscoder(document.location.href, options).run();
+    </script>
+
+    <!-- The crossorigin attribute is needed so that credentials are forwarded through UberProxy -->
+    <script type="module" src="code/kthoom.js" crossorigin="use-credentials"></script>
+
     <script type="application/javascript" src="code/kthoom-google.js"></script>
     <script type="application/javascript" src="code/kthoom-ipfs.js"></script>
-    <script type="application/javascript" src="code/kthoom.js"></script>
+    <!--script type="application/javascript" src="code/kthoom.js"></script-->
     <script type="application/javascript" src="code/bitjs/archive/archive.js"></script>
     <script id="google"
         src="https://apis.google.com/js/client.js?onload=kthoom.google.boot"
         onerror="window.onload=kthoom.google.boot" async></script>
   </head>
-  <body onload="init()">
+  <body>
     <div class="background">
       <object id="logo" type="image/svg+xml" data="images/logo.svg" width="100%">kthoom logo</object>
     </div>

@@ -770,6 +770,15 @@ function init() {
     document.body.className += /AppleWebKit/.test(navigator.userAgent) ? ' webkit' : '';
     kthoom.initMenu();
     kthoom.loadSettings();
+    // Do html5 drag and drop.
+    document.addEventListener('dragenter', function(e) { e.preventDefault();e.stopPropagation() }, false);
+    document.addEventListener('dragexit', function(e) { e.preventDefault();e.stopPropagation() }, false);
+    document.addEventListener('dragover', function(e) { e.preventDefault();e.stopPropagation() }, false);
+    document.addEventListener('drop', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      getLocalFiles({target:e.dataTransfer});
+    }, false);
     document.addEventListener('keydown', keyHandler, false);
     window.addEventListener('resize', function() {
       const f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
@@ -890,12 +899,9 @@ function HashLoader() {
   }
 }
 
-// Do html5 drag and drop.
-document.addEventListener('dragenter', function(e) { e.preventDefault();e.stopPropagation() }, false);
-document.addEventListener('dragexit', function(e) { e.preventDefault();e.stopPropagation() }, false);
-document.addEventListener('dragover', function(e) { e.preventDefault();e.stopPropagation() }, false);
-document.addEventListener('drop', function(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  getLocalFiles({target:e.dataTransfer});
-}, false);
+// Initialize everything.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function(e) { init(); }, false);
+} else {
+  init();
+}
