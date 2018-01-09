@@ -93,117 +93,6 @@ kthoom.ImageFile = function(file) {
   this.data = file;
 };
 
-kthoom.initMenu = function() {
-  getElem('menu').addEventListener('click', function(evt) {
-    const elem = evt.currentTarget;
-    elem.classList.toggle('opened');
-  });
-  getElem('menu-open-local-files').addEventListener('change',
-      getLocalFiles, false);
-  getElem('menu-open-google-drive').addEventListener('click',
-      kthoom.google.doDrive, false);
-  getElem('menu-open-ipfs-hash').addEventListener('click',
-      kthoom.ipfs.ipfsHashWindow, false);
-  getElem('menu-help').addEventListener('click',
-      showOrHideHelp, false);
-}
-
-kthoom.initProgressMeter = function() {
-  const svgns = 'http://www.w3.org/2000/svg';
-  const pdiv = document.getElementById('progress');
-  const svg = document.createElementNS(svgns, 'svg');
-  svg.style.width = '100%';
-  svg.style.height = '100%';
-  
-  const defs = document.createElementNS(svgns, 'defs');
-
-  const patt = document.createElementNS(svgns, 'pattern');
-  patt.id = 'progress_pattern';
-  patt.setAttribute('width', '30');
-  patt.setAttribute('height', '20');
-  patt.setAttribute('patternUnits', 'userSpaceOnUse');
-
-  const rect = document.createElementNS(svgns, 'rect');
-  rect.setAttribute('width', '100%');
-  rect.setAttribute('height', '100%');
-  rect.setAttribute('fill', '#cc2929');
-  
-  const poly = document.createElementNS(svgns, 'polygon');
-  poly.setAttribute('fill', 'yellow');
-  poly.setAttribute('points', '15,0 30,0 15,20 0,20');
-
-  patt.appendChild(rect);
-  patt.appendChild(poly);
-  defs.appendChild(patt);
-  
-  svg.appendChild(defs);
-  
-  const g = document.createElementNS(svgns, 'g');
-  
-  const outline = document.createElementNS(svgns, 'rect');
-  outline.setAttribute('y', '1');
-  outline.setAttribute('width', '100%');
-  outline.setAttribute('height', '15');
-  outline.setAttribute('fill', '#777');
-  outline.setAttribute('stroke', 'white');
-  outline.setAttribute('rx', '5');
-  outline.setAttribute('ry', '5');
-  g.appendChild(outline);
-
-  const title = document.createElementNS(svgns, 'text');
-  title.id = 'progress_title';
-  title.appendChild(document.createTextNode('0%'));
-  title.setAttribute('y', '13');
-  title.setAttribute('x', '99.5%');
-  title.setAttribute('fill', 'white');
-  title.setAttribute('font-size', '12px');
-  title.setAttribute('text-anchor', 'end');
-  g.appendChild(title);
-
-  const meter = document.createElementNS(svgns, 'rect');
-  meter.id = 'meter';
-  meter.setAttribute('width', '0%');
-  meter.setAttribute('height', '17');
-  meter.setAttribute('fill', 'url(#progress_pattern)');
-  meter.setAttribute('rx', '5');
-  meter.setAttribute('ry', '5');
-  
-  const meter2 = document.createElementNS(svgns, 'rect');
-  meter2.id = 'meter2';
-  meter2.setAttribute('width', '0%');
-  meter2.setAttribute('height', '17');
-  meter2.setAttribute('opacity', '0.8');
-  meter2.setAttribute('fill', '#007fff');
-  meter2.setAttribute('rx', '5');
-  meter2.setAttribute('ry', '5');
-  
-  g.appendChild(meter);
-  g.appendChild(meter2);
-  
-  const page = document.createElementNS(svgns, 'text');
-  page.id = 'page';
-  page.appendChild(document.createTextNode('0/0'));
-  page.setAttribute('y', '13');
-  page.setAttribute('x', '0.5%');
-  page.setAttribute('fill', 'white');
-  page.setAttribute('font-size', '12px');
-  g.appendChild(page);
-  
-  svg.appendChild(g);
-  pdiv.appendChild(svg);
-  
-  svg.onclick = function(e) {
-    let l = 0;
-    const docEl = document.documentElement;
-    for (let x = pdiv; x != docEl; x = x.parentNode) {
-      l += x.offsetLeft;
-    }
-    const page = Math.max(1, Math.ceil(((e.clientX - l)/pdiv.offsetWidth) * totalImages)) - 1;
-    currentImage = page;
-    updatePage();
-  };
-}
-
 kthoom.setProgressMeter = function(pct, opt_label) {
   pct = (pct*100);
   if (isNaN(pct)) pct = 1;
@@ -504,12 +393,14 @@ function loadPrevBook() {
     loadBook(library.currentBookNum - 1);
   }
 }
+kthoom.loadPrevBook = loadPrevBook;
 
 function loadNextBook() {
   if (library.currentBookNum < library.allBooks.length - 1) {
     loadBook(library.currentBookNum + 1);
   }
 }
+kthoom.loadNextBook = loadNextBook;
 
 function showPrevPage() {
   currentImage--;
@@ -530,6 +421,7 @@ function showPrevPage() {
   //showPreview();
   //getElem('prev').focus();
 }
+kthoom.showPrevPage = showPrevPage;
 
 function showNextPage() {
   currentImage++;
@@ -550,6 +442,7 @@ function showNextPage() {
   //showPreview();
   //getElem('next').focus();
 }
+kthoom.showNextPage = showNextPage;
 
 function toggleToolbar() {
   const headerDiv = getElem('header');
@@ -558,6 +451,7 @@ function toggleToolbar() {
   //getElem('toolbarbutton).innerText = s?'-':'+';
   updateScale();
 }
+kthoom.toggleToolbar = toggleToolbar;
 
 // Shows/hides the library.
 function showLibrary(show) {
@@ -744,9 +638,7 @@ function keyHandler(evt) {
 }
 
 function init() {
-  kthoom.initProgressMeter();
   document.body.className += /AppleWebKit/.test(navigator.userAgent) ? ' webkit' : '';
-  kthoom.initMenu();
   kthoom.loadSettings();
   // Do html5 drag and drop.
   document.addEventListener('dragenter', function(e) { e.preventDefault();e.stopPropagation() }, false);
@@ -877,6 +769,7 @@ function loadHash() {
   }
 }
 
+// A Promise that resolves when the DOM is ready.
 const domReady = new Promise((resolve, reject) => {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => resolve(), false);
@@ -899,7 +792,33 @@ class KthoomApp {
 
   /** @private */
   init_() {
+    this.initProgressMeter_();
+    this.initMenu_();
     console.log('kthoom initialized');
+  }
+
+  /** @private */
+  initProgressMeter_() {
+    const svg = document.getElementById('woot');
+    svg.onclick = function(e) {
+      let l = 0;
+      const docEl = document.documentElement;
+      for (let x = pdiv; x != docEl; x = x.parentNode) {
+        l += x.offsetLeft;
+      }
+      const page = Math.max(1, Math.ceil(((e.clientX - l)/pdiv.offsetWidth) * totalImages)) - 1;
+      currentImage = page;
+      updatePage();
+    };
+  }
+
+  /** #ptivate */
+  initMenu_() {
+    getElem('menu').addEventListener('click', (evt) => evt.currentTarget.classList.toggle('opened'));
+    getElem('menu-open-local-files').addEventListener('change', getLocalFiles, false);
+    getElem('menu-open-google-drive').addEventListener('click', kthoom.google.doDrive, false);
+    getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow, false);
+    getElem('menu-help').addEventListener('click', showOrHideHelp, false);
   }
 }
 
