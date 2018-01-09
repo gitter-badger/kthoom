@@ -91,7 +91,7 @@ kthoom.google = {
         xhr.responseType = 'arraybuffer';
         xhr.onload = function(event) {
           const arrayBuffer = event.target.response;
-          loadFromArrayBuffer(arrayBuffer);
+          kthoom.getApp().loadFromArrayBuffer(arrayBuffer);
         };
         xhr.onprogress = function(evt) {
           let pct = undefined;
@@ -101,7 +101,7 @@ kthoom.google = {
             pct = evt.loaded / fullSize;
           }
 
-          kthoom.setProgressMeter(pct, 'Loading from Google Drive');
+          kthoom.getApp().setProgressMeter(pct, 'Loading from Google Drive');
         }
         xhr.send(null);
       });

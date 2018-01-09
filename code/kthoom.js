@@ -22,7 +22,7 @@ if (window.kthoom == undefined) {
 }
 
 // key codes
-kthoom.Key = {
+const Key = {
     ESCAPE: 27,
     LEFT: 37,
     UP: 38,
@@ -32,7 +32,7 @@ kthoom.Key = {
     N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90,
     QUESTION_MARK: 191,
     LEFT_SQUARE_BRACKET: 219,
-    RIGHT_SQUARE_BRACKET: 221
+    RIGHT_SQUARE_BRACKET: 221,
 };
 
 // The rotation orientation of the comic.
@@ -52,32 +52,11 @@ const library = {
   
 let hflip = false;
 let vflip = false;
-let fitMode = kthoom.Key.B;
+let fitMode = Key.B;
 let wheelTimer = null;
 let wheelTurnedPageAt = 0;
 let canKeyNext = true;
 let canKeyPrev = true;
-
-kthoom.saveSettings = function() {
-  localStorage.kthoom_settings = JSON.stringify({
-    rotateTimes: kthoom.rotateTimes,
-    hflip: hflip,
-    vflip: vflip,
-    fitMode: fitMode
-  });
-}
-
-kthoom.loadSettings = function() {
-  try {
-    if (localStorage.kthoom_settings.length < 10) return;
-    const s = JSON.parse(localStorage.kthoom_settings);
-    kthoom.rotateTimes = s.rotateTimes;
-    hflip = s.hflip;
-    vflip = s.vflip;
-    fitMode = s.fitMode;
-  } catch(err) {
-  }
-}
 
 // Stores an image filename and its data: URI.
 // TODO: investigate if we really need to store as base64 (leave off ;base64 and just
@@ -92,50 +71,6 @@ kthoom.ImageFile = function(file) {
   this.dataURI = createURLFromArray(file.fileData, mimeType);
   this.data = file;
 };
-
-kthoom.setProgressMeter = function(pct, opt_label) {
-  pct = (pct*100);
-  if (isNaN(pct)) pct = 1;
-  const part = 1/totalImages;
-  const remain = ((pct - lastCompletion)/100)/part;
-  const fract = Math.min(1, remain);
-  let smartpct = ((imageFiles.length/totalImages) + fract * part )* 100;
-  if (totalImages == 0) smartpct = pct;
-  
-  // + Math.min((pct - lastCompletion), 100/totalImages * 0.9 + (pct - lastCompletion - 100/totalImages)/2, 100/totalImages);
-  let oldval = parseFloat(getElem('meter').getAttribute('width'));
-  if (isNaN(oldval)) oldval = 0;
-  const weight = 0.5;
-  smartpct = (weight * smartpct + (1-weight) * oldval);
-  if (pct == 100) smartpct = 100;
-    
-  if (!isNaN(smartpct)) {
-    getElem('meter').setAttribute('width', smartpct + '%');
-  }
-
-  let title = getElem('progress_title');
-  while (title.firstChild) title.removeChild(title.firstChild);
-
-  let labelText = pct.toFixed(2) + '% ' + imageFiles.length + '/' + totalImages + '';
-  if (opt_label) {
-    labelText = opt_label + ' ' + labelText;
-  }
-  title.appendChild(document.createTextNode(labelText));
-  // fade it out as it approaches finish
-  //title.setAttribute('fill-opacity', (pct > 90) ? ((100-pct)*5)/100 : 1);
-
-  getElem('meter2').setAttribute('width',
-      100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
-  
-  title = getElem('page');
-  while (title.firstChild) title.removeChild(title.firstChild);
-  title.appendChild(document.createTextNode( (currentImage+1) + '/' + totalImages ));
-  
-  if (pct > 0) {
-    getElem('nav').className = '';
-    getElem('progress').className = '';
-  }
-}
 
 // Attempts to read the files that the user has chosen.
 function getLocalFiles(evt) {
@@ -153,80 +88,12 @@ function getLocalFiles(evt) {
   }
 }
 
-function loadFromArrayBuffer(ab) {
-  const start = (new Date).getTime();
-  const h = new Uint8Array(ab, 0, 10);
-  const pathToBitJS = 'code/bitjs/';
-  if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { //Rar!
-    unarchiver = new bitjs.archive.Unrarrer(ab, pathToBitJS);
-  } else if (h[0] == 0x50 && h[1] == 0x4B) { // PK (Zip)
-    unarchiver = new bitjs.archive.Unzipper(ab, pathToBitJS);
-  } else if (h[0] == 255 && h[1] == 216) { // JPEG
-    totalImages = 1;
-    kthoom.setProgressMeter(1, 'Archive Missing');
-    const dataURI = createURLFromArray(new Uint8Array(ab), 'image/jpeg');
-    setImage(dataURI);
-    // hide logo
-    getElem('logo').setAttribute('style', 'display:none');
-    return;
-  } else { // Try with tar
-    unarchiver = new bitjs.archive.Untarrer(ab, pathToBitJS);
-  }
-
-  // Listen for UnarchiveEvents.
-  if (unarchiver) {
-    unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS,
-      function(e) {
-        const percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
-        totalImages = e.totalFilesInArchive;
-        kthoom.setProgressMeter(percentage, 'Unzipping');
-        // display nav
-        lastCompletion = percentage * 100;         
-      });
-    unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO,
-      function(e) {
-        console.log(e.msg);
-      });
-    unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT,
-      function(e) {
-        // convert DecompressedFile into a bunch of ImageFiles
-        if (e.unarchivedFile) {
-          const f = e.unarchivedFile;
-          // add any new pages based on the filename
-          if (imageFilenames.indexOf(f.filename) == -1) {
-            imageFilenames.push(f.filename);
-            imageFiles.push(new kthoom.ImageFile(f));
-          }
-        }
-        
-        // hide logo
-        getElem('logo').setAttribute('style', 'display:none');
-
-        // display first page if we haven't yet
-        if (imageFiles.length == currentImage + 1) {
-          updatePage();
-        }            
-      });
-    unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH,
-      function(e) {
-        const diff = ((new Date).getTime() - start)/1000;
-        console.log('Unarchiving done in ' + diff + 's');
-      })
-    unarchiver.start();
-  } else {
-    alert('Some error');
-  }
-}
-
 /**
  * @param {File} file
  */
 function loadSingleBook(file) {
   const fr = new FileReader();
-  fr.onload = function() {
-      const ab = fr.result;
-      loadFromArrayBuffer(ab);
-  };
+  fr.onload = () => kthoom.getApp().loadFromArrayBuffer(fr.result);
   fr.readAsArrayBuffer(file);
 }
 
@@ -333,7 +200,7 @@ function setImage(url) {
       const w = img.width;
       let sw = w;
       let sh = h;
-      kthoom.rotateTimes =  (4 + kthoom.rotateTimes) % 4;
+      kthoom.rotateTimes = (4 + kthoom.rotateTimes) % 4;
       x.save();
       if (kthoom.rotateTimes % 2 == 1) { sh = w; sw = h;}
       canvas.height = sh;
@@ -511,7 +378,7 @@ function closeBook() {
   
   getElem('meter').setAttribute('width', '0%');
   
-  kthoom.setProgressMeter(0);
+  kthoom.getApp().setProgressMeter(0);
   updatePage();
 }
 
@@ -525,16 +392,16 @@ function updateScale(clear) {
   if (!/fullscreen/.test(getElem('header').className)) {
     maxheight -= 25;
   }
-  if (clear || fitMode == kthoom.Key.N) {
-  } else if (fitMode == kthoom.Key.B) {
+  if (clear || fitMode == Key.N) {
+  } else if (fitMode == Key.B) {
     mainImageStyle.maxWidth = '100%';
     mainImageStyle.maxHeight = maxheight + 'px';
-  } else if (fitMode == kthoom.Key.H) {
+  } else if (fitMode == Key.H) {
     mainImageStyle.height = maxheight + 'px';
-  } else if (fitMode == kthoom.Key.W) {
+  } else if (fitMode == Key.W) {
     mainImageStyle.width = '100%';
   }
-  kthoom.saveSettings();
+  kthoom.getApp().saveSettings();
 }
 
 /**
@@ -556,12 +423,12 @@ function keyHandler(evt) {
   }
 
   // Handle keystrokes that do not depend on whether a document is loaded.
-  if (code == kthoom.Key.O) {
+  if (code == Key.O) {
     getElem('menu-open-local-files-input').click();
     getElem('menu').classList.remove('opened');
-  } else if (code == kthoom.Key.G) {
+  } else if (code == Key.G) {
     kthoom.google.doDrive();
-  } else if (code == kthoom.Key.QUESTION_MARK) {
+  } else if (code == Key.QUESTION_MARK) {
     showOrHideHelp(true);
   }
 
@@ -571,40 +438,40 @@ function keyHandler(evt) {
 
   if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
   switch(code) {
-    case kthoom.Key.X:
+    case Key.X:
       toggleToolbar();
       break;
-    case kthoom.Key.LEFT:
+    case Key.LEFT:
       if (canKeyPrev) showPrevPage();
       break;
-    case kthoom.Key.RIGHT:
+    case Key.RIGHT:
       if (canKeyNext) showNextPage();
       break;
-    case kthoom.Key.LEFT_SQUARE_BRACKET:
+    case Key.LEFT_SQUARE_BRACKET:
       if (library.currentBookNum > 0) {
         loadPrevBook();
       }
       break;
-    case kthoom.Key.RIGHT_SQUARE_BRACKET:
+    case Key.RIGHT_SQUARE_BRACKET:
       if (library.currentBookNum < library.allBooks.length - 1) {
         loadNextBook();
       }
       break;
-    case kthoom.Key.L:
+    case Key.L:
       kthoom.rotateTimes--;
       if (kthoom.rotateTimes < 0) {
         kthoom.rotateTimes = 3;
       }
       updatePage();
       break;
-    case kthoom.Key.R:
+    case Key.R:
       kthoom.rotateTimes++;
       if (kthoom.rotateTimes > 3) {
         kthoom.rotateTimes = 0;
       }
       updatePage();
       break;
-    case kthoom.Key.F:
+    case Key.F:
       if (!hflip && !vflip) {
         hflip = true;
       } else if(hflip == true) {
@@ -615,20 +482,20 @@ function keyHandler(evt) {
       }
       updatePage();
       break;
-    case kthoom.Key.W:
-      fitMode = kthoom.Key.W;
+    case Key.W:
+      fitMode = Key.W;
       updateScale();
       break;
-    case kthoom.Key.H:
-      fitMode = kthoom.Key.H;
+    case Key.H:
+      fitMode = Key.H;
       updateScale();
       break;
-    case kthoom.Key.B:
-      fitMode = kthoom.Key.B;
+    case Key.B:
+      fitMode = Key.B;
       updateScale();
       break;
-    case kthoom.Key.N:
-      fitMode = kthoom.Key.N;
+    case Key.N:
+      fitMode = Key.N;
       updateScale();
       break;
     default:
@@ -639,16 +506,6 @@ function keyHandler(evt) {
 
 function init() {
   document.body.className += /AppleWebKit/.test(navigator.userAgent) ? ' webkit' : '';
-  kthoom.loadSettings();
-  // Do html5 drag and drop.
-  document.addEventListener('dragenter', function(e) { e.preventDefault();e.stopPropagation() }, false);
-  document.addEventListener('dragexit', function(e) { e.preventDefault();e.stopPropagation() }, false);
-  document.addEventListener('dragover', function(e) { e.preventDefault();e.stopPropagation() }, false);
-  document.addEventListener('drop', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    getLocalFiles({target:e.dataTransfer});
-  }, false);
   document.addEventListener('keydown', keyHandler, false);
   window.addEventListener('resize', function() {
     const f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
@@ -685,32 +542,20 @@ function init() {
       let turnPageFn = null;
       switch (kthoom.rotateTimes) {
         case 0:
-          if (delta > wheelThreshold) {
-            turnPageFn = showNextPage;
-          } else if (delta < -wheelThreshold) {
-            turnPageFn = showPrevPage;
-          }
+          if (delta > wheelThreshold) turnPageFn = showNextPage;
+          else if (delta < -wheelThreshold) turnPageFn = showPrevPage;
           break;
         case 1:
-          if (delta > wheelThreshold) {
-            turnPageFn = showNextPage;
-          } else if (delta < -wheelThreshold) {
-            turnPageFn = showPrevPage;
-          }
+          if (delta > wheelThreshold) turnPageFn = showNextPage;
+          else if (delta < -wheelThreshold) turnPageFn = showPrevPage;
           break;
         case 2:
-          if (delta < -wheelThreshold) {
-            turnPageFn = showNextPage;
-          } else if (delta > wheelThreshold) {
-            turnPageFn = showPrevPage;
-          }
+          if (delta < -wheelThreshold) turnPageFn = showNextPage;
+          else if (delta > wheelThreshold) turnPageFn = showPrevPage;
           break;
         case 3:
-          if (delta < -wheelThreshold) {
-            turnPageFn = showNextPage;
-          } else if (delta > wheelThreshold) {
-            turnPageFn = showPrevPage;
-          }
+          if (delta < -wheelThreshold) turnPageFn = showNextPage;
+          else if (delta > wheelThreshold) turnPageFn = showPrevPage;
           break;
       }
       if (turnPageFn) {
@@ -735,18 +580,10 @@ function init() {
     // right side of the page.
     let clickedPrev = false;
     switch (kthoom.rotateTimes) {
-      case 0:
-        clickedPrev = clickX < (comicWidth / 2);
-        break;
-      case 1:
-        clickedPrev = clickY < (comicHeight / 2);
-        break;
-      case 2:
-        clickedPrev = clickX > (comicWidth / 2);
-        break;
-      case 3:
-        clickedPrev = clickY > (comicHeight / 2);
-        break;
+      case 0: clickedPrev = clickX < (comicWidth / 2); break;
+      case 1: clickedPrev = clickY < (comicHeight / 2); break;
+      case 2: clickedPrev = clickX > (comicWidth / 2); break;
+      case 3: clickedPrev = clickY > (comicHeight / 2); break;
     }
     if (clickedPrev) {
       showPrevPage();
@@ -794,13 +631,17 @@ class KthoomApp {
   init_() {
     this.initProgressMeter_();
     this.initMenu_();
+    this.initDragDrop_();
+
+    this.loadSettings_();
+
     console.log('kthoom initialized');
   }
 
   /** @private */
   initProgressMeter_() {
     const svg = document.getElementById('woot');
-    svg.onclick = function(e) {
+    svg.onclick = (e) => {
       let l = 0;
       const docEl = document.documentElement;
       for (let x = pdiv; x != docEl; x = x.parentNode) {
@@ -812,7 +653,7 @@ class KthoomApp {
     };
   }
 
-  /** #ptivate */
+  /** @private */
   initMenu_() {
     getElem('menu').addEventListener('click', (evt) => evt.currentTarget.classList.toggle('opened'));
     getElem('menu-open-local-files').addEventListener('change', getLocalFiles, false);
@@ -820,8 +661,150 @@ class KthoomApp {
     getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow, false);
     getElem('menu-help').addEventListener('click', showOrHideHelp, false);
   }
+
+  /** @private */
+  initDragDrop_() {
+    const swallowEvent = (e) => { e.preventDefault(); e.stopPropagation(); };
+    document.addEventListener('dragenter', swallowEvent, false);
+    document.addEventListener('dragexit', swallowEvent, false);
+    document.addEventListener('dragover', swallowEvent, false);
+    document.addEventListener('drop', (e) => {
+      swallowEvent(e);
+      getLocalFiles({target: e.dataTransfer});
+    }, false);
+  }
+
+  /** @private */
+  loadSettings_() {
+    try {
+      if (localStorage.kthoom_settings.length < 10) return;
+      const s = JSON.parse(localStorage.kthoom_settings);
+      kthoom.rotateTimes = s.rotateTimes;
+      hflip = s.hflip;
+      vflip = s.vflip;
+      fitMode = s.fitMode;
+    } catch(err) {}
+  }
+
+  saveSettings() {
+    localStorage.kthoom_settings = JSON.stringify({
+      rotateTimes: kthoom.rotateTimes,
+      hflip: hflip,
+      vflip: vflip,
+      fitMode: fitMode,
+    });
+  }
+
+  setProgressMeter(pct, opt_label) {
+    pct = (pct*100);
+    if (isNaN(pct)) pct = 1;
+    const part = 1/totalImages;
+    const remain = ((pct - lastCompletion)/100)/part;
+    const fract = Math.min(1, remain);
+    let smartpct = ((imageFiles.length/totalImages) + fract * part )* 100;
+    if (totalImages == 0) smartpct = pct;
+
+    // + Math.min((pct - lastCompletion), 100/totalImages * 0.9 + (pct - lastCompletion - 100/totalImages)/2, 100/totalImages);
+    let oldval = parseFloat(getElem('meter').getAttribute('width'));
+    if (isNaN(oldval)) oldval = 0;
+    const weight = 0.5;
+    smartpct = (weight * smartpct + (1-weight) * oldval);
+    if (pct == 100) smartpct = 100;
+
+    if (!isNaN(smartpct)) {
+      getElem('meter').setAttribute('width', smartpct + '%');
+    }
+
+    let title = getElem('progress_title');
+    while (title.firstChild) title.removeChild(title.firstChild);
+
+    let labelText = pct.toFixed(2) + '% ' + imageFiles.length + '/' + totalImages + '';
+    if (opt_label) {
+      labelText = opt_label + ' ' + labelText;
+    }
+    title.appendChild(document.createTextNode(labelText));
+
+    getElem('meter2').setAttribute('width',
+        100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
+
+    title = getElem('page');
+    while (title.firstChild) title.removeChild(title.firstChild);
+    title.appendChild(document.createTextNode( (currentImage+1) + '/' + totalImages ));
+
+    if (pct > 0) {
+      getElem('nav').className = '';
+      getElem('progress').className = '';
+    }
+  }
+
+  loadFromArrayBuffer(ab) {
+    const start = (new Date).getTime();
+    const h = new Uint8Array(ab, 0, 10);
+    const pathToBitJS = 'code/bitjs/';
+    if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { //Rar!
+      unarchiver = new bitjs.archive.Unrarrer(ab, pathToBitJS);
+    } else if (h[0] == 0x50 && h[1] == 0x4B) { // PK (Zip)
+      unarchiver = new bitjs.archive.Unzipper(ab, pathToBitJS);
+    } else if (h[0] == 255 && h[1] == 216) { // JPEG
+      totalImages = 1;
+      kthoom.getApp().setProgressMeter(1, 'Archive Missing');
+      const dataURI = createURLFromArray(new Uint8Array(ab), 'image/jpeg');
+      setImage(dataURI);
+      // hide logo
+      getElem('logo').setAttribute('style', 'display:none');
+      return;
+    } else { // Try with tar
+      unarchiver = new bitjs.archive.Untarrer(ab, pathToBitJS);
+    }
+
+    // Listen for UnarchiveEvents.
+    if (unarchiver) {
+      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS,
+        function(e) {
+          const percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
+          totalImages = e.totalFilesInArchive;
+          kthoom.getApp().setProgressMeter(percentage, 'Unzipping');
+          // display nav
+          lastCompletion = percentage * 100;
+        });
+      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO,
+        function(e) {
+          console.log(e.msg);
+        });
+      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT,
+        function(e) {
+          // convert DecompressedFile into a bunch of ImageFiles
+          if (e.unarchivedFile) {
+            const f = e.unarchivedFile;
+            // add any new pages based on the filename
+            if (imageFilenames.indexOf(f.filename) == -1) {
+              imageFilenames.push(f.filename);
+              imageFiles.push(new kthoom.ImageFile(f));
+            }
+          }
+
+          // hide logo
+          getElem('logo').setAttribute('style', 'display:none');
+
+          // display first page if we haven't yet
+          if (imageFiles.length == currentImage + 1) {
+            updatePage();
+          }
+        });
+      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH,
+        function(e) {
+          const diff = ((new Date).getTime() - start)/1000;
+          console.log('Unarchiving done in ' + diff + 's');
+        })
+      unarchiver.start();
+    } else {
+      alert('Some error');
+    }
+  }
 }
 
-if (!window.kthoom.app) {
-  window.kthoom.app = new KthoomApp();
+const theApp = new KthoomApp();
+
+if (!window.kthoom.getApp) {
+  window.kthoom.getApp = () => theApp;
 }
