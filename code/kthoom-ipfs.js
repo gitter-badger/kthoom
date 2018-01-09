@@ -14,10 +14,10 @@ kthoom.ipfs = {
       kthoom.setProgressMeter(0.1, 'Loading code for IPFS...');
       kthoom.ipfs.nodePromise_ = new Promise((resolve, reject) => {
         // Load in the IPFS script API.
-        var ipfsScriptEl = document.createElement('script');
+        const ipfsScriptEl = document.createElement('script');
         ipfsScriptEl.addEventListener('load', () => {
           kthoom.setProgressMeter(0.2, 'Creating IPFS node...');
-          var node = window.Ipfs.createNode();
+          const node = window.Ipfs.createNode();
           node.on('start', () => {
             kthoom.ipfs.node_ = node;
             resolve(node);
@@ -43,7 +43,7 @@ kthoom.ipfs = {
     });
   },
   ipfsHashWindow: function() {
-    var ipfshash = window.prompt("Please Enter The IPFS hash of the book");
+    const ipfshash = window.prompt("Please Enter The IPFS hash of the book");
     kthoom.ipfs.loadHash(ipfshash);
   },
 };
