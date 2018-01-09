@@ -30,12 +30,7 @@ const Key = {
 
 // Helper functions.
 function getElem(id) {
-  if (document.documentElement.querySelector) {
-    // querySelector lookup
-    return document.body.querySelector('#' + id);
-  }
-  // getElementById lookup
-  return document.getElementById(id);
+  return document.body.querySelector('#' + id);
 }
 
 function createURLFromArray(array, mimeType) {
@@ -122,7 +117,7 @@ function setImage(url) {
   const canvas = getElem('mainImage');
   const prevImage = getElem('prevImage');
   const x = canvas.getContext('2d');
-  document.getElementById('mainText').style.display = 'none';
+  getElem('mainText').style.display = 'none';
   if (url == 'loading') {
     kthoom.getApp().updateScale(true);
     canvas.width = innerWidth - 100;
@@ -151,8 +146,8 @@ function setImage(url) {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
         xhr.onload = function() {
-          document.getElementById('mainText').style.display = '';
-          document.getElementById('mainText').innerHTML = '<iframe style="width:100%;height:700px;border:0" src="data:text/html,'+escape(xhr.responseText)+'"></iframe>';
+          getElem('mainText').style.display = '';
+          getElem('mainText').innerHTML = '<iframe style="width:100%;height:700px;border:0" src="data:text/html,'+escape(xhr.responseText)+'"></iframe>';
         }
         xhr.send(null);
       } else if (!/(jpg|jpeg|png|gif)$/.test(imageFiles[currentImage].filename)) {
@@ -161,8 +156,8 @@ function setImage(url) {
           const xhr = new XMLHttpRequest();
           xhr.open('GET', url, true);
           xhr.onload = function() {
-            document.getElementById('mainText').style.display = '';
-            document.getElementById('mainText').innerText = xhr.responseText;
+            getElem('mainText').style.display = '';
+            getElem('mainText').innerText = xhr.responseText;
           };
           xhr.send(null);
         } else {
@@ -208,14 +203,16 @@ function setImage(url) {
   };
 }
 
-function showPreview() {
-  if (/fullscreen/.test(getElem('header').className)) {
-    getElem('header').className += ' preview';
+// TODO: Use timer ids here to prevent cancelling an earlier operation.
+function showHeaderPreview() {
+  const header = getElem('header');
+  if (/fullscreen/.test(header.className)) {
+    header.classList.remove('previewout');
+    header.classList.add('preview');
     setTimeout(() => {
-      getElem('header').className += ' previewout';
+      header.classList.add('previewout');
       setTimeout(() => {
-        getElem('header').className = getElem('header').className.replace(
-            /previewout|preview/g, '');
+        header.classList.remove('preview', 'previewout');
       }, 1000);
     }, 1337);
   }
@@ -260,7 +257,7 @@ function showPrevPage() {
   }
 
   updatePage();
-  //showPreview();
+  showHeaderPreview();
   //getElem('prev').focus();
 }
 kthoom.showPrevPage = showPrevPage;
@@ -281,7 +278,7 @@ function showNextPage() {
   }
 
   updatePage();
-  //showPreview();
+  showHeaderPreview();
   //getElem('next').focus();
 }
 kthoom.showNextPage = showNextPage;
@@ -405,7 +402,8 @@ class KthoomApp {
 
   /** @private */
   initProgressMeter_() {
-    const svg = document.getElementById('woot');
+    const pdiv = getElem('progress');
+    const svg = getElem('svgprogress');
     svg.onclick = (e) => {
       let l = 0;
       const docEl = document.documentElement;
@@ -622,6 +620,7 @@ class KthoomApp {
     getElem('overlay').style.display = show ? 'block' : 'none';
   }
 
+  // TODO: Make this private.
   updateScale(clear = false) {
     const mainImageStyle = getElem('mainImage').style;
     mainImageStyle.width = '';
