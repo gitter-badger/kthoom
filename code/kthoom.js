@@ -58,21 +58,24 @@ kthoom.Key = {
 kthoom.rotateTimes = 0;
 
 // global variables
-var unarchiver = null;
-var currentImage = 0;
-var imageFiles = [];
-var imageFilenames = [];
-var totalImages = 0;
-var lastCompletion = 0;
-var library = {
+let unarchiver = null;
+let currentImage = 0;
+let imageFiles = [];
+let imageFilenames = [];
+let totalImages = 0;
+let lastCompletion = 0;
+const library = {
   allBooks: [],
   currentBookNum: 0,
 };
   
-var hflip = false, vflip = false, fitMode = kthoom.Key.B;
-var wheelTimer = null;
-var wheelTurnedPageAt = 0;
-var canKeyNext = true, canKeyPrev = true;
+let hflip = false;
+let vflip = false;
+let fitMode = kthoom.Key.B;
+let wheelTimer = null;
+let wheelTurnedPageAt = 0;
+let canKeyNext = true;
+let canKeyPrev = true;
 
 kthoom.saveSettings = function() {
   localStorage.kthoom_settings = JSON.stringify({
@@ -86,7 +89,7 @@ kthoom.saveSettings = function() {
 kthoom.loadSettings = function() {
   try {
     if (localStorage.kthoom_settings.length < 10) return;
-    var s = JSON.parse(localStorage.kthoom_settings);
+    const s = JSON.parse(localStorage.kthoom_settings);
     kthoom.rotateTimes = s.rotateTimes;
     hflip = s.hflip;
     vflip = s.vflip;
@@ -101,8 +104,8 @@ kthoom.loadSettings = function() {
 //       This would save 25% on memory since base64-encoded strings are 4/3 the size of the binary
 kthoom.ImageFile = function(file) {
   this.filename = file.filename;
-  var fileExtension = file.filename.split('.').pop().toLowerCase();
-  var mimeType = fileExtension == 'png' ? 'image/png' :
+  const fileExtension = file.filename.split('.').pop().toLowerCase();
+  const mimeType = fileExtension == 'png' ? 'image/png' :
       (fileExtension == 'jpg' || fileExtension == 'jpeg') ? 'image/jpeg' :
       fileExtension == 'gif' ? 'image/gif' : undefined;
   this.dataURI = createURLFromArray(file.fileData, mimeType);
@@ -111,7 +114,7 @@ kthoom.ImageFile = function(file) {
 
 kthoom.initMenu = function() {
   getElem('menu').addEventListener('click', function(evt) {
-    var elem = evt.currentTarget;
+    const elem = evt.currentTarget;
     elem.classList.toggle('opened');
   });
   getElem('menu-open-local-files').addEventListener('change',
@@ -125,26 +128,26 @@ kthoom.initMenu = function() {
 }
 
 kthoom.initProgressMeter = function() {
-  var svgns = 'http://www.w3.org/2000/svg';
-  var pdiv = document.getElementById('progress');
-  var svg = document.createElementNS(svgns, 'svg');
+  const svgns = 'http://www.w3.org/2000/svg';
+  const pdiv = document.getElementById('progress');
+  const svg = document.createElementNS(svgns, 'svg');
   svg.style.width = '100%';
   svg.style.height = '100%';
   
-  var defs = document.createElementNS(svgns, 'defs');
+  const defs = document.createElementNS(svgns, 'defs');
 
-  var patt = document.createElementNS(svgns, 'pattern');
+  const patt = document.createElementNS(svgns, 'pattern');
   patt.id = 'progress_pattern';
   patt.setAttribute('width', '30');
   patt.setAttribute('height', '20');
   patt.setAttribute('patternUnits', 'userSpaceOnUse');
 
-  var rect = document.createElementNS(svgns, 'rect');
+  const rect = document.createElementNS(svgns, 'rect');
   rect.setAttribute('width', '100%');
   rect.setAttribute('height', '100%');
   rect.setAttribute('fill', '#cc2929');
   
-  var poly = document.createElementNS(svgns, 'polygon');
+  const poly = document.createElementNS(svgns, 'polygon');
   poly.setAttribute('fill', 'yellow');
   poly.setAttribute('points', '15,0 30,0 15,20 0,20');
 
@@ -154,9 +157,9 @@ kthoom.initProgressMeter = function() {
   
   svg.appendChild(defs);
   
-  var g = document.createElementNS(svgns, 'g');
+  const g = document.createElementNS(svgns, 'g');
   
-  var outline = document.createElementNS(svgns, 'rect');
+  const outline = document.createElementNS(svgns, 'rect');
   outline.setAttribute('y', '1');
   outline.setAttribute('width', '100%');
   outline.setAttribute('height', '15');
@@ -166,7 +169,7 @@ kthoom.initProgressMeter = function() {
   outline.setAttribute('ry', '5');
   g.appendChild(outline);
 
-  var title = document.createElementNS(svgns, 'text');
+  const title = document.createElementNS(svgns, 'text');
   title.id = 'progress_title';
   title.appendChild(document.createTextNode('0%'));
   title.setAttribute('y', '13');
@@ -176,7 +179,7 @@ kthoom.initProgressMeter = function() {
   title.setAttribute('text-anchor', 'end');
   g.appendChild(title);
 
-  var meter = document.createElementNS(svgns, 'rect');
+  const meter = document.createElementNS(svgns, 'rect');
   meter.id = 'meter';
   meter.setAttribute('width', '0%');
   meter.setAttribute('height', '17');
@@ -184,7 +187,7 @@ kthoom.initProgressMeter = function() {
   meter.setAttribute('rx', '5');
   meter.setAttribute('ry', '5');
   
-  var meter2 = document.createElementNS(svgns, 'rect');
+  const meter2 = document.createElementNS(svgns, 'rect');
   meter2.id = 'meter2';
   meter2.setAttribute('width', '0%');
   meter2.setAttribute('height', '17');
@@ -196,7 +199,7 @@ kthoom.initProgressMeter = function() {
   g.appendChild(meter);
   g.appendChild(meter2);
   
-  var page = document.createElementNS(svgns, 'text');
+  const page = document.createElementNS(svgns, 'text');
   page.id = 'page';
   page.appendChild(document.createTextNode('0/0'));
   page.setAttribute('y', '13');
@@ -205,41 +208,45 @@ kthoom.initProgressMeter = function() {
   page.setAttribute('font-size', '12px');
   g.appendChild(page);
   
-  
   svg.appendChild(g);
   pdiv.appendChild(svg);
   
   svg.onclick = function(e) {
-    for (var x = pdiv, l = 0; x != document.documentElement; x = x.parentNode) l += x.offsetLeft;
-    var page = Math.max(1, Math.ceil(((e.clientX - l)/pdiv.offsetWidth) * totalImages)) - 1;
+    let l = 0;
+    const docEl = document.documentElement;
+    for (let x = pdiv; x != docEl; x = x.parentNode) {
+      l += x.offsetLeft;
+    }
+    const page = Math.max(1, Math.ceil(((e.clientX - l)/pdiv.offsetWidth) * totalImages)) - 1;
     currentImage = page;
     updatePage();
   };
 }
 
 kthoom.setProgressMeter = function(pct, opt_label) {
-  var pct = (pct*100);
+  pct = (pct*100);
   if (isNaN(pct)) pct = 1;
-  var part = 1/totalImages;
-  var remain = ((pct - lastCompletion)/100)/part;
-  var fract = Math.min(1, remain);
-  var smartpct = ((imageFiles.length/totalImages) + fract * part )* 100;
+  const part = 1/totalImages;
+  const remain = ((pct - lastCompletion)/100)/part;
+  const fract = Math.min(1, remain);
+  let smartpct = ((imageFiles.length/totalImages) + fract * part )* 100;
   if (totalImages == 0) smartpct = pct;
   
-   // + Math.min((pct - lastCompletion), 100/totalImages * 0.9 + (pct - lastCompletion - 100/totalImages)/2, 100/totalImages);
-  var oldval = parseFloat(getElem('meter').getAttribute('width'));
+  // + Math.min((pct - lastCompletion), 100/totalImages * 0.9 + (pct - lastCompletion - 100/totalImages)/2, 100/totalImages);
+  let oldval = parseFloat(getElem('meter').getAttribute('width'));
   if (isNaN(oldval)) oldval = 0;
-  var weight = 0.5;
+  const weight = 0.5;
   smartpct = (weight * smartpct + (1-weight) * oldval);
   if (pct == 100) smartpct = 100;
     
   if (!isNaN(smartpct)) {
     getElem('meter').setAttribute('width', smartpct + '%');
   }
-  var title = getElem('progress_title');
+
+  let title = getElem('progress_title');
   while (title.firstChild) title.removeChild(title.firstChild);
 
-  var labelText = pct.toFixed(2) + '% ' + imageFiles.length + '/' + totalImages + '';
+  let labelText = pct.toFixed(2) + '% ' + imageFiles.length + '/' + totalImages + '';
   if (opt_label) {
     labelText = opt_label + ' ' + labelText;
   }
@@ -250,10 +257,9 @@ kthoom.setProgressMeter = function(pct, opt_label) {
   getElem('meter2').setAttribute('width',
       100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
   
-  var title = getElem('page');
+  title = getElem('page');
   while (title.firstChild) title.removeChild(title.firstChild);
   title.appendChild(document.createTextNode( (currentImage+1) + '/' + totalImages ));
-  
   
   if (pct > 0) {
     getElem('nav').className = '';
@@ -263,7 +269,7 @@ kthoom.setProgressMeter = function(pct, opt_label) {
 
 // Attempts to read the files that the user has chosen.
 function getLocalFiles(evt) {
-  var filelist = evt.target.files;
+  const filelist = evt.target.files;
   library.allBooks = filelist;
   library.currentBookNum = 0;
 
@@ -278,9 +284,9 @@ function getLocalFiles(evt) {
 }
 
 function loadFromArrayBuffer(ab) {
-  var start = (new Date).getTime();
-  var h = new Uint8Array(ab, 0, 10);
-  var pathToBitJS = 'code/bitjs/';
+  const start = (new Date).getTime();
+  const h = new Uint8Array(ab, 0, 10);
+  const pathToBitJS = 'code/bitjs/';
   if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { //Rar!
     unarchiver = new bitjs.archive.Unrarrer(ab, pathToBitJS);
   } else if (h[0] == 0x50 && h[1] == 0x4B) { // PK (Zip)
@@ -288,7 +294,7 @@ function loadFromArrayBuffer(ab) {
   } else if (h[0] == 255 && h[1] == 216) { // JPEG
     totalImages = 1;
     kthoom.setProgressMeter(1, 'Archive Missing');
-    var dataURI = createURLFromArray(new Uint8Array(ab), 'image/jpeg');
+    const dataURI = createURLFromArray(new Uint8Array(ab), 'image/jpeg');
     setImage(dataURI);
     // hide logo
     getElem('logo').setAttribute('style', 'display:none');
@@ -301,7 +307,7 @@ function loadFromArrayBuffer(ab) {
   if (unarchiver) {
     unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS,
       function(e) {
-        var percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
+        const percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
         totalImages = e.totalFilesInArchive;
         kthoom.setProgressMeter(percentage, 'Unzipping');
         // display nav
@@ -315,7 +321,7 @@ function loadFromArrayBuffer(ab) {
       function(e) {
         // convert DecompressedFile into a bunch of ImageFiles
         if (e.unarchivedFile) {
-          var f = e.unarchivedFile;
+          const f = e.unarchivedFile;
           // add any new pages based on the filename
           if (imageFilenames.indexOf(f.filename) == -1) {
             imageFilenames.push(f.filename);
@@ -333,7 +339,7 @@ function loadFromArrayBuffer(ab) {
       });
     unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH,
       function(e) {
-        var diff = ((new Date).getTime() - start)/1000;
+        const diff = ((new Date).getTime() - start)/1000;
         console.log('Unarchiving done in ' + diff + 's');
       })
     unarchiver.start();
@@ -346,18 +352,20 @@ function loadFromArrayBuffer(ab) {
  * @param {File} file
  */
 function loadSingleBook(file) {
-  var fr = new FileReader();
+  const fr = new FileReader();
   fr.onload = function() {
-      var ab = fr.result;
+      const ab = fr.result;
       loadFromArrayBuffer(ab);
   };
   fr.readAsArrayBuffer(file);
 }
 
-var createURLFromArray = function(array, mimeType) {
-  var offset = array.byteOffset, len = array.byteLength;
-  var bb, url;
-  var blob;
+const createURLFromArray = function(array, mimeType) {
+  const offset = array.byteOffset;
+  const len = array.byteLength;
+  let bb;
+  let url;
+  let blob;
 
   // TODO: Move all this browser support testing to a common place
   //     and do it just once.
@@ -385,7 +393,7 @@ var createURLFromArray = function(array, mimeType) {
 
 
 function updatePage() {
-  var title = getElem('page');
+  const title = getElem('page');
   while (title.firstChild) title.removeChild(title.firstChild);
   title.appendChild(document.createTextNode( (currentImage+1) + '/' + totalImages ));
   
@@ -399,9 +407,9 @@ function updatePage() {
 }
 
 function setImage(url) {
-  var canvas = getElem('mainImage');
-  var prevImage = getElem('prevImage');
-  var x = canvas.getContext('2d');
+  const canvas = getElem('mainImage');
+  const prevImage = getElem('prevImage');
+  const x = canvas.getContext('2d');
   document.getElementById('mainText').style.display = 'none';
   if (url == 'loading') {
     updateScale(true);
@@ -416,7 +424,7 @@ function setImage(url) {
       document.body.style.overflowY = 'scroll';
     }
     
-    var img = new Image();
+    const img = new Image();
     img.onerror = function(e) {
       canvas.width = innerWidth - 100;
       canvas.height = 300;
@@ -428,7 +436,7 @@ function setImage(url) {
           imageFiles[currentImage].filename + ')', 100, 100)
       
       if (/(html|htm)$/.test(imageFiles[currentImage].filename)) {
-        var xhr = new XMLHttpRequest();
+        const xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
         xhr.onload = function() {
           document.getElementById('mainText').style.display = '';
@@ -436,9 +444,9 @@ function setImage(url) {
         }
         xhr.send(null);
       } else if (!/(jpg|jpeg|png|gif)$/.test(imageFiles[currentImage].filename)) {
-        var fileSize = (imageFiles[currentImage].data.fileData.length);
+        const fileSize = (imageFiles[currentImage].data.fileData.length);
         if (fileSize < 10*1024) {
-          var xhr = new XMLHttpRequest();
+          const xhr = new XMLHttpRequest();
           xhr.open('GET', url, true);
           xhr.onload = function() {
             document.getElementById('mainText').style.display = '';
@@ -451,10 +459,10 @@ function setImage(url) {
       }
     };
     img.onload = function() {
-      var h = img.height, 
-          w = img.width, 
-          sw = w, 
-          sh = h;
+      const h = img.height; 
+      const w = img.width;
+      let sw = w;
+      let sh = h;
       kthoom.rotateTimes =  (4 + kthoom.rotateTimes) % 4;
       x.save();
       if (kthoom.rotateTimes % 2 == 1) { sh = w; sw = h;}
@@ -563,8 +571,8 @@ function showNextPage() {
 }
 
 function toggleToolbar() {
-  var headerDiv = getElem('header');
-  var fullscreen = /fullscreen/.test(headerDiv.className);
+  const headerDiv = getElem('header');
+  const fullscreen = /fullscreen/.test(headerDiv.className);
   headerDiv.className = (fullscreen ? '' : 'fullscreen');
   //getElem('toolbarbutton).innerText = s?'-':'+';
   updateScale();
@@ -572,26 +580,26 @@ function toggleToolbar() {
 
 // Shows/hides the library.
 function showLibrary(show) {
-  var libraryDiv = getElem('library');
+  const libraryDiv = getElem('library');
   libraryDiv.style.visibility = (show ? 'visible' : 'hidden');
 }
 
 // Opens/closes the library.
 function toggleLibraryOpen() {
-  var libraryDiv = getElem('library');
-  var opened = /opened/.test(libraryDiv.className);
+  const libraryDiv = getElem('library');
+  const opened = /opened/.test(libraryDiv.className);
   libraryDiv.className = (opened ? '' : 'opened');
 }
 
 // Fills the library with the book names.
 function updateLibrary() {
-  var libDiv = getElem('libraryContents');
+  const libDiv = getElem('libraryContents');
   // Clear out the library.
   libDiv.innerHTML = '';
   if (library.allBooks.length > 0) {
-    for (var i = 0; i < library.allBooks.length; ++i) {
-      var book = library.allBooks[i];
-      var bookDiv = document.createElement('div');
+    for (let i = 0; i < library.allBooks.length; ++i) {
+      const book = library.allBooks[i];
+      const bookDiv = document.createElement('div');
       bookDiv.classList.add('libraryBook');
       if (library.currentBookNum == i) {
         bookDiv.classList.add('current');
@@ -600,7 +608,7 @@ function updateLibrary() {
       bookDiv.innerHTML = book.name;
       bookDiv.addEventListener('click', function(evt) {
         // Trigger a re-render of the library.
-        var index = parseInt(evt.target.dataset.index, 10);
+        const index = parseInt(evt.target.dataset.index, 10);
         loadBook(index);
       });
       libDiv.appendChild(bookDiv);
@@ -633,12 +641,12 @@ function closeBook() {
 }
 
 function updateScale(clear) {
-  var mainImageStyle = getElem('mainImage').style;
+  const mainImageStyle = getElem('mainImage').style;
   mainImageStyle.width = '';
   mainImageStyle.height = '';
   mainImageStyle.maxWidth = '';
   mainImageStyle.maxHeight = '';
-  var maxheight = innerHeight - 15;
+  let maxheight = innerHeight - 15;
   if (!/fullscreen/.test(getElem('header').className)) {
     maxheight -= 25;
   }
@@ -663,10 +671,10 @@ function showOrHideHelp(show = true) {
 }
 
 function keyHandler(evt) {
-  var code = evt.keyCode;
+  const code = evt.keyCode;
 
   // If the overlay is shown, the only keystroke we handle is closing it.
-  var overlayShown = getElem('overlay').style.display != 'none';
+  const overlayShown = getElem('overlay').style.display != 'none';
   if (overlayShown) {
     showOrHideHelp(false);
     return;
@@ -764,7 +772,7 @@ function init() {
     kthoom.loadSettings();
     document.addEventListener('keydown', keyHandler, false);
     window.addEventListener('resize', function() {
-      var f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
+      const f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
       getElem('header').className = f ? 'fullscreen' : '';
       updateScale();
     }, false);
@@ -782,10 +790,10 @@ function init() {
       }, 200);
 
       // Determine what delta is relevant based on orientation.
-      var delta = (kthoom.rotateTimes %2 == 0 ? evt.deltaX : evt.deltaY);
+      const delta = (kthoom.rotateTimes %2 == 0 ? evt.deltaX : evt.deltaY);
 
-      var wheelThreshold = 50; // TODO: Tweak this?
-      var wheelThresholdHysteresis = wheelThreshold / 3;
+      const wheelThreshold = 50; // TODO: Tweak this?
+      const wheelThresholdHysteresis = wheelThreshold / 3;
 
       // If we turned the page, we swallow all other wheel events until the delta
       // is below the hysteresis threshold.
@@ -795,7 +803,7 @@ function init() {
         }
       } else {
         // If we haven't turned the page yet, see if this delta would turn the page.
-        var turnPageFn = null;
+        let turnPageFn = null;
         switch (kthoom.rotateTimes) {
           case 0:
             if (delta > wheelThreshold) {
@@ -835,18 +843,18 @@ function init() {
     getElem('mainImage').addEventListener('click', function(evt) {
       // Firefox does not support offsetX/Y so we have to manually calculate
       // where the user clicked in the image.
-      var mainContentWidth = getElem('mainContent').clientWidth;
-      var mainContentHeight = getElem('mainContent').clientHeight;
-      var comicWidth = evt.target.clientWidth;
-      var comicHeight = evt.target.clientHeight;
-      var offsetX = (mainContentWidth - comicWidth) / 2;
-      var offsetY = (mainContentHeight - comicHeight) / 2;
-      var clickX = !!evt.offsetX ? evt.offsetX : (evt.clientX - offsetX);
-      var clickY = !!evt.offsetY ? evt.offsetY : (evt.clientY - offsetY);
+      const mainContentWidth = getElem('mainContent').clientWidth;
+      const mainContentHeight = getElem('mainContent').clientHeight;
+      const comicWidth = evt.target.clientWidth;
+      const comicHeight = evt.target.clientHeight;
+      const offsetX = (mainContentWidth - comicWidth) / 2;
+      const offsetY = (mainContentHeight - comicHeight) / 2;
+      const clickX = !!evt.offsetX ? evt.offsetX : (evt.clientX - offsetX);
+      const clickY = !!evt.offsetY ? evt.offsetY : (evt.clientY - offsetY);
 
       // Determine if the user clicked/tapped the left side or the
       // right side of the page.
-      var clickedPrev = false;
+      let clickedPrev = false;
       switch (kthoom.rotateTimes) {
         case 0:
           clickedPrev = clickX < (comicWidth / 2);
@@ -875,9 +883,9 @@ function init() {
 }
 
 function HashLoader() {
-  var hashcontent = window.location.hash.substr(1);
+  const hashcontent = window.location.hash.substr(1);
   if (hashcontent.lastIndexOf("ipfs", 0) === 0) {
-    var ipfshash = hashcontent.substr(4);
+    const ipfshash = hashcontent.substr(4);
     kthoom.ipfs.loadHash(ipfshash);
   }
 }
