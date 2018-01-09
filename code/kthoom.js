@@ -7,25 +7,6 @@
  * Copyright(c) 2011 antimatter15
  */
 
-/* Reference Documentation:
-
-  * Web Workers: http://www.whatwg.org/specs/web-workers/current-work/
-  * Web Workers in Mozilla: https://developer.mozilla.org/En/Using_web_workers
-  * File API (FileReader): http://www.w3.org/TR/FileAPI/
-  * Typed Arrays: http://www.khronos.org/registry/typedarray/specs/latest/#6
-
-*/
-
-if (!window.console) {
-  window.console = {};
-  window.console.log = function(str) {};
-  window.console.dir = function(str) {};
-}
-if (window.opera) {
-  window.console.log = function(str) {opera.postError(str);};
-  window.console.dir = function(str) {};
-}
-
 // gets the element with the given id
 function getElem(id) {
   if (document.documentElement.querySelector) {
@@ -763,135 +744,132 @@ function keyHandler(evt) {
 }
 
 function init() {
-  if (!window.FileReader) {
-    alert('Sorry, kthoom will not work with your browser because it does not support the File API.  Please try kthoom with Chrome 12+ or Firefox 7+');
-  } else {
-    kthoom.initProgressMeter();
-    document.body.className += /AppleWebKit/.test(navigator.userAgent) ? ' webkit' : '';
-    kthoom.initMenu();
-    kthoom.loadSettings();
-    // Do html5 drag and drop.
-    document.addEventListener('dragenter', function(e) { e.preventDefault();e.stopPropagation() }, false);
-    document.addEventListener('dragexit', function(e) { e.preventDefault();e.stopPropagation() }, false);
-    document.addEventListener('dragover', function(e) { e.preventDefault();e.stopPropagation() }, false);
-    document.addEventListener('drop', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      getLocalFiles({target:e.dataTransfer});
-    }, false);
-    document.addEventListener('keydown', keyHandler, false);
-    window.addEventListener('resize', function() {
-      const f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
-      getElem('header').className = f ? 'fullscreen' : '';
-      updateScale();
-    }, false);
-    window.addEventListener('wheel', function(evt) {
-      evt.preventDefault();
+  kthoom.initProgressMeter();
+  document.body.className += /AppleWebKit/.test(navigator.userAgent) ? ' webkit' : '';
+  kthoom.initMenu();
+  kthoom.loadSettings();
+  // Do html5 drag and drop.
+  document.addEventListener('dragenter', function(e) { e.preventDefault();e.stopPropagation() }, false);
+  document.addEventListener('dragexit', function(e) { e.preventDefault();e.stopPropagation() }, false);
+  document.addEventListener('dragover', function(e) { e.preventDefault();e.stopPropagation() }, false);
+  document.addEventListener('drop', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    getLocalFiles({target:e.dataTransfer});
+  }, false);
+  document.addEventListener('keydown', keyHandler, false);
+  window.addEventListener('resize', function() {
+    const f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
+    getElem('header').className = f ? 'fullscreen' : '';
+    updateScale();
+  }, false);
+  window.addEventListener('wheel', function(evt) {
+    evt.preventDefault();
 
-      // Keep the timer going if it has been started.
-      if (wheelTimer) {
-        clearTimeout(wheelTimer);
-      }
-      // If we haven't received wheel events for some time, reset things.
-      wheelTimer = setTimeout(function() {
-        wheelTimer = null;
+    // Keep the timer going if it has been started.
+    if (wheelTimer) {
+      clearTimeout(wheelTimer);
+    }
+    // If we haven't received wheel events for some time, reset things.
+    wheelTimer = setTimeout(function() {
+      wheelTimer = null;
+      wheelTurnedPageAt = 0;
+    }, 200);
+
+    // Determine what delta is relevant based on orientation.
+    const delta = (kthoom.rotateTimes %2 == 0 ? evt.deltaX : evt.deltaY);
+
+    const wheelThreshold = 50; // TODO: Tweak this?
+    const wheelThresholdHysteresis = wheelThreshold / 3;
+
+    // If we turned the page, we swallow all other wheel events until the delta
+    // is below the hysteresis threshold.
+    if (wheelTurnedPageAt !== 0) {
+      if (Math.abs(delta) < wheelThresholdHysteresis) {
         wheelTurnedPageAt = 0;
-      }, 200);
-
-      // Determine what delta is relevant based on orientation.
-      const delta = (kthoom.rotateTimes %2 == 0 ? evt.deltaX : evt.deltaY);
-
-      const wheelThreshold = 50; // TODO: Tweak this?
-      const wheelThresholdHysteresis = wheelThreshold / 3;
-
-      // If we turned the page, we swallow all other wheel events until the delta
-      // is below the hysteresis threshold.
-      if (wheelTurnedPageAt !== 0) {
-        if (Math.abs(delta) < wheelThresholdHysteresis) {
-          wheelTurnedPageAt = 0;
-        }
-      } else {
-        // If we haven't turned the page yet, see if this delta would turn the page.
-        let turnPageFn = null;
-        switch (kthoom.rotateTimes) {
-          case 0:
-            if (delta > wheelThreshold) {
-              turnPageFn = showNextPage;
-            } else if (delta < -wheelThreshold) {
-              turnPageFn = showPrevPage;
-            }
-            break;
-          case 1:
-            if (delta > wheelThreshold) {
-              turnPageFn = showNextPage;
-            } else if (delta < -wheelThreshold) {
-              turnPageFn = showPrevPage;
-            }
-            break;
-          case 2:
-            if (delta < -wheelThreshold) {
-              turnPageFn = showNextPage;
-            } else if (delta > wheelThreshold) {
-              turnPageFn = showPrevPage;
-            }
-            break;
-          case 3:
-            if (delta < -wheelThreshold) {
-              turnPageFn = showNextPage;
-            } else if (delta > wheelThreshold) {
-              turnPageFn = showPrevPage;
-            }
-            break;
-        }
-        if (turnPageFn) {
-          turnPageFn();
-          wheelTurnedPageAt = delta;
-        }
       }
-    }, true);
-    getElem('mainImage').addEventListener('click', function(evt) {
-      // Firefox does not support offsetX/Y so we have to manually calculate
-      // where the user clicked in the image.
-      const mainContentWidth = getElem('mainContent').clientWidth;
-      const mainContentHeight = getElem('mainContent').clientHeight;
-      const comicWidth = evt.target.clientWidth;
-      const comicHeight = evt.target.clientHeight;
-      const offsetX = (mainContentWidth - comicWidth) / 2;
-      const offsetY = (mainContentHeight - comicHeight) / 2;
-      const clickX = !!evt.offsetX ? evt.offsetX : (evt.clientX - offsetX);
-      const clickY = !!evt.offsetY ? evt.offsetY : (evt.clientY - offsetY);
-
-      // Determine if the user clicked/tapped the left side or the
-      // right side of the page.
-      let clickedPrev = false;
+    } else {
+      // If we haven't turned the page yet, see if this delta would turn the page.
+      let turnPageFn = null;
       switch (kthoom.rotateTimes) {
         case 0:
-          clickedPrev = clickX < (comicWidth / 2);
+          if (delta > wheelThreshold) {
+            turnPageFn = showNextPage;
+          } else if (delta < -wheelThreshold) {
+            turnPageFn = showPrevPage;
+          }
           break;
         case 1:
-          clickedPrev = clickY < (comicHeight / 2);
+          if (delta > wheelThreshold) {
+            turnPageFn = showNextPage;
+          } else if (delta < -wheelThreshold) {
+            turnPageFn = showPrevPage;
+          }
           break;
         case 2:
-          clickedPrev = clickX > (comicWidth / 2);
+          if (delta < -wheelThreshold) {
+            turnPageFn = showNextPage;
+          } else if (delta > wheelThreshold) {
+            turnPageFn = showPrevPage;
+          }
           break;
         case 3:
-          clickedPrev = clickY > (comicHeight / 2);
+          if (delta < -wheelThreshold) {
+            turnPageFn = showNextPage;
+          } else if (delta > wheelThreshold) {
+            turnPageFn = showPrevPage;
+          }
           break;
       }
-      if (clickedPrev) {
-        showPrevPage();
-      } else {
-        showNextPage();
+      if (turnPageFn) {
+        turnPageFn();
+        wheelTurnedPageAt = delta;
       }
-    }, false);
-    getElem('libraryTab').addEventListener('click', function() {
-      toggleLibraryOpen();
-    }, false);
-  }
-  HashLoader();
+    }
+  }, true);
+  getElem('mainImage').addEventListener('click', function(evt) {
+    // Firefox does not support offsetX/Y so we have to manually calculate
+    // where the user clicked in the image.
+    const mainContentWidth = getElem('mainContent').clientWidth;
+    const mainContentHeight = getElem('mainContent').clientHeight;
+    const comicWidth = evt.target.clientWidth;
+    const comicHeight = evt.target.clientHeight;
+    const offsetX = (mainContentWidth - comicWidth) / 2;
+    const offsetY = (mainContentHeight - comicHeight) / 2;
+    const clickX = !!evt.offsetX ? evt.offsetX : (evt.clientX - offsetX);
+    const clickY = !!evt.offsetY ? evt.offsetY : (evt.clientY - offsetY);
+
+    // Determine if the user clicked/tapped the left side or the
+    // right side of the page.
+    let clickedPrev = false;
+    switch (kthoom.rotateTimes) {
+      case 0:
+        clickedPrev = clickX < (comicWidth / 2);
+        break;
+      case 1:
+        clickedPrev = clickY < (comicHeight / 2);
+        break;
+      case 2:
+        clickedPrev = clickX > (comicWidth / 2);
+        break;
+      case 3:
+        clickedPrev = clickY > (comicHeight / 2);
+        break;
+    }
+    if (clickedPrev) {
+      showPrevPage();
+    } else {
+      showNextPage();
+    }
+  }, false);
+  getElem('libraryTab').addEventListener('click', function() {
+    toggleLibraryOpen();
+  }, false);
+
+  loadHash();
 }
 
-function HashLoader() {
+function loadHash() {
   const hashcontent = window.location.hash.substr(1);
   if (hashcontent.lastIndexOf("ipfs", 0) === 0) {
     const ipfshash = hashcontent.substr(4);
@@ -899,9 +877,32 @@ function HashLoader() {
   }
 }
 
-// Initialize everything.
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', function(e) { init(); }, false);
-} else {
-  init();
+const domReady = new Promise((resolve, reject) => {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => resolve(), false);
+  } else {
+    resolve();
+  }
+});
+
+/**
+ * The main class for the kthoom reader.
+ */
+class KthoomApp {
+  constructor() {
+    domReady.then(() => {
+      // TODO: Move all of init() into this class.
+      init();
+      this.init_();
+    });
+  }
+
+  /** @private */
+  init_() {
+    console.log('kthoom initialized');
+  }
+}
+
+if (!window.kthoom.app) {
+  window.kthoom.app = new KthoomApp();
 }
