@@ -7,19 +7,12 @@
  * Copyright(c) 2011 antimatter15
  */
 
-// gets the element with the given id
-function getElem(id) {
-  if (document.documentElement.querySelector) {
-    // querySelector lookup
-    return document.body.querySelector('#' + id);
-  }  
-  // getElementById lookup
-  return document.getElementById(id);
-}
-
 if (window.kthoom == undefined) {
   window.kthoom = {};
 }
+
+const SWIPE_THRESHOLD = 50; // TODO: Tweak this?
+const LOCAL_STORAGE_KEY = 'kthoom_settings';
 
 // key codes
 const Key = {
@@ -34,6 +27,23 @@ const Key = {
     LEFT_SQUARE_BRACKET: 219,
     RIGHT_SQUARE_BRACKET: 221,
 };
+
+// Helper functions.
+function getElem(id) {
+  if (document.documentElement.querySelector) {
+    // querySelector lookup
+    return document.body.querySelector('#' + id);
+  }
+  // getElementById lookup
+  return document.getElementById(id);
+}
+
+function createURLFromArray(array, mimeType) {
+  const offset = array.byteOffset;
+  const len = array.byteLength;
+  let blob = new Blob([array], {type: mimeType}).slice(offset, offset + len, mimeType);
+  return URL.createObjectURL(blob);
+}
 
 // The rotation orientation of the comic.
 kthoom.rotateTimes = 0;
@@ -53,24 +63,21 @@ const library = {
 let hflip = false;
 let vflip = false;
 let fitMode = Key.B;
-let wheelTimer = null;
-let wheelTurnedPageAt = 0;
 let canKeyNext = true;
 let canKeyPrev = true;
 
 // Stores an image filename and its data: URI.
-// TODO: investigate if we really need to store as base64 (leave off ;base64 and just
-//       non-safe URL characters are encoded as %xx ?)
-//       This would save 25% on memory since base64-encoded strings are 4/3 the size of the binary
-kthoom.ImageFile = function(file) {
-  this.filename = file.filename;
-  const fileExtension = file.filename.split('.').pop().toLowerCase();
-  const mimeType = fileExtension == 'png' ? 'image/png' :
-      (fileExtension == 'jpg' || fileExtension == 'jpeg') ? 'image/jpeg' :
-      fileExtension == 'gif' ? 'image/gif' : undefined;
-  this.dataURI = createURLFromArray(file.fileData, mimeType);
-  this.data = file;
-};
+class ImageFile {
+  constructor(file) {
+    this.data = file;
+    this.filename = file.filename;
+    const fileExtension = file.filename.split('.').pop().toLowerCase();
+    const mimeType = fileExtension == 'png' ? 'image/png' :
+        (fileExtension == 'jpg' || fileExtension == 'jpeg') ? 'image/jpeg' :
+        fileExtension == 'gif' ? 'image/gif' : undefined;
+    this.dataURI = createURLFromArray(file.fileData, mimeType);
+  }
+}
 
 // Attempts to read the files that the user has chosen.
 function getLocalFiles(evt) {
@@ -96,38 +103,6 @@ function loadSingleBook(file) {
   fr.onload = () => kthoom.getApp().loadFromArrayBuffer(fr.result);
   fr.readAsArrayBuffer(file);
 }
-
-const createURLFromArray = function(array, mimeType) {
-  const offset = array.byteOffset;
-  const len = array.byteLength;
-  let bb;
-  let url;
-  let blob;
-
-  // TODO: Move all this browser support testing to a common place
-  //     and do it just once.
-
-  // Blob constructor, see http://dev.w3.org/2006/webapi/FileAPI/#dfn-Blob.
-  if (typeof Blob == 'function') {
-    blob = new Blob([array], {type: mimeType});
-  } else {
-    throw 'Browser support for Blobs is missing.'
-  }
-
-  if (blob.slice) {
-    blob = blob.slice(offset, offset + len, mimeType);
-  } else {
-    throw 'Browser support for Blobs is missing.'
-  }
-
-  if ((typeof URL != 'function' && typeof URL != 'object') ||
-      typeof URL.createObjectURL != 'function') {
-    throw 'Browser support for Object URLs is missing';
-  }
-
-  return URL.createObjectURL(blob);
-}
-
 
 function updatePage() {
   const title = getElem('page');
@@ -236,9 +211,9 @@ function setImage(url) {
 function showPreview() {
   if (/fullscreen/.test(getElem('header').className)) {
     getElem('header').className += ' preview';
-    setTimeout(function() {
+    setTimeout(() => {
       getElem('header').className += ' previewout';
-      setTimeout(function() {
+      setTimeout(() => {
         getElem('header').className = getElem('header').className.replace(
             /previewout|preview/g, '');
       }, 1000);
@@ -348,7 +323,7 @@ function updateLibrary() {
       }
       bookDiv.dataset.index = i;
       bookDiv.innerHTML = book.name;
-      bookDiv.addEventListener('click', function(evt) {
+      bookDiv.addEventListener('click', (evt) => {
         // Trigger a re-render of the library.
         const index = parseInt(evt.target.dataset.index, 10);
         loadBook(index);
@@ -408,7 +383,6 @@ function updateScale(clear) {
  * @param {boolean} show Whether to show help.  Defaults to true.
  */
 function showOrHideHelp(show = true) {
-  //getElem('menu').classList.remove('opened');
   getElem('overlay').style.display = show ? 'block' : 'none';
 }
 
@@ -499,7 +473,6 @@ function keyHandler(evt) {
       updateScale();
       break;
     default:
-      //console.log('KeyCode = ' + code);
       break;
   }
 }
@@ -507,64 +480,12 @@ function keyHandler(evt) {
 function init() {
   document.body.className += /AppleWebKit/.test(navigator.userAgent) ? ' webkit' : '';
   document.addEventListener('keydown', keyHandler, false);
-  window.addEventListener('resize', function() {
+  window.addEventListener('resize', () => {
     const f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
     getElem('header').className = f ? 'fullscreen' : '';
     updateScale();
   }, false);
-  window.addEventListener('wheel', function(evt) {
-    evt.preventDefault();
-
-    // Keep the timer going if it has been started.
-    if (wheelTimer) {
-      clearTimeout(wheelTimer);
-    }
-    // If we haven't received wheel events for some time, reset things.
-    wheelTimer = setTimeout(function() {
-      wheelTimer = null;
-      wheelTurnedPageAt = 0;
-    }, 200);
-
-    // Determine what delta is relevant based on orientation.
-    const delta = (kthoom.rotateTimes %2 == 0 ? evt.deltaX : evt.deltaY);
-
-    const wheelThreshold = 50; // TODO: Tweak this?
-    const wheelThresholdHysteresis = wheelThreshold / 3;
-
-    // If we turned the page, we swallow all other wheel events until the delta
-    // is below the hysteresis threshold.
-    if (wheelTurnedPageAt !== 0) {
-      if (Math.abs(delta) < wheelThresholdHysteresis) {
-        wheelTurnedPageAt = 0;
-      }
-    } else {
-      // If we haven't turned the page yet, see if this delta would turn the page.
-      let turnPageFn = null;
-      switch (kthoom.rotateTimes) {
-        case 0:
-          if (delta > wheelThreshold) turnPageFn = showNextPage;
-          else if (delta < -wheelThreshold) turnPageFn = showPrevPage;
-          break;
-        case 1:
-          if (delta > wheelThreshold) turnPageFn = showNextPage;
-          else if (delta < -wheelThreshold) turnPageFn = showPrevPage;
-          break;
-        case 2:
-          if (delta < -wheelThreshold) turnPageFn = showNextPage;
-          else if (delta > wheelThreshold) turnPageFn = showPrevPage;
-          break;
-        case 3:
-          if (delta < -wheelThreshold) turnPageFn = showNextPage;
-          else if (delta > wheelThreshold) turnPageFn = showPrevPage;
-          break;
-      }
-      if (turnPageFn) {
-        turnPageFn();
-        wheelTurnedPageAt = delta;
-      }
-    }
-  }, true);
-  getElem('mainImage').addEventListener('click', function(evt) {
+  getElem('mainImage').addEventListener('click', (evt) => {
     // Firefox does not support offsetX/Y so we have to manually calculate
     // where the user clicked in the image.
     const mainContentWidth = getElem('mainContent').clientWidth;
@@ -591,9 +512,7 @@ function init() {
       showNextPage();
     }
   }, false);
-  getElem('libraryTab').addEventListener('click', function() {
-    toggleLibraryOpen();
-  }, false);
+  getElem('libraryTab').addEventListener('click', () => toggleLibraryOpen(), false);
 
   loadHash();
 }
@@ -606,21 +525,23 @@ function loadHash() {
   }
 }
 
-// A Promise that resolves when the DOM is ready.
-const domReady = new Promise((resolve, reject) => {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => resolve(), false);
-  } else {
-    resolve();
-  }
-});
-
 /**
  * The main class for the kthoom reader.
  */
 class KthoomApp {
   constructor() {
-    domReady.then(() => {
+    this.wheelTimer_ = null;
+    this.wheelTurnedPageAt_ = 0;
+
+    // This Promise resolves when kthoom is ready.
+    this.initializedPromise_ = new Promise((resolve, reject) => {
+      // This Promise resolves when the DOM is ready.
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => resolve(), false);
+      } else {
+        resolve();
+      }
+    }).then(() => {
       // TODO: Move all of init() into this class.
       init();
       this.init_();
@@ -632,6 +553,7 @@ class KthoomApp {
     this.initProgressMeter_();
     this.initMenu_();
     this.initDragDrop_();
+    this.initSwipe_();
 
     this.loadSettings_();
 
@@ -675,10 +597,52 @@ class KthoomApp {
   }
 
   /** @private */
+  initSwipe_() {
+    window.addEventListener('wheel', (evt) => {
+      evt.preventDefault();
+
+      // Keep the timer going if it has been started.
+      if (this.wheelTimer_) {
+        clearTimeout(this.wheelTimer_);
+      }
+      // If we haven't received wheel events for some time, reset things.
+      this.wheelTimer_ = setTimeout(() => {
+        this.wheelTimer_ = null;
+        this.wheelTurnedPageAt_ = 0;
+      }, 200);
+
+      // Determine what delta is relevant based on orientation.
+      const delta = (kthoom.rotateTimes %2 == 0 ? evt.deltaX : evt.deltaY);
+
+      // If we turned the page, we won't let the page turn again until the delta
+      // is below the hysteresis threshold (i.e. the swipe has lost its momentum).
+      if (this.wheelTurnedPageAt_ !== 0) {
+        if (Math.abs(delta) < SWIPE_THRESHOLD / 3) {
+          this.wheelTurnedPageAt_ = 0;
+        }
+      } else {
+        // If we haven't turned the page yet, see if this delta would turn the page.
+        let turnPageFn = null;
+        if (kthoom.rotateTimes <= 1) {
+          if (delta > SWIPE_THRESHOLD) turnPageFn = showNextPage;
+          else if (delta < -SWIPE_THRESHOLD) turnPageFn = showPrevPage;
+        } else if (kthoom.rotateTimes <= 3) {
+          if (delta < -SWIPE_THRESHOLD) turnPageFn = showNextPage;
+          else if (delta > SWIPE_THRESHOLD) turnPageFn = showPrevPage;
+        }
+        if (turnPageFn) {
+          turnPageFn();
+          this.wheelTurnedPageAt_ = delta;
+        }
+      }
+    }, true);
+  }
+
+  /** @private */
   loadSettings_() {
     try {
-      if (localStorage.kthoom_settings.length < 10) return;
-      const s = JSON.parse(localStorage.kthoom_settings);
+      if (localStorage[LOCAL_STORAGE_KEY].length < 10) return;
+      const s = JSON.parse(localStorage[LOCAL_STORAGE_KEY]);
       kthoom.rotateTimes = s.rotateTimes;
       hflip = s.hflip;
       vflip = s.vflip;
@@ -686,8 +650,10 @@ class KthoomApp {
     } catch(err) {}
   }
 
+  initialized() { return this.initializedPromise_; }
+
   saveSettings() {
-    localStorage.kthoom_settings = JSON.stringify({
+    localStorage[LOCAL_STORAGE_KEY] = JSON.stringify({
       rotateTimes: kthoom.rotateTimes,
       hflip: hflip,
       vflip: vflip,
@@ -704,7 +670,6 @@ class KthoomApp {
     let smartpct = ((imageFiles.length/totalImages) + fract * part )* 100;
     if (totalImages == 0) smartpct = pct;
 
-    // + Math.min((pct - lastCompletion), 100/totalImages * 0.9 + (pct - lastCompletion - 100/totalImages)/2, 100/totalImages);
     let oldval = parseFloat(getElem('meter').getAttribute('width'));
     if (isNaN(oldval)) oldval = 0;
     const weight = 0.5;
@@ -741,13 +706,13 @@ class KthoomApp {
     const start = (new Date).getTime();
     const h = new Uint8Array(ab, 0, 10);
     const pathToBitJS = 'code/bitjs/';
-    if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { //Rar!
+    if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { // Rar!
       unarchiver = new bitjs.archive.Unrarrer(ab, pathToBitJS);
     } else if (h[0] == 0x50 && h[1] == 0x4B) { // PK (Zip)
       unarchiver = new bitjs.archive.Unzipper(ab, pathToBitJS);
     } else if (h[0] == 255 && h[1] == 216) { // JPEG
       totalImages = 1;
-      kthoom.getApp().setProgressMeter(1, 'Archive Missing');
+      this.setProgressMeter(1, 'Archive Missing');
       const dataURI = createURLFromArray(new Uint8Array(ab), 'image/jpeg');
       setImage(dataURI);
       // hide logo
@@ -760,26 +725,23 @@ class KthoomApp {
     // Listen for UnarchiveEvents.
     if (unarchiver) {
       unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS,
-        function(e) {
+        (e) => {
           const percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
           totalImages = e.totalFilesInArchive;
-          kthoom.getApp().setProgressMeter(percentage, 'Unzipping');
+          this.setProgressMeter(percentage, 'Unzipping');
           // display nav
           lastCompletion = percentage * 100;
         });
-      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO,
-        function(e) {
-          console.log(e.msg);
-        });
+      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO, (e) => console.log(e.msg));
       unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT,
-        function(e) {
+        (e) => {
           // convert DecompressedFile into a bunch of ImageFiles
           if (e.unarchivedFile) {
             const f = e.unarchivedFile;
             // add any new pages based on the filename
             if (imageFilenames.indexOf(f.filename) == -1) {
               imageFilenames.push(f.filename);
-              imageFiles.push(new kthoom.ImageFile(f));
+              imageFiles.push(new ImageFile(f));
             }
           }
 
@@ -792,7 +754,7 @@ class KthoomApp {
           }
         });
       unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH,
-        function(e) {
+        (e) => {
           const diff = ((new Date).getTime() - start)/1000;
           console.log('Unarchiving done in ' + diff + 's');
         })
