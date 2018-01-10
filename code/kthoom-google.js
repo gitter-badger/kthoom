@@ -58,10 +58,10 @@ kthoom.google = {
     if (!kthoom.google.authed) {
       kthoom.google.authorize(false /* immediate */, kthoom.google.doDrive);
     } else {
-      var docsView = new google.picker.DocsView();
+      const docsView = new google.picker.DocsView();
       docsView.setMode(google.picker.DocsViewMode.LIST);
       docsView.setQuery('*.cbr|*.cbz|*.cbt');
-      var picker = new google.picker.PickerBuilder().
+      const picker = new google.picker.PickerBuilder().
           addView(docsView).
           // Enable this feature when we can efficiently get downloadUrls
           // for each file selected (right now we'd have to do drive.get
@@ -80,28 +80,28 @@ kthoom.google = {
 
   pickerCallback : function(data) {
     if (data.action == google.picker.Action.PICKED) {
-      var fullSize = data.docs[0].sizeBytes;
-      var gRequest = gapi.client.drive.files.get({
-          'fileId': data.docs[0].id
+      const fullSize = data.docs[0].sizeBytes;
+      const gRequest = gapi.client.drive.files.get({
+          'fileId': data.docs[0].id,
       });
       gRequest.execute(function(response) {
-        var xhr = new XMLHttpRequest();
+        const xhr = new XMLHttpRequest();
         xhr.open('GET', response.downloadUrl, true);
         xhr.setRequestHeader('Authorization', 'OAuth ' + kthoom.google.oathToken);
         xhr.responseType = 'arraybuffer';
         xhr.onload = function(event) {
-          var arrayBuffer = event.target.response;
-          loadFromArrayBuffer(arrayBuffer);
+          const arrayBuffer = event.target.response;
+          kthoom.getApp().loadFromArrayBuffer(arrayBuffer);
         };
         xhr.onprogress = function(evt) {
-          var pct = undefined;
+          let pct = undefined;
           if (evt.lengthComputable && evt.total) {
             pct = evt.loaded / evt.total;
           } else if (fullSize) {
             pct = evt.loaded / fullSize;
           }
 
-          kthoom.setProgressMeter(pct, 'Loading from Google Drive');
+          kthoom.getApp().setProgressMeter(pct, 'Loading from Google Drive');
         }
         xhr.send(null);
       });

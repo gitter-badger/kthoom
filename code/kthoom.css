@@ -116,32 +116,6 @@ body {
   word-wrap: break-word;
 }
 
-
-#filechooser {
-	display: inline;
-	position: absolute;
-	color: transparent !important;
-}
-
-#filechooser {
-  left: auto;
-}
-.webkit #filechooser {
-	left: 0;
-	right: auto;
-}
-
-#uploader {
-	display: inline;
-	left: 0;
-	overflow: hidden;
-	width: 89px;
-	position: absolute;
-	text-align: left;
-	height: 30px;
-}
-
-
 #header.fullscreen {
   opacity: 0;
   position: absolute;

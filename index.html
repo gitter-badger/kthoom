@@ -4,15 +4,36 @@
     <title>kthoom Comic Reader</title>
     <link rel="stylesheet" href="code/kthoom.css" type="text/css"/>
     <link rel="icon" type="image/png" href="images/logo.png"/>
+
+    <!-- Needed for Traceur, the nomodule attribute is needed so that Traceur is only used by browsers
+         that don't support ES6 modules natively.  We can completely remove these two scripts once
+         all browsers support ES6 modules natively. -->
+    <script nomodule src="code/traceur/traceur.js"></script>
+    <script nomodule>
+      var options = new traceur.util.Options();
+      options.asyncFunctions = true;
+      var pathname = document.location.pathname;
+      if (pathname.indexOf('index.html') != -1) {
+        pathname = pathname.substr(0, pathname.indexOf('index.html'));
+      }
+      // Traceur's script location is different than native browsers.  I hacked this option so that
+      // we can use either Traceur or native browser parsing of modules.
+      options.scriptBaseURL = pathname + 'code/';
+      new traceur.WebPageTranscoder(document.location.href, options).run();
+    </script>
+
+    <!-- The crossorigin attribute is needed so that credentials are forwarded through UberProxy -->
+    <script type="module" src="code/kthoom.js" crossorigin="use-credentials"></script>
+
     <script type="application/javascript" src="code/kthoom-google.js"></script>
     <script type="application/javascript" src="code/kthoom-ipfs.js"></script>
-    <script type="application/javascript" src="code/kthoom.js"></script>
+    <!--script type="application/javascript" src="code/kthoom.js"></script-->
     <script type="application/javascript" src="code/bitjs/archive/archive.js"></script>
     <script id="google"
         src="https://apis.google.com/js/client.js?onload=kthoom.google.boot"
         onerror="window.onload=kthoom.google.boot" async></script>
   </head>
-  <body onload="init()">
+  <body>
     <div class="background">
       <object id="logo" type="image/svg+xml" data="images/logo.svg" width="100%">kthoom logo</object>
     </div>
@@ -50,15 +71,29 @@
             </li>
           </ul>
         </div>
-	      <div id="progress" class="hide"></div>
+	      <div id="progress" class="hide">
+          <svg id="svgprogress" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+            <defs>
+              <pattern id="progress_pattern" width="30" height="20" patternUnits="userSpaceOnUse">
+                <rect width="100%" height="100%" fill="#cc2929"></rect>
+                <polygon fill="yellow" points="15,0 30,0 15,20 0,20"></polygon>
+              </pattern>
+            </defs>
+            <g>
+              <rect y="1" width="100%" height="15" fill="#777" stroke="white" rx="5" ry="5"></rect>
+              <text id="progress_title" y="13" x="99.5%" fill="white" font-size="12px" text-anchor="end">0%</text>
+              <rect id="meter" width="0%" height="17" fill="url(#progress_pattern)" rx="5" ry="5"></rect>
+              <rect id="meter2" width="0%" height="17" opacity="0.8" fill="#007fff" rx="5" ry="5"></rect>
+              <text id="page" y="13" x="0.5%" fill="white" font-size="12px">0/0</text>
+            </g>
+          </svg>
+        </div>
 	      <div id="nav" class="hide">
-		      <button id="prevBook" title="Previous Book ([)" type="button" onclick="loadPrevBook()">&lt;&lt;</button>
-		      <button id="prev" title="Previous Page (Left Arrow)" type="button" onclick="showPrevPage()">&lt;</button>
-		      <!--<span id="pageCounter">Page X/Y</span>-->
-		      <button id="toolbarbutton" title="Minimize Toolbar" type="button" onclick="toggleToolbar()">-</button>
-		      <button id="next" title="Next Page (Right Arrow)" type="button" onclick="showNextPage()">&gt;</button>
-		      <button id="nextBook" title="Next Book (])" type="button" onclick="loadNextBook()">&gt;&gt;</button>
-		      <!--<img id="close" title="Close Book (X)" onclick="closeBook()" src="images/cancel.png" tabIndex="3"/>-->
+		      <button id="prevBook" title="Previous Book ([)" type="button">&lt;&lt;</button>
+		      <button id="prev" title="Previous Page (Left Arrow)" type="button">&lt;</button>
+		      <button id="toolbarbutton" title="Minimize Toolbar" type="button">-</button>
+		      <button id="next" title="Next Page (Right Arrow)" type="button">&gt;</button>
+		      <button id="nextBook" title="Next Book (])" type="button">&gt;&gt;</button>
 	      </div>
 	    </div>
       <div id="mainContent">
