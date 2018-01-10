@@ -74,216 +74,6 @@ class ImageFile {
   }
 }
 
-// Attempts to read the files that the user has chosen.
-function getLocalFiles(evt) {
-  const filelist = evt.target.files;
-  library.allBooks = filelist;
-  library.currentBookNum = 0;
-
-  closeBook();
-  loadSingleBook(filelist[0]);
-
-  // Only show library if we have more than one book.
-  if (filelist.length > 1) {
-    kthoom.getApp().showLibrary(true);
-    updateLibrary();
-  }
-}
-
-/**
- * @param {File} file
- */
-function loadSingleBook(file) {
-  const fr = new FileReader();
-  fr.onload = () => kthoom.getApp().loadFromArrayBuffer(fr.result);
-  fr.readAsArrayBuffer(file);
-}
-
-function updatePage() {
-  const title = getElem('page');
-  while (title.firstChild) title.removeChild(title.firstChild);
-  title.appendChild(document.createTextNode( (currentImage+1) + '/' + totalImages ));
-  
-  getElem('meter2').setAttribute('width',
-      100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
-  if (imageFiles[currentImage]) {
-    setImage(imageFiles[currentImage].dataURI);
-  } else {
-    setImage('loading');
-  }
-}
-
-function setImage(url) {
-  const canvas = getElem('mainImage');
-  const prevImage = getElem('prevImage');
-  const x = canvas.getContext('2d');
-  getElem('mainText').style.display = 'none';
-  if (url == 'loading') {
-    kthoom.getApp().updateScale(true);
-    canvas.width = innerWidth - 100;
-    canvas.height = 200;
-    x.fillStyle = 'red';
-    x.font = '50px sans-serif';
-    x.strokeStyle = 'black';
-    x.fillText('Loading Page #' + (currentImage + 1), 100, 100)
-  } else {
-    if (document.body.scrollHeight/innerHeight > 1) {
-      document.body.style.overflowY = 'scroll';
-    }
-    
-    const img = new Image();
-    img.onerror = function(e) {
-      canvas.width = innerWidth - 100;
-      canvas.height = 300;
-      kthoom.getApp().updateScale(true);
-      x.fillStyle = 'orange';
-      x.font = '32px sans-serif';
-      x.strokeStyle = 'black';
-      x.fillText('Page #' + (currentImage+1) + ' (' +
-          imageFiles[currentImage].filename + ')', 100, 100)
-      
-      if (/(html|htm)$/.test(imageFiles[currentImage].filename)) {
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.onload = function() {
-          getElem('mainText').style.display = '';
-          getElem('mainText').innerHTML = '<iframe style="width:100%;height:700px;border:0" src="data:text/html,'+escape(xhr.responseText)+'"></iframe>';
-        }
-        xhr.send(null);
-      } else if (!/(jpg|jpeg|png|gif)$/.test(imageFiles[currentImage].filename)) {
-        const fileSize = (imageFiles[currentImage].data.fileData.length);
-        if (fileSize < 10*1024) {
-          const xhr = new XMLHttpRequest();
-          xhr.open('GET', url, true);
-          xhr.onload = function() {
-            getElem('mainText').style.display = '';
-            getElem('mainText').innerText = xhr.responseText;
-          };
-          xhr.send(null);
-        } else {
-          x.fillText('Cannot display this type of file', 100, 200);
-        }
-      }
-    };
-    img.onload = function() {
-      const h = img.height; 
-      const w = img.width;
-      let sw = w;
-      let sh = h;
-      kthoom.rotateTimes = (4 + kthoom.rotateTimes) % 4;
-      x.save();
-      if (kthoom.rotateTimes % 2 == 1) { sh = w; sw = h;}
-      canvas.height = sh;
-      canvas.width = sw;
-      x.translate(sw/2, sh/2);
-      x.rotate(Math.PI/2 * kthoom.rotateTimes);
-      x.translate(-w/2, -h/2);
-      if (vflip) {
-        x.scale(1, -1)
-        x.translate(0, -h);
-      }
-      if (hflip) {
-        x.scale(-1, 1)
-        x.translate(-w, 0);
-      }
-      canvas.style.display = 'none';
-      scrollTo(0,0);
-      x.drawImage(img, 0, 0);
-      
-      kthoom.getApp().updateScale();
-        
-      canvas.style.display = '';
-      document.body.style.overflowY = '';
-      x.restore();
-    };
-    if (img.src) {
-      prevImage.setAttribute('src', img.src);
-    }
-    img.src = url;
-  };
-}
-
-// TODO: Use timer ids here to prevent cancelling an earlier operation.
-function showHeaderPreview() {
-  const header = getElem('header');
-  if (/fullscreen/.test(header.className)) {
-    header.classList.remove('previewout');
-    header.classList.add('preview');
-    setTimeout(() => {
-      header.classList.add('previewout');
-      setTimeout(() => {
-        header.classList.remove('preview', 'previewout');
-      }, 1000);
-    }, 1337);
-  }
-}
-
-function loadBook(bookNum) {
-  if (bookNum >= 0 && bookNum < library.allBooks.length) {
-    closeBook();
-    library.currentBookNum = bookNum;
-    loadSingleBook(library.allBooks[library.currentBookNum]);
-    updateLibrary();
-  }
-}
-
-// Fills the library with the book names.
-function updateLibrary() {
-  const libDiv = getElem('libraryContents');
-  // Clear out the library.
-  libDiv.innerHTML = '';
-  if (library.allBooks.length > 0) {
-    for (let i = 0; i < library.allBooks.length; ++i) {
-      const book = library.allBooks[i];
-      const bookDiv = document.createElement('div');
-      bookDiv.classList.add('libraryBook');
-      if (library.currentBookNum == i) {
-        bookDiv.classList.add('current');
-      }
-      bookDiv.dataset.index = i;
-      bookDiv.innerHTML = book.name;
-      bookDiv.addEventListener('click', (evt) => {
-        // Trigger a re-render of the library.
-        const index = parseInt(evt.target.dataset.index, 10);
-        loadBook(index);
-      });
-      libDiv.appendChild(bookDiv);
-    }
-  }
-}
-
-function closeBook() {
-  // Terminate any async work the current unarchiver is doing.
-  if (unarchiver) {
-    unarchiver.stop();
-    unarchiver = null;
-  }
-  currentImage = 0;
-  imageFiles = [];
-  imageFilenames = [];
-  totalImages = 0;
-  lastCompletion = 0;
-  
-  // display logo
-  getElem('logo').setAttribute('style', 'display:block');
-  
-  getElem('nav').className = 'hide';
-  getElem('progress').className = 'hide';
-  
-  getElem('meter').setAttribute('width', '0%');
-  
-  kthoom.getApp().setProgressMeter(0);
-  updatePage();
-}
-
-function loadHash() {
-  const hashcontent = window.location.hash.substr(1);
-  if (hashcontent.lastIndexOf("ipfs", 0) === 0) {
-    const ipfshash = hashcontent.substr(4);
-    kthoom.ipfs.loadHash(ipfshash);
-  }
-}
-
 /**
  * The main class for the kthoom reader.
  */
@@ -302,7 +92,6 @@ class KthoomApp {
       }
     }).then(() => {
       this.init_();
-      loadHash();
     });
   }
 
@@ -318,6 +107,7 @@ class KthoomApp {
     document.addEventListener('keydown', (e) => this.keyHandler_(e), false);
 
     this.loadSettings_();
+    this.loadHash_();
 
     console.log('kthoom initialized');
   }
@@ -334,14 +124,14 @@ class KthoomApp {
       }
       const page = Math.max(1, Math.ceil(((e.clientX - l)/pdiv.offsetWidth) * totalImages)) - 1;
       currentImage = page;
-      updatePage();
+      this.updatePage();
     };
   }
 
   /** @private */
   initMenu_() {
-    getElem('menu').addEventListener('click', (evt) => evt.currentTarget.classList.toggle('opened'));
-    getElem('menu-open-local-files').addEventListener('change', getLocalFiles, false);
+    getElem('menu').addEventListener('click', (e) => e.currentTarget.classList.toggle('opened'));
+    getElem('menu-open-local-files').addEventListener('change', (e) => this.getLocalFiles(e), false);
     getElem('menu-open-google-drive').addEventListener('click', kthoom.google.doDrive, false);
     getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow, false);
     getElem('menu-help').addEventListener('click', this.showOrHideHelp_, false);
@@ -355,7 +145,7 @@ class KthoomApp {
     document.addEventListener('dragover', swallowEvent, false);
     document.addEventListener('drop', (e) => {
       swallowEvent(e);
-      getLocalFiles({target: e.dataTransfer});
+      this.getLocalFiles({target: e.dataTransfer});
     }, false);
   }
 
@@ -450,6 +240,14 @@ class KthoomApp {
     }, false);
   }
 
+  loadHash_() {
+    const hashcontent = window.location.hash.substr(1);
+    if (hashcontent.lastIndexOf("ipfs", 0) === 0) {
+      const ipfshash = hashcontent.substr(4);
+      kthoom.ipfs.loadHash(ipfshash);
+    }
+  }
+
   /** @private */
   loadSettings_() {
     try {
@@ -513,14 +311,14 @@ class KthoomApp {
         if (kthoom.rotateTimes < 0) {
           kthoom.rotateTimes = 3;
         }
-        updatePage();
+        this.updatePage();
         break;
       case Key.R:
         kthoom.rotateTimes++;
         if (kthoom.rotateTimes > 3) {
           kthoom.rotateTimes = 0;
         }
-        updatePage();
+        this.updatePage();
         break;
       case Key.F:
         if (!hflip && !vflip) {
@@ -531,7 +329,7 @@ class KthoomApp {
         } else if(vflip == true) {
           vflip = false;
         }
-        updatePage();
+        this.updatePage();
         break;
       case Key.W: case Key.H: case Key.B: case Key.N:
         fitMode = code;
@@ -638,6 +436,21 @@ class KthoomApp {
     this.updateScale();
   }
 
+  // TODO: Use timer ids here to prevent cancelling an earlier operation.
+  showHeaderPreview() {
+    const header = getElem('header');
+    if (header.classList.contains('fullscreen')) {
+      header.classList.remove('previewout');
+      header.classList.add('preview');
+      setTimeout(() => {
+        header.classList.add('previewout');
+        setTimeout(() => {
+          header.classList.remove('preview', 'previewout');
+        }, 1000);
+      }, 1337);
+    }
+  }
+
   showPrevPage() {
     currentImage--;
 
@@ -653,9 +466,8 @@ class KthoomApp {
       }
     }
 
-    updatePage();
-    showHeaderPreview();
-    //getElem('prev').focus();
+    this.updatePage();
+    this.showHeaderPreview();
   }
 
   showNextPage() {
@@ -673,20 +485,114 @@ class KthoomApp {
       }
     }
 
-    updatePage();
-    showHeaderPreview();
-    //getElem('next').focus();
+    this.updatePage();
+    this.showHeaderPreview();
   }
 
   loadPrevBook() {
     if (library.currentBookNum > 0) {
-      loadBook(library.currentBookNum - 1);
+      this.loadBook(library.currentBookNum - 1);
     }
   }
 
   loadNextBook() {
     if (library.currentBookNum < library.allBooks.length - 1) {
-      loadBook(library.currentBookNum + 1);
+      this.loadBook(library.currentBookNum + 1);
+    }
+  }
+
+  loadBook(bookNum) {
+    if (bookNum >= 0 && bookNum < library.allBooks.length) {
+      this.closeBook();
+      library.currentBookNum = bookNum;
+      this.loadSingleBook(library.allBooks[library.currentBookNum]);
+      this.updateLibrary();
+    }
+  }
+
+  /**
+   * @param {File} file
+   */
+  loadSingleBook(file) {
+    const fr = new FileReader();
+    fr.onload = () => this.loadFromArrayBuffer(fr.result);
+    fr.readAsArrayBuffer(file);
+  }
+
+  closeBook() {
+    // Terminate any async work the current unarchiver is doing.
+    if (unarchiver) {
+      unarchiver.stop();
+      unarchiver = null;
+    }
+    currentImage = 0;
+    imageFiles = [];
+    imageFilenames = [];
+    totalImages = 0;
+    lastCompletion = 0;
+
+    // display logo
+    getElem('logo').setAttribute('style', 'display:block');
+    getElem('nav').className = 'hide';
+    getElem('progress').className = 'hide';
+    getElem('meter').setAttribute('width', '0%');
+
+    this.setProgressMeter(0);
+    this.updatePage();
+  }
+
+  updatePage() {
+    const title = getElem('page');
+    while (title.firstChild) title.removeChild(title.firstChild);
+    title.appendChild(document.createTextNode( (currentImage+1) + '/' + totalImages ));
+
+    getElem('meter2').setAttribute('width',
+        100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
+    if (imageFiles[currentImage]) {
+      this.setImage(imageFiles[currentImage].dataURI);
+    } else {
+      this.setImage('loading');
+    }
+  }
+
+  // Fills the library with the book names.
+  updateLibrary() {
+    const libDiv = getElem('libraryContents');
+    // Clear out the library.
+    libDiv.innerHTML = '';
+    if (library.allBooks.length > 0) {
+      for (let i = 0; i < library.allBooks.length; ++i) {
+        const book = library.allBooks[i];
+        const bookDiv = document.createElement('div');
+        bookDiv.classList.add('libraryBook');
+        if (library.currentBookNum == i) {
+          bookDiv.classList.add('current');
+        }
+        bookDiv.dataset.index = i;
+        bookDiv.innerHTML = book.name;
+        bookDiv.addEventListener('click', (evt) => {
+          // Trigger a re-render of the library.
+          const index = parseInt(evt.target.dataset.index, 10);
+          this.loadBook(index);
+        });
+        libDiv.appendChild(bookDiv);
+      }
+    }
+  }
+
+  // Attempts to read the files that the user has chosen.
+  getLocalFiles(evt) {
+    const filelist = evt.target.files;
+    library.allBooks = filelist;
+    library.currentBookNum = 0;
+
+    this.closeBook();
+    this.loadSingleBook(filelist[0]);
+
+    // Only show library if we have more than one book.
+    if (filelist.length > 1) {
+      this.showLibrary(true);
+      this.updateLibrary();
     }
   }
 
@@ -702,7 +608,7 @@ class KthoomApp {
       totalImages = 1;
       this.setProgressMeter(1, 'Archive Missing');
       const dataURI = createURLFromArray(new Uint8Array(ab), 'image/jpeg');
-      setImage(dataURI);
+      this.setImage(dataURI);
       // hide logo
       getElem('logo').setAttribute('style', 'display:none');
       return;
@@ -736,7 +642,7 @@ class KthoomApp {
 
           // display first page if we haven't yet
           if (imageFiles.length == currentImage + 1) {
-            updatePage();
+            this.updatePage();
           }
       });
       unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, (e) => {
@@ -747,6 +653,96 @@ class KthoomApp {
     } else {
       alert('Some error');
     }
+  }
+
+  setImage(url) {
+    const canvas = getElem('mainImage');
+    const prevImage = getElem('prevImage');
+    const x = canvas.getContext('2d');
+    getElem('mainText').style.display = 'none';
+    if (url == 'loading') {
+      this.updateScale(true);
+      canvas.width = innerWidth - 100;
+      canvas.height = 200;
+      x.fillStyle = 'red';
+      x.font = '50px sans-serif';
+      x.strokeStyle = 'black';
+      x.fillText('Loading Page #' + (currentImage + 1), 100, 100)
+    } else {
+      if (document.body.scrollHeight/innerHeight > 1) {
+        document.body.style.overflowY = 'scroll';
+      }
+
+      const img = new Image();
+      img.onerror = (e) => {
+        canvas.width = innerWidth - 100;
+        canvas.height = 300;
+        this.updateScale(true);
+        x.fillStyle = 'orange';
+        x.font = '32px sans-serif';
+        x.strokeStyle = 'black';
+        x.fillText('Page #' + (currentImage+1) + ' (' +
+            imageFiles[currentImage].filename + ')', 100, 100)
+
+        if (/(html|htm)$/.test(imageFiles[currentImage].filename)) {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', url, true);
+          xhr.onload = () => {
+            getElem('mainText').style.display = '';
+            getElem('mainText').innerHTML = '<iframe style="width:100%;height:700px;border:0" src="data:text/html,'+escape(xhr.responseText)+'"></iframe>';
+          }
+          xhr.send(null);
+        } else if (!/(jpg|jpeg|png|gif)$/.test(imageFiles[currentImage].filename)) {
+          const fileSize = (imageFiles[currentImage].data.fileData.length);
+          if (fileSize < 10*1024) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onload = () => {
+              getElem('mainText').style.display = '';
+              getElem('mainText').innerText = xhr.responseText;
+            };
+            xhr.send(null);
+          } else {
+            x.fillText('Cannot display this type of file', 100, 200);
+          }
+        }
+      };
+      img.onload = () => {
+        const h = img.height;
+        const w = img.width;
+        let sw = w;
+        let sh = h;
+        kthoom.rotateTimes = (4 + kthoom.rotateTimes) % 4;
+        x.save();
+        if (kthoom.rotateTimes % 2 == 1) { sh = w; sw = h;}
+        canvas.height = sh;
+        canvas.width = sw;
+        x.translate(sw/2, sh/2);
+        x.rotate(Math.PI/2 * kthoom.rotateTimes);
+        x.translate(-w/2, -h/2);
+        if (vflip) {
+          x.scale(1, -1)
+          x.translate(0, -h);
+        }
+        if (hflip) {
+          x.scale(-1, 1)
+          x.translate(-w, 0);
+        }
+        canvas.style.display = 'none';
+        scrollTo(0,0);
+        x.drawImage(img, 0, 0);
+
+        this.updateScale();
+
+        canvas.style.display = '';
+        document.body.style.overflowY = '';
+        x.restore();
+      };
+      if (img.src) {
+        prevImage.setAttribute('src', img.src);
+      }
+      img.src = url;
+    };
   }
 }
 
