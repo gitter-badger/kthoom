@@ -85,7 +85,7 @@ function getLocalFiles(evt) {
 
   // Only show library if we have more than one book.
   if (filelist.length > 1) {
-    showLibrary(true);
+    kthoom.getApp().showLibrary(true);
     updateLibrary();
   }
 }
@@ -225,84 +225,6 @@ function loadBook(bookNum) {
     loadSingleBook(library.allBooks[library.currentBookNum]);
     updateLibrary();
   }
-}
-
-function loadPrevBook() {
-  if (library.currentBookNum > 0) {
-    loadBook(library.currentBookNum - 1);
-  }
-}
-kthoom.loadPrevBook = loadPrevBook;
-
-function loadNextBook() {
-  if (library.currentBookNum < library.allBooks.length - 1) {
-    loadBook(library.currentBookNum + 1);
-  }
-}
-kthoom.loadNextBook = loadNextBook;
-
-function showPrevPage() {
-  currentImage--;
-
-  if (currentImage < 0) {
-    if (library.allBooks.length == 1) {
-      currentImage = imageFiles.length - 1;
-    } else if (library.currentBookNum > 0) {
-      loadPrevBook();
-    } else {
-      // Freeze on the current page.
-      currentImage++;
-      return;
-    }
-  }
-
-  updatePage();
-  showHeaderPreview();
-  //getElem('prev').focus();
-}
-kthoom.showPrevPage = showPrevPage;
-
-function showNextPage() {
-  currentImage++;
-  
-  if (currentImage >= Math.max(totalImages, imageFiles.length)) {
-    if (library.allBooks.length == 1) {
-      currentImage = 0;
-    } else if (library.currentBookNum < library.allBooks.length - 1) {
-      loadNextBook();
-    } else {
-      // Freeze on the current page.
-      currentImage--;
-      return;
-    }
-  }
-
-  updatePage();
-  showHeaderPreview();
-  //getElem('next').focus();
-}
-kthoom.showNextPage = showNextPage;
-
-function toggleToolbar() {
-  const headerDiv = getElem('header');
-  const fullscreen = /fullscreen/.test(headerDiv.className);
-  headerDiv.className = (fullscreen ? '' : 'fullscreen');
-  //getElem('toolbarbutton).innerText = s?'-':'+';
-  kthoom.getApp().updateScale();
-}
-kthoom.toggleToolbar = toggleToolbar;
-
-// Shows/hides the library.
-function showLibrary(show) {
-  const libraryDiv = getElem('library');
-  libraryDiv.style.visibility = (show ? 'visible' : 'hidden');
-}
-
-// Opens/closes the library.
-function toggleLibraryOpen() {
-  const libraryDiv = getElem('library');
-  const opened = /opened/.test(libraryDiv.className);
-  libraryDiv.className = (opened ? '' : 'opened');
 }
 
 // Fills the library with the book names.
@@ -465,11 +387,11 @@ class KthoomApp {
         // If we haven't turned the page yet, see if this delta would turn the page.
         let turnPageFn = null;
         if (kthoom.rotateTimes <= 1) {
-          if (delta > SWIPE_THRESHOLD) turnPageFn = showNextPage;
-          else if (delta < -SWIPE_THRESHOLD) turnPageFn = showPrevPage;
+          if (delta > SWIPE_THRESHOLD) turnPageFn = () => this.showNextPage();
+          else if (delta < -SWIPE_THRESHOLD) turnPageFn = () => this.showPrevPage();
         } else if (kthoom.rotateTimes <= 3) {
-          if (delta < -SWIPE_THRESHOLD) turnPageFn = showNextPage;
-          else if (delta > SWIPE_THRESHOLD) turnPageFn = showPrevPage;
+          if (delta < -SWIPE_THRESHOLD) turnPageFn = () => this.showNextPage();
+          else if (delta > SWIPE_THRESHOLD) turnPageFn = () => this.showPrevPage();
         }
         if (turnPageFn) {
           turnPageFn();
@@ -503,12 +425,20 @@ class KthoomApp {
         case 3: clickedPrev = clickY > (comicHeight / 2); break;
       }
       if (clickedPrev) {
-        showPrevPage();
+        this.showPrevPage();
       } else {
-        showNextPage();
+        this.showNextPage();
       }
     }, false);
-    getElem('libraryTab').addEventListener('click', () => toggleLibraryOpen(), false);
+
+    getElem('libraryTab').addEventListener('click', () => this.toggleLibraryOpen(), false);
+
+    // Toolbar
+    getElem('prevBook').addEventListener('click', () => this.loadPrevBook(), false);
+    getElem('prev').addEventListener('click', () => this.showPrevPage(), false);
+    getElem('toolbarbutton').addEventListener('click', () => this.toggleToolbar(), false);
+    getElem('next').addEventListener('click', () => this.showNextPage(), false);
+    getElem('nextBook').addEventListener('click', () => this.loadNextBook(), false);
   }
 
   /** @private */
@@ -560,22 +490,22 @@ class KthoomApp {
     if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
     switch(code) {
       case Key.X:
-        toggleToolbar();
+        this.toggleToolbar();
         break;
       case Key.LEFT:
-        if (canKeyPrev) showPrevPage();
+        if (canKeyPrev) this.showPrevPage();
         break;
       case Key.RIGHT:
-        if (canKeyNext) showNextPage();
+        if (canKeyNext) this.showNextPage();
         break;
       case Key.LEFT_SQUARE_BRACKET:
         if (library.currentBookNum > 0) {
-          loadPrevBook();
+          this.loadPrevBook();
         }
         break;
       case Key.RIGHT_SQUARE_BRACKET:
         if (library.currentBookNum < library.allBooks.length - 1) {
-          loadNextBook();
+          this.loadNextBook();
         }
         break;
       case Key.L:
@@ -692,6 +622,71 @@ class KthoomApp {
     if (pct > 0) {
       getElem('nav').className = '';
       getElem('progress').className = '';
+    }
+  }
+
+  toggleLibraryOpen() {
+    getElem('library').classList.toggle('opened');
+  }
+
+  showLibrary(show) {
+    getElem('library').style.visibility = (show ? 'visible' : 'hidden');
+  }
+
+  toggleToolbar() {
+    getElem('header').classList.toggle('fullscreen');
+    this.updateScale();
+  }
+
+  showPrevPage() {
+    currentImage--;
+
+    if (currentImage < 0) {
+      if (library.allBooks.length == 1) {
+        currentImage = imageFiles.length - 1;
+      } else if (library.currentBookNum > 0) {
+        this.loadPrevBook();
+      } else {
+        // Freeze on the current page.
+        currentImage++;
+        return;
+      }
+    }
+
+    updatePage();
+    showHeaderPreview();
+    //getElem('prev').focus();
+  }
+
+  showNextPage() {
+    currentImage++;
+
+    if (currentImage >= Math.max(totalImages, imageFiles.length)) {
+      if (library.allBooks.length == 1) {
+        currentImage = 0;
+      } else if (library.currentBookNum < library.allBooks.length - 1) {
+        this.loadNextBook();
+      } else {
+        // Freeze on the current page.
+        currentImage--;
+        return;
+      }
+    }
+
+    updatePage();
+    showHeaderPreview();
+    //getElem('next').focus();
+  }
+
+  loadPrevBook() {
+    if (library.currentBookNum > 0) {
+      loadBook(library.currentBookNum - 1);
+    }
+  }
+
+  loadNextBook() {
+    if (library.currentBookNum < library.allBooks.length - 1) {
+      loadBook(library.currentBookNum + 1);
     }
   }
 
