@@ -40,27 +40,12 @@ function createURLFromArray(array, mimeType) {
   return URL.createObjectURL(blob);
 }
 
-// The rotation orientation of the comic.
-kthoom.rotateTimes = 0;
-
 // global variables
-let unarchiver = null;
-let currentImage = 0;
-let imageFiles = [];
-let imageFilenames = [];
-let totalImages = 0;
-let lastCompletion = 0;
 const library = {
   allBooks: [],
   currentBookNum: 0,
 };
   
-let hflip = false;
-let vflip = false;
-let fitMode = Key.B;
-let canKeyNext = true;
-let canKeyPrev = true;
-
 // Stores an image filename and its data: URI.
 class ImageFile {
   constructor(file) {
@@ -79,6 +64,18 @@ class ImageFile {
  */
 class KthoomApp {
   constructor() {
+    this.unarchiver_ = null;
+    this.currentImage_ = 0;
+    this.imageFiles_ = [];
+    this.imageFilenames_ = [];
+    this.totalImages_ = 0;
+    this.lastCompletion_ = 0;
+
+    this.rotateTimes_ = 0;
+    this.hflip_ = false;
+    this.vflip_ = false;
+    this.fitMode_ = Key.B;
+
     this.wheelTimer_ = null;
     this.wheelTurnedPageAt_ = 0;
 
@@ -122,8 +119,8 @@ class KthoomApp {
       for (let x = pdiv; x != docEl; x = x.parentNode) {
         l += x.offsetLeft;
       }
-      const page = Math.max(1, Math.ceil(((e.clientX - l)/pdiv.offsetWidth) * totalImages)) - 1;
-      currentImage = page;
+      const page = Math.max(1, Math.ceil(((e.clientX - l)/pdiv.offsetWidth) * this.totalImages_)) - 1;
+      this.currentImage_ = page;
       this.updatePage();
     };
   }
@@ -165,7 +162,7 @@ class KthoomApp {
       }, 200);
 
       // Determine what delta is relevant based on orientation.
-      const delta = (kthoom.rotateTimes %2 == 0 ? evt.deltaX : evt.deltaY);
+      const delta = (this.rotateTimes_ %2 == 0 ? evt.deltaX : evt.deltaY);
 
       // If we turned the page, we won't let the page turn again until the delta
       // is below the hysteresis threshold (i.e. the swipe has lost its momentum).
@@ -176,10 +173,10 @@ class KthoomApp {
       } else {
         // If we haven't turned the page yet, see if this delta would turn the page.
         let turnPageFn = null;
-        if (kthoom.rotateTimes <= 1) {
+        if (this.rotateTimes_ <= 1) {
           if (delta > SWIPE_THRESHOLD) turnPageFn = () => this.showNextPage();
           else if (delta < -SWIPE_THRESHOLD) turnPageFn = () => this.showPrevPage();
-        } else if (kthoom.rotateTimes <= 3) {
+        } else if (this.rotateTimes_ <= 3) {
           if (delta < -SWIPE_THRESHOLD) turnPageFn = () => this.showNextPage();
           else if (delta > SWIPE_THRESHOLD) turnPageFn = () => this.showPrevPage();
         }
@@ -208,7 +205,7 @@ class KthoomApp {
       // Determine if the user clicked/tapped the left side or the
       // right side of the page.
       let clickedPrev = false;
-      switch (kthoom.rotateTimes) {
+      switch (this.rotateTimes_) {
         case 0: clickedPrev = clickX < (comicWidth / 2); break;
         case 1: clickedPrev = clickY < (comicHeight / 2); break;
         case 2: clickedPrev = clickX > (comicWidth / 2); break;
@@ -253,10 +250,10 @@ class KthoomApp {
     try {
       if (localStorage[LOCAL_STORAGE_KEY].length < 10) return;
       const s = JSON.parse(localStorage[LOCAL_STORAGE_KEY]);
-      kthoom.rotateTimes = s.rotateTimes;
-      hflip = s.hflip;
-      vflip = s.vflip;
-      fitMode = s.fitMode;
+      this.rotateTimes_ = s.rotateTimes;
+      this.hflip_ = s.hflip;
+      this.vflip_ = s.vflip;
+      this.fitMode_ = s.fitMode;
     } catch(err) {}
   }
 
@@ -282,8 +279,9 @@ class KthoomApp {
     }
 
     if (getComputedStyle(getElem('progress')).display == 'none') return;
-    canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
-    canKeyPrev = (scrollX <= 0);
+
+    let canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
+    let canKeyPrev = (scrollX <= 0);
 
     if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
     switch(code) {
@@ -307,32 +305,32 @@ class KthoomApp {
         }
         break;
       case Key.L:
-        kthoom.rotateTimes--;
-        if (kthoom.rotateTimes < 0) {
-          kthoom.rotateTimes = 3;
+      this.rotateTimes_--;
+        if (this.rotateTimes_ < 0) {
+          this.rotateTimes_ = 3;
         }
         this.updatePage();
         break;
       case Key.R:
-        kthoom.rotateTimes++;
-        if (kthoom.rotateTimes > 3) {
-          kthoom.rotateTimes = 0;
+      this.rotateTimes_++;
+        if (this.rotateTimes_ > 3) {
+          this.rotateTimes_ = 0;
         }
         this.updatePage();
         break;
       case Key.F:
-        if (!hflip && !vflip) {
-          hflip = true;
-        } else if(hflip == true) {
-          vflip = true;
-          hflip = false;
-        } else if(vflip == true) {
-          vflip = false;
+        if (!this.hflip_ && !this.vflip_) {
+          this.hflip_ = true;
+        } else if(this.hflip_ == true) {
+          this.vflip_ = true;
+          this.hflip_ = false;
+        } else if(this.vflip_ == true) {
+          this.vflip_ = false;
         }
         this.updatePage();
         break;
       case Key.W: case Key.H: case Key.B: case Key.N:
-        fitMode = code;
+        this.fitMode_ = code;
         this.updateScale();
         break;
       default:
@@ -359,13 +357,13 @@ class KthoomApp {
     if (!/fullscreen/.test(getElem('header').className)) {
       maxheight -= 25;
     }
-    if (clear || fitMode == Key.N) {
-    } else if (fitMode == Key.B) {
+    if (clear || this.fitMode_ == Key.N) {
+    } else if (this.fitMode_ == Key.B) {
       mainImageStyle.maxWidth = '100%';
       mainImageStyle.maxHeight = maxheight + 'px';
-    } else if (fitMode == Key.H) {
+    } else if (this.fitMode_ == Key.H) {
       mainImageStyle.height = maxheight + 'px';
-    } else if (fitMode == Key.W) {
+    } else if (this.fitMode_ == Key.W) {
       mainImageStyle.width = '100%';
     }
     this.saveSettings();
@@ -375,21 +373,21 @@ class KthoomApp {
 
   saveSettings() {
     localStorage[LOCAL_STORAGE_KEY] = JSON.stringify({
-      rotateTimes: kthoom.rotateTimes,
-      hflip: hflip,
-      vflip: vflip,
-      fitMode: fitMode,
+      rotateTimes: this.rotateTimes_,
+      hflip: this.hflip_,
+      vflip: this.vflip_,
+      fitMode: this.fitMode_,
     });
   }
 
   setProgressMeter(pct, opt_label) {
     pct = (pct*100);
     if (isNaN(pct)) pct = 1;
-    const part = 1/totalImages;
-    const remain = ((pct - lastCompletion)/100)/part;
+    const part = 1 / this.totalImages_;
+    const remain = ((pct - this.lastCompletion_)/100)/part;
     const fract = Math.min(1, remain);
-    let smartpct = ((imageFiles.length/totalImages) + fract * part )* 100;
-    if (totalImages == 0) smartpct = pct;
+    let smartpct = ((this.imageFiles_.length / this.totalImages_) + fract * part )* 100;
+    if (this.totalImages_ == 0) smartpct = pct;
 
     let oldval = parseFloat(getElem('meter').getAttribute('width'));
     if (isNaN(oldval)) oldval = 0;
@@ -404,18 +402,18 @@ class KthoomApp {
     let title = getElem('progress_title');
     while (title.firstChild) title.removeChild(title.firstChild);
 
-    let labelText = pct.toFixed(2) + '% ' + imageFiles.length + '/' + totalImages + '';
+    let labelText = pct.toFixed(2) + '% ' + this.imageFiles_.length + '/' + this.totalImages_ + '';
     if (opt_label) {
       labelText = opt_label + ' ' + labelText;
     }
     title.appendChild(document.createTextNode(labelText));
 
     getElem('meter2').setAttribute('width',
-        100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
+        100 * (this.totalImages_ == 0 ? 0 : ((this.currentImage_ + 1) / this.totalImages_)) + '%');
 
     title = getElem('page');
     while (title.firstChild) title.removeChild(title.firstChild);
-    title.appendChild(document.createTextNode( (currentImage+1) + '/' + totalImages ));
+    title.appendChild(document.createTextNode((this.currentImage_ + 1) + '/' + this.totalImages_));
 
     if (pct > 0) {
       getElem('nav').className = '';
@@ -452,16 +450,16 @@ class KthoomApp {
   }
 
   showPrevPage() {
-    currentImage--;
+    this.currentImage_--;
 
-    if (currentImage < 0) {
+    if (this.currentImage_ < 0) {
       if (library.allBooks.length == 1) {
-        currentImage = imageFiles.length - 1;
+        this.currentImage_ = this.imageFiles_.length - 1;
       } else if (library.currentBookNum > 0) {
         this.loadPrevBook();
       } else {
         // Freeze on the current page.
-        currentImage++;
+        this.currentImage_++;
         return;
       }
     }
@@ -471,16 +469,16 @@ class KthoomApp {
   }
 
   showNextPage() {
-    currentImage++;
+    this.currentImage_++;
 
-    if (currentImage >= Math.max(totalImages, imageFiles.length)) {
+    if (this.currentImage_ >= Math.max(this.totalImages_, this.imageFiles_.length)) {
       if (library.allBooks.length == 1) {
-        currentImage = 0;
+        this.currentImage_ = 0;
       } else if (library.currentBookNum < library.allBooks.length - 1) {
         this.loadNextBook();
       } else {
         // Freeze on the current page.
-        currentImage--;
+        this.currentImage_--;
         return;
       }
     }
@@ -521,15 +519,15 @@ class KthoomApp {
 
   closeBook() {
     // Terminate any async work the current unarchiver is doing.
-    if (unarchiver) {
-      unarchiver.stop();
-      unarchiver = null;
+    if (this.unarchiver_) {
+      this.unarchiver_.stop();
+      this.unarchiver_ = null;
     }
-    currentImage = 0;
-    imageFiles = [];
-    imageFilenames = [];
-    totalImages = 0;
-    lastCompletion = 0;
+    this.currentImage_ = 0;
+    this.imageFiles_ = [];
+    this.imageFilenames_ = [];
+    this.totalImages_ = 0;
+    this.lastCompletion_ = 0;
 
     // display logo
     getElem('logo').setAttribute('style', 'display:block');
@@ -544,12 +542,12 @@ class KthoomApp {
   updatePage() {
     const title = getElem('page');
     while (title.firstChild) title.removeChild(title.firstChild);
-    title.appendChild(document.createTextNode( (currentImage+1) + '/' + totalImages ));
+    title.appendChild(document.createTextNode( (this.currentImage_ + 1) + '/' + this.totalImages_ ));
 
     getElem('meter2').setAttribute('width',
-        100 * (totalImages == 0 ? 0 : ((currentImage+1)/totalImages)) + '%');
-    if (imageFiles[currentImage]) {
-      this.setImage(imageFiles[currentImage].dataURI);
+        100 * (this.totalImages_ == 0 ? 0 : ((this.currentImage_ + 1) / this.totalImages_)) + '%');
+    if (this.imageFiles_[this.currentImage_]) {
+      this.setImage(this.imageFiles_[this.currentImage_].dataURI);
     } else {
       this.setImage('loading');
     }
@@ -601,11 +599,11 @@ class KthoomApp {
     const h = new Uint8Array(ab, 0, 10);
     const pathToBitJS = 'code/bitjs/';
     if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { // Rar!
-      unarchiver = new bitjs.archive.Unrarrer(ab, pathToBitJS);
+      this.unarchiver_ = new bitjs.archive.Unrarrer(ab, pathToBitJS);
     } else if (h[0] == 0x50 && h[1] == 0x4B) { // PK (Zip)
-      unarchiver = new bitjs.archive.Unzipper(ab, pathToBitJS);
+      this.unarchiver_ = new bitjs.archive.Unzipper(ab, pathToBitJS);
     } else if (h[0] == 255 && h[1] == 216) { // JPEG
-      totalImages = 1;
+      this.totalImages_ = 1;
       this.setProgressMeter(1, 'Archive Missing');
       const dataURI = createURLFromArray(new Uint8Array(ab), 'image/jpeg');
       this.setImage(dataURI);
@@ -613,27 +611,27 @@ class KthoomApp {
       getElem('logo').setAttribute('style', 'display:none');
       return;
     } else { // Try with tar
-      unarchiver = new bitjs.archive.Untarrer(ab, pathToBitJS);
+      this.unarchiver_ = new bitjs.archive.Untarrer(ab, pathToBitJS);
     }
 
     // Listen for UnarchiveEvents.
-    if (unarchiver) {
-      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS, (e) => {
+    if (this.unarchiver_) {
+      this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS, (e) => {
           const percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
-          totalImages = e.totalFilesInArchive;
+          this.totalImages_ = e.totalFilesInArchive;
           this.setProgressMeter(percentage, 'Unzipping');
           // display nav
-          lastCompletion = percentage * 100;
+          this.lastCompletion_ = percentage * 100;
       });
-      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO, (e) => console.log(e.msg));
-      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT, (e) => {
+      this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO, (e) => console.log(e.msg));
+      this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT, (e) => {
           // convert DecompressedFile into a bunch of ImageFiles
           if (e.unarchivedFile) {
             const f = e.unarchivedFile;
             // add any new pages based on the filename
-            if (imageFilenames.indexOf(f.filename) == -1) {
-              imageFilenames.push(f.filename);
-              imageFiles.push(new ImageFile(f));
+            if (this.imageFilenames_.indexOf(f.filename) == -1) {
+              this.imageFilenames_.push(f.filename);
+              this.imageFiles_.push(new ImageFile(f));
             }
           }
 
@@ -641,15 +639,15 @@ class KthoomApp {
           getElem('logo').setAttribute('style', 'display:none');
 
           // display first page if we haven't yet
-          if (imageFiles.length == currentImage + 1) {
+          if (this.imageFiles_.length == this.currentImage_ + 1) {
             this.updatePage();
           }
       });
-      unarchiver.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, (e) => {
+      this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, (e) => {
           const diff = ((new Date).getTime() - start)/1000;
           console.log('Unarchiving done in ' + diff + 's');
       });
-      unarchiver.start();
+      this.unarchiver_.start();
     } else {
       alert('Some error');
     }
@@ -667,7 +665,7 @@ class KthoomApp {
       x.fillStyle = 'red';
       x.font = '50px sans-serif';
       x.strokeStyle = 'black';
-      x.fillText('Loading Page #' + (currentImage + 1), 100, 100)
+      x.fillText('Loading Page #' + (this.currentImage_ + 1), 100, 100)
     } else {
       if (document.body.scrollHeight/innerHeight > 1) {
         document.body.style.overflowY = 'scroll';
@@ -681,10 +679,10 @@ class KthoomApp {
         x.fillStyle = 'orange';
         x.font = '32px sans-serif';
         x.strokeStyle = 'black';
-        x.fillText('Page #' + (currentImage+1) + ' (' +
-            imageFiles[currentImage].filename + ')', 100, 100)
+        x.fillText('Page #' + (this.currentImage_ + 1) + ' (' +
+            this.imageFiles_[this.currentImage_].filename + ')', 100, 100)
 
-        if (/(html|htm)$/.test(imageFiles[currentImage].filename)) {
+        if (/(html|htm)$/.test(this.imageFiles_[this.currentImage_].filename)) {
           const xhr = new XMLHttpRequest();
           xhr.open('GET', url, true);
           xhr.onload = () => {
@@ -692,8 +690,8 @@ class KthoomApp {
             getElem('mainText').innerHTML = '<iframe style="width:100%;height:700px;border:0" src="data:text/html,'+escape(xhr.responseText)+'"></iframe>';
           }
           xhr.send(null);
-        } else if (!/(jpg|jpeg|png|gif)$/.test(imageFiles[currentImage].filename)) {
-          const fileSize = (imageFiles[currentImage].data.fileData.length);
+        } else if (!/(jpg|jpeg|png|gif)$/.test(this.imageFiles_[this.currentImage_].filename)) {
+          const fileSize = (this.imageFiles_[this.currentImage_].data.fileData.length);
           if (fileSize < 10*1024) {
             const xhr = new XMLHttpRequest();
             xhr.open('GET', url, true);
@@ -712,19 +710,19 @@ class KthoomApp {
         const w = img.width;
         let sw = w;
         let sh = h;
-        kthoom.rotateTimes = (4 + kthoom.rotateTimes) % 4;
+        this.rotateTimes_ = (4 + this.rotateTimes_) % 4;
         x.save();
-        if (kthoom.rotateTimes % 2 == 1) { sh = w; sw = h;}
+        if (this.rotateTimes_ % 2 == 1) { sh = w; sw = h;}
         canvas.height = sh;
         canvas.width = sw;
         x.translate(sw/2, sh/2);
-        x.rotate(Math.PI/2 * kthoom.rotateTimes);
+        x.rotate(Math.PI/2 * this.rotateTimes_);
         x.translate(-w/2, -h/2);
-        if (vflip) {
+        if (this.vflip_) {
           x.scale(1, -1)
           x.translate(0, -h);
         }
-        if (hflip) {
+        if (this.hflip_) {
           x.scale(-1, 1)
           x.translate(-w, 0);
         }
