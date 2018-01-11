@@ -1,5 +1,10 @@
 import { getElem } from './helpers.js';
 
+// TODO: Have the ReadingStack subscribe to all of its book events.
+// TODO: Have the ReadingStack display progress bars in the pane as books load
+//       and unarchive.
+// TODO: Have a removeBook() method that unsubscribes, removes and re-renders.
+
 /**
  * The ReadingStack is responsible for displaying information about the current
  * set of books the user has in their stack as well as the book they are
@@ -93,6 +98,7 @@ export class ReadingStack {
     getElem('readingStack').classList.toggle('opened');
   }
 
+  // TODO: Do this better so that each change of state doesn't require a complete re-render?
   /** @private */
   renderStack_() {
     const libDiv = getElem('readingStackContents');

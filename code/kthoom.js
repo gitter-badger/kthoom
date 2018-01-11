@@ -17,7 +17,6 @@ if (window.kthoom == undefined) {
   window.kthoom = {};
 }
 
-const SWIPE_THRESHOLD = 50; // TODO: Tweak this?
 const LOCAL_STORAGE_KEY = 'kthoom_settings';
 
 /**
@@ -27,24 +26,8 @@ class KthoomApp {
   constructor() {
     this.bookViewer_ = new BookViewer();
     this.readingStack_ = new ReadingStack();
-    // TODO: Remove this once we are fully using Books.
-    this.currentImage_ = 0;
 
-    // TODO: Move this to BookViewer eventually.
     this.currentBook_ = null;
-
-    this.imageFiles_ = []; // In Book Now.
-    this.imageFilenames_ = []; // In Book Now.
-    this.totalImages_ = 0; // In Book Now.
-    this.lastCompletion_ = 0;
-
-    this.rotateTimes_ = 0;
-    this.hflip_ = false;
-    this.vflip_ = false;
-    this.fitMode_ = Key.B;
-
-    this.wheelTimer_ = null;
-    this.wheelTurnedPageAt_ = 0;
 
     // This Promise resolves when kthoom is ready.
     this.initializedPromise_ = new Promise((resolve, reject) => {
@@ -62,10 +45,8 @@ class KthoomApp {
   /** @private */
   init_() {
     this.readingStack_.whenCurrentBookChanged(book => this.handleCurrentBookChanged_(book));
-    this.initProgressMeter_();
     this.initMenu_();
     this.initDragDrop_();
-    this.initSwipe_();
     this.initClickHandlers_();
     this.initResizeHandler_();
 
@@ -78,25 +59,9 @@ class KthoomApp {
   }
 
   /** @private */
-  initProgressMeter_() {
-    const pdiv = getElem('progress');
-    const svg = getElem('svgprogress');
-    svg.onclick = (e) => {
-      let l = 0;
-      const docEl = document.documentElement;
-      for (let x = pdiv; x != docEl; x = x.parentNode) {
-        l += x.offsetLeft;
-      }
-      const page = Math.max(1, Math.ceil(((e.clientX - l)/pdiv.offsetWidth) * this.totalImages_)) - 1;
-      this.currentImage_ = page;
-      this.updatePage();
-    };
-  }
-
-  /** @private */
   initMenu_() {
     getElem('menu').addEventListener('click', (e) => e.currentTarget.classList.toggle('opened'));
-    getElem('menu-open-local-files').addEventListener('change', (e) => this.getLocalFiles(e), false);
+    getElem('menu-open-local-files').addEventListener('change', (e) => this.loadLocalFiles_(e), false);
     getElem('menu-open-google-drive').addEventListener('click', kthoom.google.doDrive, false);
     getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow, false);
     getElem('menu-help').addEventListener('click', this.showOrHideHelp_, false);
@@ -110,50 +75,8 @@ class KthoomApp {
     document.addEventListener('dragover', swallowEvent, false);
     document.addEventListener('drop', (e) => {
       swallowEvent(e);
-      this.getLocalFiles({target: e.dataTransfer});
+      this.loadLocalFiles_({target: e.dataTransfer});
     }, false);
-  }
-
-  /** @private */
-  initSwipe_() {
-    window.addEventListener('wheel', (evt) => {
-      evt.preventDefault();
-
-      // Keep the timer going if it has been started.
-      if (this.wheelTimer_) {
-        clearTimeout(this.wheelTimer_);
-      }
-      // If we haven't received wheel events for some time, reset things.
-      this.wheelTimer_ = setTimeout(() => {
-        this.wheelTimer_ = null;
-        this.wheelTurnedPageAt_ = 0;
-      }, 200);
-
-      // Determine what delta is relevant based on orientation.
-      const delta = (this.rotateTimes_ %2 == 0 ? evt.deltaX : evt.deltaY);
-
-      // If we turned the page, we won't let the page turn again until the delta
-      // is below the hysteresis threshold (i.e. the swipe has lost its momentum).
-      if (this.wheelTurnedPageAt_ !== 0) {
-        if (Math.abs(delta) < SWIPE_THRESHOLD / 3) {
-          this.wheelTurnedPageAt_ = 0;
-        }
-      } else {
-        // If we haven't turned the page yet, see if this delta would turn the page.
-        let turnPageFn = null;
-        if (this.rotateTimes_ <= 1) {
-          if (delta > SWIPE_THRESHOLD) turnPageFn = () => this.showNextPage();
-          else if (delta < -SWIPE_THRESHOLD) turnPageFn = () => this.showPrevPage();
-        } else if (this.rotateTimes_ <= 3) {
-          if (delta < -SWIPE_THRESHOLD) turnPageFn = () => this.showNextPage();
-          else if (delta > SWIPE_THRESHOLD) turnPageFn = () => this.showPrevPage();
-        }
-        if (turnPageFn) {
-          turnPageFn();
-          this.wheelTurnedPageAt_ = delta;
-        }
-      }
-    }, true);
   }
 
   /** @private */
@@ -173,7 +96,7 @@ class KthoomApp {
       // Determine if the user clicked/tapped the left side or the
       // right side of the page.
       let clickedPrev = false;
-      switch (this.rotateTimes_) {
+      switch (this.bookViewer_.getRotateTimes()) {
         case 0: clickedPrev = clickX < (comicWidth / 2); break;
         case 1: clickedPrev = clickY < (comicHeight / 2); break;
         case 2: clickedPrev = clickX > (comicWidth / 2); break;
@@ -197,15 +120,18 @@ class KthoomApp {
   /** @private */
   initResizeHandler_() {
     window.addEventListener('resize', () => {
-      const f = (screen.width - innerWidth < 4 && screen.height - innerHeight < 4);
+      const f = (window.screen.width - window.innerWidth < 4 &&
+                 window.screen.height - window.innerHeight < 4);
+      // TODO: Move all 'header' management into BookViewer.
       getElem('header').className = f ? 'fullscreen' : '';
-      this.updateScale();
+      this.bookViewer_.updateScale();
     }, false);
   }
 
+  /** @private */
   loadHash_() {
     const hashcontent = window.location.hash.substr(1);
-    if (hashcontent.lastIndexOf("ipfs", 0) === 0) {
+    if (hashcontent.lastIndexOf('ipfs', 0) === 0) {
       const ipfshash = hashcontent.substr(4);
       kthoom.ipfs.loadHash(ipfshash);
     }
@@ -216,10 +142,10 @@ class KthoomApp {
     try {
       if (localStorage[LOCAL_STORAGE_KEY].length < 10) return;
       const s = JSON.parse(localStorage[LOCAL_STORAGE_KEY]);
-      this.rotateTimes_ = s.rotateTimes;
-      this.hflip_ = s.hflip;
-      this.vflip_ = s.vflip;
-      this.fitMode_ = s.fitMode;
+      this.bookViewer_.setRotateTimes(s.rotateTimes);
+      this.bookViewer_.setHflip(s.hflip);
+      this.bookViewer_.setVflip(s.vflip);
+      this.bookViewer_.setFitMode(s.fitMode);
     } catch(err) {}
   }
 
@@ -267,33 +193,17 @@ class KthoomApp {
         this.readingStack_.changeToNextBook();
         break;
       case Key.L:
-      this.rotateTimes_--;
-        if (this.rotateTimes_ < 0) {
-          this.rotateTimes_ = 3;
-        }
-        this.updatePage();
-        break;
+        this.bookViewer_.rotateCounterClockwise();
+      break;
       case Key.R:
-      this.rotateTimes_++;
-        if (this.rotateTimes_ > 3) {
-          this.rotateTimes_ = 0;
-        }
-        this.updatePage();
+        this.bookViewer_.rotateClockwise();
         break;
       case Key.F:
-        if (!this.hflip_ && !this.vflip_) {
-          this.hflip_ = true;
-        } else if(this.hflip_ == true) {
-          this.vflip_ = true;
-          this.hflip_ = false;
-        } else if(this.vflip_ == true) {
-          this.vflip_ = false;
-        }
-        this.updatePage();
+        this.bookViewer_.flip();
         break;
       case Key.W: case Key.H: case Key.B: case Key.N:
-        this.fitMode_ = code;
-        this.updateScale();
+        this.bookViewer_.setFitMode(code);
+        this.saveSettings_();
         break;
       default:
         break;
@@ -308,236 +218,53 @@ class KthoomApp {
     getElem('overlay').style.display = show ? 'block' : 'none';
   }
 
-  // TODO: Make this private.
-  updateScale(clear = false) {
-    const mainImageStyle = getElem('mainImage').style;
-    mainImageStyle.width = '';
-    mainImageStyle.height = '';
-    mainImageStyle.maxWidth = '';
-    mainImageStyle.maxHeight = '';
-    let maxheight = innerHeight - 15;
-    if (!/fullscreen/.test(getElem('header').className)) {
-      maxheight -= 25;
-    }
-    if (clear || this.fitMode_ == Key.N) {
-    } else if (this.fitMode_ == Key.B) {
-      mainImageStyle.maxWidth = '100%';
-      mainImageStyle.maxHeight = maxheight + 'px';
-    } else if (this.fitMode_ == Key.H) {
-      mainImageStyle.height = maxheight + 'px';
-    } else if (this.fitMode_ == Key.W) {
-      mainImageStyle.width = '100%';
-    }
-    this.saveSettings();
-  }
-
-  initialized() { return this.initializedPromise_; }
-
-  saveSettings() {
+  /** @private */
+  saveSettings_() {
     localStorage[LOCAL_STORAGE_KEY] = JSON.stringify({
-      rotateTimes: this.rotateTimes_,
-      hflip: this.hflip_,
-      vflip: this.vflip_,
-      fitMode: this.fitMode_,
+      rotateTimes: this.bookViewer_.getRotateTimes(),
+      hflip: this.bookViewer_.isHflip(),
+      vflip: this.bookViewer_.isVflip(),
+      fitMode: this.bookViewer_.getFitMode(),
     });
   }
 
   setProgressMeter(pct, opt_label) {
-    pct = (pct*100);
-    if (isNaN(pct)) pct = 1;
-    const part = 1 / this.totalImages_;
-    const remain = ((pct - this.lastCompletion_)/100)/part;
-    const fract = Math.min(1, remain);
-    let smartpct = ((this.imageFiles_.length / this.totalImages_) + fract * part )* 100;
-    if (this.totalImages_ == 0) smartpct = pct;
-
-    let oldval = parseFloat(getElem('meter').getAttribute('width'));
-    if (isNaN(oldval)) oldval = 0;
-    const weight = 0.5;
-    smartpct = (weight * smartpct + (1-weight) * oldval);
-    if (pct == 100) smartpct = 100;
-
-    if (!isNaN(smartpct)) {
-      getElem('meter').setAttribute('width', smartpct + '%');
-    }
-
-    let title = getElem('progress_title');
-    while (title.firstChild) title.removeChild(title.firstChild);
-
-    let labelText = pct.toFixed(2) + '% ' + this.imageFiles_.length + '/' + this.totalImages_ + '';
-    if (opt_label) {
-      labelText = opt_label + ' ' + labelText;
-    }
-    title.appendChild(document.createTextNode(labelText));
-
-    getElem('meter2').setAttribute('width',
-        100 * (this.totalImages_ == 0 ? 0 : ((this.currentImage_ + 1) / this.totalImages_)) + '%');
-
-    title = getElem('page');
-    while (title.firstChild) title.removeChild(title.firstChild);
-    title.appendChild(document.createTextNode((this.currentImage_ + 1) + '/' + this.totalImages_));
-
-    if (pct > 0) {
-      getElem('nav').className = '';
-      getElem('progress').className = '';
-    }
+    this.bookViewer_.setProgressMeter(pct, opt_label);
   }
 
+  // TODO: Move all 'header' management into BookViewer.
   toggleToolbar() {
     getElem('header').classList.toggle('fullscreen');
-    this.updateScale();
-  }
-
-  // TODO: Use timer ids here to prevent cancelling an earlier operation.
-  showHeaderPreview() {
-    const header = getElem('header');
-    if (header.classList.contains('fullscreen')) {
-      header.classList.remove('previewout');
-      header.classList.add('preview');
-      setTimeout(() => {
-        header.classList.add('previewout');
-        setTimeout(() => {
-          header.classList.remove('preview', 'previewout');
-        }, 1000);
-      }, 1337);
-    }
+    this.bookViewer_.updateScale();
   }
 
   showPrevPage() {
-    this.currentImage_--;
-
-    if (this.currentImage_ < 0) {
+    const turnedPage = this.bookViewer_.showPrevPage();
+    if (!turnedPage) {
       if (this.readingStack_.getNumberOfBooks() == 1) {
-        this.currentImage_ = this.imageFiles_.length - 1;
+        this.bookViewer_.showPage(this.currentBook_.getNumberOfPages() - 1);
       } else {
         this.readingStack_.changeToPrevBook();
       }
     }
-
-    this.updatePage();
-    this.showHeaderPreview();
   }
 
   showNextPage() {
-    this.currentImage_++;
-
-    if (this.currentImage_ >= Math.max(this.totalImages_, this.imageFiles_.length)) {
+    const turnedPage = this.bookViewer_.showNextPage();
+    if (!turnedPage) {
       if (this.readingStack_.getNumberOfBooks() == 1) {
-        this.currentImage_ = 0;
+        this.bookViewer_.showPage(0);
       } else {
         this.readingStack_.changeToNextBook();
       }
     }
-
-    this.updatePage();
-    this.showHeaderPreview();
   }
 
   /**
-   * @param {string} name
-   * @param {ArrayBuffer} ab
-   */
-  loadSingleBookFromArrayBuffer(name, ab) {
-    Book.fromArrayBuffer(name, ab).then(book => {
-      this.readingStack_.addBook(book);
-    });
-  }
-
-  /**
-   * @param {BookEvent} evt The BookEvent.
-   */
-  handleBookEvent_(evt) {
-    const book = evt.book;
-    if (evt instanceof UnarchiveProgressEvent) {
-      this.totalImages_ = book.getNumberOfPages();
-      this.setProgressMeter(evt.percentage, 'Unzipping');
-      // display nav
-      this.lastCompletion_ = evt.percentage * 100;
-    } else if (evt instanceof UnarchivePageExtractedEvent) {
-      const page = evt.page;
-
-      // TODO: Stop doing this once we no longer needs imageFilenames_ and imageFiles_.
-      // add any new pages based on the filename
-      if (this.imageFilenames_.indexOf(page.imageFilename) == -1) {
-        this.imageFilenames_.push(page.imageFilename);
-        this.imageFiles_.push(page.imageFile);
-      }
-
-      // display first page if we haven't yet
-      if (this.imageFiles_.length == this.currentImage_ + 1) {
-        this.updatePage();
-      }
-    }
-  }
-
-  /**
-   * @param {Book} book
+   * Attempts to read the files that the user has chosen.
    * @private
    */
-  handleCurrentBookChanged_(book) {
-    if (book !== this.currentBook_) {
-      this.closeBook();
-
-      // hide logo
-      getElem('logo').setAttribute('style', 'display:none');
-
-      this.currentBook_ = book;
-      book.subscribe(this, (evt) => this.handleBookEvent_(evt));
-      if (!book.isUnarchived()) {
-        book.unarchive();
-      } else {
-        for (let p = 0; p < book.getNumberOfPages(); ++p) {
-          const page = book.getPage(p);
-          this.imageFilenames_.push(page.imageFilename);
-          this.imageFiles_.push(page.imageFile);
-        }
-        this.totalImages_ = book.getNumberOfPages();
-        this.currentImage_ = 0;
-        this.setProgressMeter(1);
-        this.updatePage();
-      }
-    }
-  }
-
-  closeBook() {
-    // Terminate any async work the current unarchiver is doing.
-    if (this.currentBook_) {
-      this.currentBook_.unsubscribe(this);
-      this.currentBook_ = null;
-    }
-
-    this.currentImage_ = 0;
-    this.imageFiles_ = [];
-    this.imageFilenames_ = [];
-    this.totalImages_ = 0;
-    this.lastCompletion_ = 0;
-
-    // display logo
-    getElem('logo').setAttribute('style', 'display:block');
-    getElem('nav').className = 'hide';
-    getElem('progress').className = 'hide';
-    getElem('meter').setAttribute('width', '0%');
-
-    this.setProgressMeter(0);
-    this.updatePage();
-  }
-
-  updatePage() {
-    const title = getElem('page');
-    while (title.firstChild) title.removeChild(title.firstChild);
-    title.appendChild(document.createTextNode( (this.currentImage_ + 1) + '/' + this.totalImages_ ));
-
-    getElem('meter2').setAttribute('width',
-        100 * (this.totalImages_ == 0 ? 0 : ((this.currentImage_ + 1) / this.totalImages_)) + '%');
-    if (this.imageFiles_[this.currentImage_]) {
-      this.setImage(this.imageFiles_[this.currentImage_].dataURI);
-    } else {
-      this.setImage('loading');
-    }
-  }
-
-  // Attempts to read the files that the user has chosen.
-  getLocalFiles(evt) {
+  loadLocalFiles_(evt) {
     const filelist = evt.target.files;
 
     const bookPromises = [];
@@ -554,94 +281,32 @@ class KthoomApp {
     });
   }
 
-  setImage(url) {
-    const canvas = getElem('mainImage');
-    const prevImage = getElem('prevImage');
-    const x = canvas.getContext('2d');
-    getElem('mainText').style.display = 'none';
-    if (url == 'loading') {
-      this.updateScale(true);
-      canvas.width = innerWidth - 100;
-      canvas.height = 200;
-      x.fillStyle = 'red';
-      x.font = '50px sans-serif';
-      x.strokeStyle = 'black';
-      x.fillText('Loading Page #' + (this.currentImage_ + 1), 100, 100)
-    } else {
-      if (document.body.scrollHeight/innerHeight > 1) {
-        document.body.style.overflowY = 'scroll';
-      }
+  // TODO: Add a loadSingleBookFromXHR() method.
 
-      const img = new Image();
-      img.onerror = (e) => {
-        canvas.width = innerWidth - 100;
-        canvas.height = 300;
-        this.updateScale(true);
-        x.fillStyle = 'orange';
-        x.font = '32px sans-serif';
-        x.strokeStyle = 'black';
-        x.fillText('Page #' + (this.currentImage_ + 1) + ' (' +
-            this.imageFiles_[this.currentImage_].filename + ')', 100, 100)
+  /**
+   * @param {string} name
+   * @param {ArrayBuffer} ab
+   */
+  loadSingleBookFromArrayBuffer(name, ab) {
+    Book.fromArrayBuffer(name, ab).then(book => {
+      this.readingStack_.addBook(book);
+    });
+  }
 
-        if (/(html|htm)$/.test(this.imageFiles_[this.currentImage_].filename)) {
-          const xhr = new XMLHttpRequest();
-          xhr.open('GET', url, true);
-          xhr.onload = () => {
-            getElem('mainText').style.display = '';
-            getElem('mainText').innerHTML = '<iframe style="width:100%;height:700px;border:0" src="data:text/html,'+escape(xhr.responseText)+'"></iframe>';
-          }
-          xhr.send(null);
-        } else if (!/(jpg|jpeg|png|gif)$/.test(this.imageFiles_[this.currentImage_].filename)) {
-          const fileSize = (this.imageFiles_[this.currentImage_].data.fileData.length);
-          if (fileSize < 10*1024) {
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', url, true);
-            xhr.onload = () => {
-              getElem('mainText').style.display = '';
-              getElem('mainText').innerText = xhr.responseText;
-            };
-            xhr.send(null);
-          } else {
-            x.fillText('Cannot display this type of file', 100, 200);
-          }
-        }
-      };
-      img.onload = () => {
-        const h = img.height;
-        const w = img.width;
-        let sw = w;
-        let sh = h;
-        this.rotateTimes_ = (4 + this.rotateTimes_) % 4;
-        x.save();
-        if (this.rotateTimes_ % 2 == 1) { sh = w; sw = h;}
-        canvas.height = sh;
-        canvas.width = sw;
-        x.translate(sw/2, sh/2);
-        x.rotate(Math.PI/2 * this.rotateTimes_);
-        x.translate(-w/2, -h/2);
-        if (this.vflip_) {
-          x.scale(1, -1)
-          x.translate(0, -h);
-        }
-        if (this.hflip_) {
-          x.scale(-1, 1)
-          x.translate(-w, 0);
-        }
-        canvas.style.display = 'none';
-        scrollTo(0,0);
-        x.drawImage(img, 0, 0);
+  /**
+   * @param {Book} book
+   * @private
+   */
+  handleCurrentBookChanged_(book) {
+    if (book !== this.currentBook_) {
+      this.bookViewer_.closeBook();
 
-        this.updateScale();
+      // hide logo
+      getElem('logo').setAttribute('style', 'display:none');
 
-        canvas.style.display = '';
-        document.body.style.overflowY = '';
-        x.restore();
-      };
-      if (img.src) {
-        prevImage.setAttribute('src', img.src);
-      }
-      img.src = url;
-    };
+      this.currentBook_ = book;
+      this.bookViewer_.setCurrentBook(book);
+    }
   }
 }
 

@@ -33,9 +33,10 @@ export class UnarchiveProgressEvent extends BookEvent {
 }
 
 export class UnarchivePageExtractedEvent extends BookEvent {
-  constructor(book, page) {
+  constructor(book, page, pageNum) {
     super(book);
     this.page = page;
+    this.pageNum = pageNum;
   }
 }
 
@@ -95,6 +96,7 @@ export class Book {
   getName() { return this.name_; }
   getFormatType() { return this.formatType_; }
   getNumberOfPages() { return this.totalPages_; }
+  getNumberOfPagesReady() { return this.pages_.length; }
   getPage(i) {
     if (i < 0 || i >= this.totalPages_) {
       return null;
@@ -111,6 +113,8 @@ export class Book {
     this.loadState_ = LoadState.LOADED;
     this.unarchiveState_ = UnarchiveState.NOT_UNARCHIVED;
   }
+
+  // TODO: Add a load() method and emit LOADING events?
 
   // TODO: Only do this if it is not already unarchived.
   unarchive() {
@@ -159,7 +163,7 @@ export class Book {
             const newPage = new Page(f.filename, new ImageFile(f));
             // TODO: Error if we have more pages than totalPages_.
             this.pages_.push(newPage);
-            this.notify_(new UnarchivePageExtractedEvent(this, newPage));
+            this.notify_(new UnarchivePageExtractedEvent(this, newPage, this.pages_.length));
           }
       });
       this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, (e) => {
@@ -211,6 +215,8 @@ Book.fromFile = function(file) {
     fr.readAsArrayBuffer(file);
   });
 };
+
+// TODO: Have a Book.fromXHR that returns a Promise<Book>
 
 Book.fromArrayBuffer = function(name, ab) {
   return new Promise((resolve, reject) => {
