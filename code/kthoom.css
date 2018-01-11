@@ -152,7 +152,7 @@ body {
   opacity: 0;
 }
 
-#library {
+#readingStack {
   border-color: grey;
   bottom: 30px;
   color: grey;
@@ -173,7 +173,7 @@ body {
   visibility: hidden;
 }
 
-#libraryTab {
+#readingStackTab {
   -ms-align-self: center;
   -webkit-align-self: center;
   align-self: center;
@@ -192,7 +192,7 @@ body {
   z-index: 100;
 }
 
-#libraryContents {
+#readingStackContents {
   background-color: black;
   border-color: inherit;
   border-radius: 5px;
@@ -208,13 +208,13 @@ body {
   z-index: 1;
 }
 
-#library:hover, #library.opened {
+#readingStack:hover, #readingStack.opened {
   border-color: yellow;
   color: yellow;
   margin-right: 0;
 }
 
-.libraryBook {
+.readingStackBook {
   border-bottom: solid 1px grey;
   border-top: solid 1px black;
   overflow: hidden;
@@ -222,13 +222,13 @@ body {
   text-overflow: ellipsis;
 }
 
-.libraryBook:hover {
+.readingStackBook:hover {
   background-color: #444;
   border-bottom: solid 1px yellow;
   border-top: solid 1px yellow;
 }
 
-.libraryBook.current {
+.readingStackBook.current {
   background-color: #cc2929;
   border-bottom: solid 1px yellow;
   border-top: solid 1px yellow;

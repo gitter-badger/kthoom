@@ -91,7 +91,7 @@ kthoom.google = {
         xhr.responseType = 'arraybuffer';
         xhr.onload = function(event) {
           const arrayBuffer = event.target.response;
-          kthoom.getApp().loadFromArrayBuffer(arrayBuffer);
+          kthoom.getApp().loadSingleBookFromArrayBuffer(data.docs[0].name, arrayBuffer);
         };
         xhr.onprogress = function(evt) {
           let pct = undefined;

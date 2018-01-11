@@ -7,6 +7,12 @@
  * Copyright(c) 2011 antimatter15
  */
 
+import { Book, BookEvent, Page, UnarchiveProgressEvent, UnarchivePageExtractedEvent,
+         UnarchiveCompleteEvent } from './book.js';
+import { BookViewer } from './book-viewer.js';
+import { ReadingStack } from './reading-stack.js';
+import { Key, getElem, createURLFromArray } from './helpers.js';
+
 if (window.kthoom == undefined) {
   window.kthoom = {};
 }
@@ -14,61 +20,28 @@ if (window.kthoom == undefined) {
 const SWIPE_THRESHOLD = 50; // TODO: Tweak this?
 const LOCAL_STORAGE_KEY = 'kthoom_settings';
 
-// key codes
-const Key = {
-    ESCAPE: 27,
-    LEFT: 37,
-    UP: 38,
-    RIGHT: 39,
-    DOWN: 40, 
-    A: 65, B: 66, C: 67, D: 68, E: 69, F: 70, G: 71, H: 72, I: 73, J: 74, K: 75, L: 76, M: 77, 
-    N: 78, O: 79, P: 80, Q: 81, R: 82, S: 83, T: 84, U: 85, V: 86, W: 87, X: 88, Y: 89, Z: 90,
-    QUESTION_MARK: 191,
-    LEFT_SQUARE_BRACKET: 219,
-    RIGHT_SQUARE_BRACKET: 221,
-};
-
-// Helper functions.
-function getElem(id) {
-  return document.body.querySelector('#' + id);
-}
-
-function createURLFromArray(array, mimeType) {
-  const offset = array.byteOffset;
-  const len = array.byteLength;
-  let blob = new Blob([array], {type: mimeType}).slice(offset, offset + len, mimeType);
-  return URL.createObjectURL(blob);
-}
-
 // global variables
 const library = {
   allBooks: [],
   currentBookNum: 0,
 };
   
-// Stores an image filename and its data: URI.
-class ImageFile {
-  constructor(file) {
-    this.data = file;
-    this.filename = file.filename;
-    const fileExtension = file.filename.split('.').pop().toLowerCase();
-    const mimeType = fileExtension == 'png' ? 'image/png' :
-        (fileExtension == 'jpg' || fileExtension == 'jpeg') ? 'image/jpeg' :
-        fileExtension == 'gif' ? 'image/gif' : undefined;
-    this.dataURI = createURLFromArray(file.fileData, mimeType);
-  }
-}
-
 /**
  * The main class for the kthoom reader.
  */
 class KthoomApp {
   constructor() {
-    this.unarchiver_ = null;
+    this.bookViewer_ = new BookViewer();
+    this.readingStack_ = new ReadingStack();
+    // TODO: Remove this once we are fully using Books.
     this.currentImage_ = 0;
-    this.imageFiles_ = [];
-    this.imageFilenames_ = [];
-    this.totalImages_ = 0;
+
+    // TODO: Move this to BookViewer eventually.
+    this.currentBook_ = null;
+
+    this.imageFiles_ = []; // In Book Now.
+    this.imageFilenames_ = []; // In Book Now.
+    this.totalImages_ = 0; // In Book Now.
     this.lastCompletion_ = 0;
 
     this.rotateTimes_ = 0;
@@ -217,8 +190,6 @@ class KthoomApp {
         this.showNextPage();
       }
     }, false);
-
-    getElem('libraryTab').addEventListener('click', () => this.toggleLibraryOpen(), false);
 
     // Toolbar
     getElem('prevBook').addEventListener('click', () => this.loadPrevBook(), false);
@@ -421,12 +392,8 @@ class KthoomApp {
     }
   }
 
-  toggleLibraryOpen() {
-    getElem('library').classList.toggle('opened');
-  }
-
   showLibrary(show) {
-    getElem('library').style.visibility = (show ? 'visible' : 'hidden');
+    getElem('readingStack').style.visibility = (show ? 'visible' : 'hidden');
   }
 
   toggleToolbar() {
@@ -503,26 +470,77 @@ class KthoomApp {
     if (bookNum >= 0 && bookNum < library.allBooks.length) {
       this.closeBook();
       library.currentBookNum = bookNum;
-      this.loadSingleBook(library.allBooks[library.currentBookNum]);
+      this.loadSingleBookFromFile(library.allBooks[library.currentBookNum]);
       this.updateLibrary();
+    }
+  }
+
+  /**
+   * @param {BookEvent} evt The BookEvent.
+   */
+  handleBookEvent_(evt) {
+    const book = evt.book;
+    if (evt instanceof UnarchiveProgressEvent) {
+      this.totalImages_ = book.getNumberOfPages();
+      this.setProgressMeter(evt.percentage, 'Unzipping');
+      // display nav
+      this.lastCompletion_ = evt.percentage * 100;
+    } else if (evt instanceof UnarchivePageExtractedEvent) {
+      const page = evt.page;
+
+      // TODO: Stop doing this once we no longer needs imageFilenames_ and imageFiles_.
+      // add any new pages based on the filename
+      if (this.imageFilenames_.indexOf(page.imageFilename) == -1) {
+        this.imageFilenames_.push(page.imageFilename);
+        this.imageFiles_.push(page.imageFile);
+      }
+
+      // hide logo
+      getElem('logo').setAttribute('style', 'display:none');
+
+      // display first page if we haven't yet
+      if (this.imageFiles_.length == this.currentImage_ + 1) {
+        this.updatePage();
+      }
     }
   }
 
   /**
    * @param {File} file
    */
-  loadSingleBook(file) {
-    const fr = new FileReader();
-    fr.onload = () => this.loadFromArrayBuffer(fr.result);
-    fr.readAsArrayBuffer(file);
+  loadSingleBookFromFile(file) {
+    this.loadSingleBook_(Book.fromFile(file));
+  }
+
+  /**
+   * @param {string} name
+   * @param {ArrayBuffer} ab
+   */
+  loadSingleBookFromArrayBuffer(name, ab) {
+    this.loadSingleBook_(Book.fromArrayBuffer(name, ab));
+  }
+
+  /**
+   * Loads a single book.
+   * @param {Promise<Book>} bookPromise
+   */
+  loadSingleBook_(bookPromise) {
+    this.closeBook();
+    bookPromise.then(book => {
+      this.currentBook_ = book;
+      book.subscribe(this, (evt) => this.handleBookEvent_(evt));
+      book.unarchive();
+    });
   }
 
   closeBook() {
     // Terminate any async work the current unarchiver is doing.
-    if (this.unarchiver_) {
-      this.unarchiver_.stop();
-      this.unarchiver_ = null;
+    if (this.currentBook_) {
+      this.currentBook_.unsubscribe(this);
+      this.currentBook_ = null;
+      this.setProgressMeter(1);
     }
+
     this.currentImage_ = 0;
     this.imageFiles_ = [];
     this.imageFilenames_ = [];
@@ -555,14 +573,14 @@ class KthoomApp {
 
   // Fills the library with the book names.
   updateLibrary() {
-    const libDiv = getElem('libraryContents');
+    const libDiv = getElem('readingStackContents');
     // Clear out the library.
     libDiv.innerHTML = '';
     if (library.allBooks.length > 0) {
       for (let i = 0; i < library.allBooks.length; ++i) {
         const book = library.allBooks[i];
         const bookDiv = document.createElement('div');
-        bookDiv.classList.add('libraryBook');
+        bookDiv.classList.add('readingStackBook');
         if (library.currentBookNum == i) {
           bookDiv.classList.add('current');
         }
@@ -585,71 +603,12 @@ class KthoomApp {
     library.currentBookNum = 0;
 
     this.closeBook();
-    this.loadSingleBook(filelist[0]);
+    this.loadSingleBookFromFile(filelist[0]);
 
     // Only show library if we have more than one book.
     if (filelist.length > 1) {
       this.showLibrary(true);
       this.updateLibrary();
-    }
-  }
-
-  loadFromArrayBuffer(ab) {
-    const start = (new Date).getTime();
-    const h = new Uint8Array(ab, 0, 10);
-    const pathToBitJS = 'code/bitjs/';
-    if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { // Rar!
-      this.unarchiver_ = new bitjs.archive.Unrarrer(ab, pathToBitJS);
-    } else if (h[0] == 0x50 && h[1] == 0x4B) { // PK (Zip)
-      this.unarchiver_ = new bitjs.archive.Unzipper(ab, pathToBitJS);
-    } else if (h[0] == 255 && h[1] == 216) { // JPEG
-      this.totalImages_ = 1;
-      this.setProgressMeter(1, 'Archive Missing');
-      const dataURI = createURLFromArray(new Uint8Array(ab), 'image/jpeg');
-      this.setImage(dataURI);
-      // hide logo
-      getElem('logo').setAttribute('style', 'display:none');
-      return;
-    } else { // Try with tar
-      this.unarchiver_ = new bitjs.archive.Untarrer(ab, pathToBitJS);
-    }
-
-    // Listen for UnarchiveEvents.
-    if (this.unarchiver_) {
-      this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS, (e) => {
-          const percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
-          this.totalImages_ = e.totalFilesInArchive;
-          this.setProgressMeter(percentage, 'Unzipping');
-          // display nav
-          this.lastCompletion_ = percentage * 100;
-      });
-      this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO, (e) => console.log(e.msg));
-      this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT, (e) => {
-          // convert DecompressedFile into a bunch of ImageFiles
-          if (e.unarchivedFile) {
-            const f = e.unarchivedFile;
-            // add any new pages based on the filename
-            if (this.imageFilenames_.indexOf(f.filename) == -1) {
-              this.imageFilenames_.push(f.filename);
-              this.imageFiles_.push(new ImageFile(f));
-            }
-          }
-
-          // hide logo
-          getElem('logo').setAttribute('style', 'display:none');
-
-          // display first page if we haven't yet
-          if (this.imageFiles_.length == this.currentImage_ + 1) {
-            this.updatePage();
-          }
-      });
-      this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, (e) => {
-          const diff = ((new Date).getTime() - start)/1000;
-          console.log('Unarchiving done in ' + diff + 's');
-      });
-      this.unarchiver_.start();
-    } else {
-      alert('Some error');
     }
   }
 
