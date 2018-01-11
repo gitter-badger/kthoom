@@ -20,12 +20,6 @@ if (window.kthoom == undefined) {
 const SWIPE_THRESHOLD = 50; // TODO: Tweak this?
 const LOCAL_STORAGE_KEY = 'kthoom_settings';
 
-// global variables
-const library = {
-  allBooks: [],
-  currentBookNum: 0,
-};
-  
 /**
  * The main class for the kthoom reader.
  */
@@ -67,6 +61,7 @@ class KthoomApp {
 
   /** @private */
   init_() {
+    this.readingStack_.whenCurrentBookChanged(book => this.handleCurrentBookChanged_(book));
     this.initProgressMeter_();
     this.initMenu_();
     this.initDragDrop_();
@@ -192,11 +187,11 @@ class KthoomApp {
     }, false);
 
     // Toolbar
-    getElem('prevBook').addEventListener('click', () => this.loadPrevBook(), false);
+    getElem('prevBook').addEventListener('click', () => this.readingStack_.changeToPrevBook(), false);
     getElem('prev').addEventListener('click', () => this.showPrevPage(), false);
     getElem('toolbarbutton').addEventListener('click', () => this.toggleToolbar(), false);
     getElem('next').addEventListener('click', () => this.showNextPage(), false);
-    getElem('nextBook').addEventListener('click', () => this.loadNextBook(), false);
+    getElem('nextBook').addEventListener('click', () => this.readingStack_.changeToNextBook(), false);
   }
 
   /** @private */
@@ -266,14 +261,10 @@ class KthoomApp {
         if (canKeyNext) this.showNextPage();
         break;
       case Key.LEFT_SQUARE_BRACKET:
-        if (library.currentBookNum > 0) {
-          this.loadPrevBook();
-        }
+        this.readingStack_.changeToPrevBook();
         break;
       case Key.RIGHT_SQUARE_BRACKET:
-        if (library.currentBookNum < library.allBooks.length - 1) {
-          this.loadNextBook();
-        }
+        this.readingStack_.changeToNextBook();
         break;
       case Key.L:
       this.rotateTimes_--;
@@ -392,10 +383,6 @@ class KthoomApp {
     }
   }
 
-  showLibrary(show) {
-    getElem('readingStack').style.visibility = (show ? 'visible' : 'hidden');
-  }
-
   toggleToolbar() {
     getElem('header').classList.toggle('fullscreen');
     this.updateScale();
@@ -420,14 +407,10 @@ class KthoomApp {
     this.currentImage_--;
 
     if (this.currentImage_ < 0) {
-      if (library.allBooks.length == 1) {
+      if (this.readingStack_.getNumberOfBooks() == 1) {
         this.currentImage_ = this.imageFiles_.length - 1;
-      } else if (library.currentBookNum > 0) {
-        this.loadPrevBook();
       } else {
-        // Freeze on the current page.
-        this.currentImage_++;
-        return;
+        this.readingStack_.changeToPrevBook();
       }
     }
 
@@ -439,14 +422,10 @@ class KthoomApp {
     this.currentImage_++;
 
     if (this.currentImage_ >= Math.max(this.totalImages_, this.imageFiles_.length)) {
-      if (library.allBooks.length == 1) {
+      if (this.readingStack_.getNumberOfBooks() == 1) {
         this.currentImage_ = 0;
-      } else if (library.currentBookNum < library.allBooks.length - 1) {
-        this.loadNextBook();
       } else {
-        // Freeze on the current page.
-        this.currentImage_--;
-        return;
+        this.readingStack_.changeToNextBook();
       }
     }
 
@@ -454,25 +433,14 @@ class KthoomApp {
     this.showHeaderPreview();
   }
 
-  loadPrevBook() {
-    if (library.currentBookNum > 0) {
-      this.loadBook(library.currentBookNum - 1);
-    }
-  }
-
-  loadNextBook() {
-    if (library.currentBookNum < library.allBooks.length - 1) {
-      this.loadBook(library.currentBookNum + 1);
-    }
-  }
-
-  loadBook(bookNum) {
-    if (bookNum >= 0 && bookNum < library.allBooks.length) {
-      this.closeBook();
-      library.currentBookNum = bookNum;
-      this.loadSingleBookFromFile(library.allBooks[library.currentBookNum]);
-      this.updateLibrary();
-    }
+  /**
+   * @param {string} name
+   * @param {ArrayBuffer} ab
+   */
+  loadSingleBookFromArrayBuffer(name, ab) {
+    Book.fromArrayBuffer(name, ab).then(book => {
+      this.readingStack_.addBook(book);
+    });
   }
 
   /**
@@ -495,9 +463,6 @@ class KthoomApp {
         this.imageFiles_.push(page.imageFile);
       }
 
-      // hide logo
-      getElem('logo').setAttribute('style', 'display:none');
-
       // display first page if we haven't yet
       if (this.imageFiles_.length == this.currentImage_ + 1) {
         this.updatePage();
@@ -506,31 +471,32 @@ class KthoomApp {
   }
 
   /**
-   * @param {File} file
+   * @param {Book} book
+   * @private
    */
-  loadSingleBookFromFile(file) {
-    this.loadSingleBook_(Book.fromFile(file));
-  }
+  handleCurrentBookChanged_(book) {
+    if (book !== this.currentBook_) {
+      this.closeBook();
 
-  /**
-   * @param {string} name
-   * @param {ArrayBuffer} ab
-   */
-  loadSingleBookFromArrayBuffer(name, ab) {
-    this.loadSingleBook_(Book.fromArrayBuffer(name, ab));
-  }
+      // hide logo
+      getElem('logo').setAttribute('style', 'display:none');
 
-  /**
-   * Loads a single book.
-   * @param {Promise<Book>} bookPromise
-   */
-  loadSingleBook_(bookPromise) {
-    this.closeBook();
-    bookPromise.then(book => {
       this.currentBook_ = book;
       book.subscribe(this, (evt) => this.handleBookEvent_(evt));
-      book.unarchive();
-    });
+      if (!book.isUnarchived()) {
+        book.unarchive();
+      } else {
+        for (let p = 0; p < book.getNumberOfPages(); ++p) {
+          const page = book.getPage(p);
+          this.imageFilenames_.push(page.imageFilename);
+          this.imageFiles_.push(page.imageFile);
+        }
+        this.totalImages_ = book.getNumberOfPages();
+        this.currentImage_ = 0;
+        this.setProgressMeter(1);
+        this.updatePage();
+      }
+    }
   }
 
   closeBook() {
@@ -538,7 +504,6 @@ class KthoomApp {
     if (this.currentBook_) {
       this.currentBook_.unsubscribe(this);
       this.currentBook_ = null;
-      this.setProgressMeter(1);
     }
 
     this.currentImage_ = 0;
@@ -571,45 +536,22 @@ class KthoomApp {
     }
   }
 
-  // Fills the library with the book names.
-  updateLibrary() {
-    const libDiv = getElem('readingStackContents');
-    // Clear out the library.
-    libDiv.innerHTML = '';
-    if (library.allBooks.length > 0) {
-      for (let i = 0; i < library.allBooks.length; ++i) {
-        const book = library.allBooks[i];
-        const bookDiv = document.createElement('div');
-        bookDiv.classList.add('readingStackBook');
-        if (library.currentBookNum == i) {
-          bookDiv.classList.add('current');
-        }
-        bookDiv.dataset.index = i;
-        bookDiv.innerHTML = book.name;
-        bookDiv.addEventListener('click', (evt) => {
-          // Trigger a re-render of the library.
-          const index = parseInt(evt.target.dataset.index, 10);
-          this.loadBook(index);
-        });
-        libDiv.appendChild(bookDiv);
-      }
-    }
-  }
-
   // Attempts to read the files that the user has chosen.
   getLocalFiles(evt) {
     const filelist = evt.target.files;
-    library.allBooks = filelist;
-    library.currentBookNum = 0;
 
-    this.closeBook();
-    this.loadSingleBookFromFile(filelist[0]);
-
-    // Only show library if we have more than one book.
-    if (filelist.length > 1) {
-      this.showLibrary(true);
-      this.updateLibrary();
+    const bookPromises = [];
+    // TODO: Use Array.from(filelist).map(...) once IE11 is no longer a concern.
+    for (let fileNum = 0; fileNum < filelist.length; ++fileNum) {
+      bookPromises.push(Book.fromFile(filelist[fileNum]));
     }
+
+    Promise.all(bookPromises).then(books => {
+      if (books.length > 0) {
+        this.readingStack_.show(true);
+        this.readingStack_.addBooks(books);
+      }
+    });
   }
 
   setImage(url) {

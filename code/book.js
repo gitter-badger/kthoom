@@ -46,7 +46,7 @@ export class UnarchiveCompleteEvent extends BookEvent {
 }
 
 // Stores an image filename and its data: URI.
-class ImageFile {
+export class ImageFile {
   constructor(file) {
     this.data = file;
     this.filename = file.filename;
@@ -89,10 +89,18 @@ export class Book {
     this.subscribers_ = {};
   }
 
-  getFormatType() { return this.formatType_; }
-  getNumberOfPages() { return this.totalPages_; }
   isLoaded() { return this.loadState_ === LoadState.LOADED; }
   isUnarchived() { return this.unarchiveState_ === UnarchiveState.UNARCHIVED; }
+
+  getName() { return this.name_; }
+  getFormatType() { return this.formatType_; }
+  getNumberOfPages() { return this.totalPages_; }
+  getPage(i) {
+    if (i < 0 || i >= this.totalPages_) {
+      return null;
+    }
+    return this.pages_[i];
+  }
 
   setArrayBuffer(ab) {
     this.ab_ = ab;
@@ -155,6 +163,7 @@ export class Book {
           }
       });
       this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, (e) => {
+          this.unarchiveState_ = UnarchiveState.UNARCHIVED;
           const diff = ((new Date).getTime() - start)/1000;
           console.log('Unarchiving done in ' + diff + 's');
           this.notify_(new UnarchiveCompleteEvent(this));
@@ -202,7 +211,6 @@ Book.fromFile = function(file) {
     fr.readAsArrayBuffer(file);
   });
 };
-
 
 Book.fromArrayBuffer = function(name, ab) {
   return new Promise((resolve, reject) => {
