@@ -33,13 +33,14 @@ export class BookViewer {
   initProgressMeter_() {
     const pdiv = getElem('progress');
     const svg = getElem('svgprogress');
-    svg.onclick = (e) => {
+    svg.onclick = (evt) => {
       let l = 0;
       const docEl = document.documentElement;
       for (let el = pdiv; el != docEl; el = el.parentNode) {
         l += el.offsetLeft;
       }
-      const page = Math.max(1, Math.ceil(((e.clientX - l)/pdiv.offsetWidth) * this.totalImages_)) - 1;
+      const totalPages = this.currentBook_.getNumberOfPages();
+      const page = Math.max(1, Math.ceil(((evt.clientX - l)/pdiv.offsetWidth) * totalPages)) - 1;
       this.currentPageNum_ = page;
       this.updatePage();
     };

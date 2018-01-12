@@ -259,6 +259,7 @@ Book.fromFile = function(file) {
  * @param {string} name The book name.
  * @param {XMLHttpRequest} xhr XHR ready with the method, url and header.
  * @param {number} expectedSize Unarchived size in bytes.
+ * @return {Promise<Book>}
  */
 Book.fromXhr = function(name, xhr, expectedSize) {
   return new Promise((resolve, reject) => {
@@ -268,6 +269,11 @@ Book.fromXhr = function(name, xhr, expectedSize) {
   });
 };
 
+/**
+ * @param {string} name The book name.
+ * @param {ArrayBuffer} ab The ArrayBuffer filled with the unarchived bytes.
+ * @return {Promise<Book>}
+ */
 Book.fromArrayBuffer = function(name, ab) {
   return new Promise((resolve, reject) => {
     const book = new Book(name);
