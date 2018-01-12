@@ -25,6 +25,18 @@ export class BookEvent {
   constructor(book) { this.book = book; }
 }
 
+// TODO: Add newBytes to this event?
+export class LoadProgressEvent extends BookEvent {
+  constructor(book, pct) {
+    super(book);
+    this.percentage = pct;
+  }
+}
+
+export class LoadCompleteEvent extends BookEvent {
+  constructor(book) { super(book); }
+}
+
 export class UnarchiveProgressEvent extends BookEvent {
   constructor(book, pct) {
     super(book);
@@ -41,9 +53,7 @@ export class UnarchivePageExtractedEvent extends BookEvent {
 }
 
 export class UnarchiveCompleteEvent extends BookEvent {
-  constructor(book) {
-    super(book);
-  }
+  constructor(book) { super(book); }
 }
 
 // Stores an image filename and its data: URI.
@@ -81,6 +91,9 @@ export class Book {
     this.loadState_ = LoadState.NOT_LOADED;
     this.unarchiveState_ = UnarchiveState.NOT_UNARCHIVED;
 
+    this.loadingPercentage_ = 0.0;
+    this.unarchivingPercentage_ = 0.0;
+
     this.ab_ = null;
     this.unarchiver_ = null;
 
@@ -95,6 +108,8 @@ export class Book {
 
   getName() { return this.name_; }
   getFormatType() { return this.formatType_; }
+  getLoadingPercentage() { return this.loadingPercentage_; }
+  getUnarchivingPercentage() { return this.unarchivingPercentage_; }
   getNumberOfPages() { return this.totalPages_; }
   getNumberOfPagesReady() { return this.pages_.length; }
   getPage(i) {
@@ -104,6 +119,29 @@ export class Book {
     return this.pages_[i];
   }
 
+  // TODO: Add a load() method and emit LOADING events?
+  loadFromXhr(xhr, expectedSize) {
+    xhr.responseType = 'arraybuffer';
+    xhr.onprogress = (evt) => {
+      let pct = undefined;
+      if (evt.lengthComputable && evt.total) {
+        pct = evt.loaded / evt.total;
+      } else if (expectedSize) {
+        pct = evt.loaded / expectedSize;
+      }
+      if (pct) {
+        this.loadingPercentage_ = pct;
+        this.notify_(new LoadProgressEvent(this, pct));
+      }
+    }
+    xhr.onload = (evt) => {
+      const arrayBuffer = evt.target.response;
+      this.setArrayBuffer(arrayBuffer);
+      this.notify_(new LoadCompleteEvent(this));
+    };
+    xhr.send(null);
+  }
+
   setArrayBuffer(ab) {
     this.ab_ = ab;
     this.formatType_ = FormatType.UNKNOWN;
@@ -111,12 +149,11 @@ export class Book {
     this.totalPages_ = 0;
     this.pages_ = [];
     this.loadState_ = LoadState.LOADED;
+    this.loadingPercentage_ = 1.0;
     this.unarchiveState_ = UnarchiveState.NOT_UNARCHIVED;
+    this.unarchivingPercentage_ = 0.0;
   }
 
-  // TODO: Add a load() method and emit LOADING events?
-
-  // TODO: Only do this if it is not already unarchived.
   unarchive() {
     const start = (new Date).getTime();
     const h = new Uint8Array(this.ab_, 0, 10);
@@ -152,6 +189,7 @@ export class Book {
           this.totalPages_ = e.totalFilesInArchive;
 
           const percentage = e.currentBytesUnarchived / e.totalUncompressedBytesInArchive;
+          this.unarchivingPercentage_ = percentage;
           this.notify_(new UnarchiveProgressEvent(this, percentage));
       });
       this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO, (e) => console.log(e.msg));
@@ -168,6 +206,7 @@ export class Book {
       });
       this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, (e) => {
           this.unarchiveState_ = UnarchiveState.UNARCHIVED;
+          this.unarchivingPercentage_ = 1.0;
           const diff = ((new Date).getTime() - start)/1000;
           console.log('Unarchiving done in ' + diff + 's');
           this.notify_(new UnarchiveCompleteEvent(this));
@@ -216,7 +255,18 @@ Book.fromFile = function(file) {
   });
 };
 
-// TODO: Have a Book.fromXHR that returns a Promise<Book>
+/**
+ * @param {string} name The book name.
+ * @param {XMLHttpRequest} xhr XHR ready with the method, url and header.
+ * @param {number} expectedSize Unarchived size in bytes.
+ */
+Book.fromXhr = function(name, xhr, expectedSize) {
+  return new Promise((resolve, reject) => {
+    const book = new Book(name);
+    book.loadFromXhr(xhr, expectedSize);
+    resolve(book);
+  });
+};
 
 Book.fromArrayBuffer = function(name, ab) {
   return new Promise((resolve, reject) => {

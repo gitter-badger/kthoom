@@ -1,5 +1,5 @@
-import { Book, BookEvent, Page, UnarchiveProgressEvent, UnarchivePageExtractedEvent,
-  UnarchiveCompleteEvent } from './book.js';
+import { Book, BookEvent, Page, LoadCompleteEvent, LoadProgressEvent,
+  UnarchiveProgressEvent, UnarchivePageExtractedEvent, UnarchiveCompleteEvent } from './book.js';
 import { Key, getElem } from './helpers.js';
 
 const SWIPE_THRESHOLD = 50; // TODO: Tweak this?
@@ -92,7 +92,12 @@ export class BookViewer {
    * @private
    */
   handleBookEvent_(evt) {
-    if (evt instanceof UnarchiveProgressEvent) {
+    if (evt instanceof LoadProgressEvent) {
+      this.lastCompletion_ = evt.percentage * 100;
+      this.setProgressMeter(evt.percentage, 'Loading');
+    } else if (evt instanceof LoadCompleteEvent) {
+      this.currentBook_.unarchive();
+    } else if (evt instanceof UnarchiveProgressEvent) {
       this.lastCompletion_ = evt.percentage * 100;
       this.setProgressMeter(evt.percentage, 'Unzipping');
     } else if (evt instanceof UnarchivePageExtractedEvent) {
@@ -214,7 +219,7 @@ export class BookViewer {
       this.currentPage_ = book.getPage(0);
       this.currentPageNum_ = 0;
 
-      if (!book.isUnarchived()) {
+      if (!book.isUnarchived() && book.isLoaded()) {
         book.unarchive();
       } else {
         this.setProgressMeter(1);
@@ -300,7 +305,7 @@ export class BookViewer {
     const remain = ((pct - this.lastCompletion_)/100)/part;
     const fract = Math.min(1, remain);
     let smartpct = ((numPagesReady / totalPages) + fract * part )* 100;
-    if (this.totalImages_ == 0) smartpct = pct;
+    if (totalPages == 0) smartpct = pct;
 
     let oldval = parseFloat(getElem('meter').getAttribute('width'));
     if (isNaN(oldval)) oldval = 0;

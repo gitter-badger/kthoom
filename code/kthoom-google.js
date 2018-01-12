@@ -88,23 +88,8 @@ kthoom.google = {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', response.downloadUrl, true);
         xhr.setRequestHeader('Authorization', 'OAuth ' + kthoom.google.oathToken);
-        xhr.responseType = 'arraybuffer';
-        xhr.onload = function(event) {
-          const arrayBuffer = event.target.response;
-          kthoom.getApp().loadSingleBookFromArrayBuffer(data.docs[0].name, arrayBuffer);
-        };
-        xhr.onprogress = function(evt) {
-          let pct = undefined;
-          if (evt.lengthComputable && evt.total) {
-            pct = evt.loaded / evt.total;
-          } else if (fullSize) {
-            pct = evt.loaded / fullSize;
-          }
-
-          kthoom.getApp().setProgressMeter(pct, 'Loading from Google Drive');
-        }
-        xhr.send(null);
+        kthoom.getApp().loadSingleBookFromXHR(data.docs[0].name, xhr, fullSize);
       });
     }
-  }
- };
+  },
+};

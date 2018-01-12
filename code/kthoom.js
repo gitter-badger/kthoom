@@ -281,7 +281,12 @@ class KthoomApp {
     });
   }
 
-  // TODO: Add a loadSingleBookFromXHR() method.
+  loadSingleBookFromXHR(name, xhr, expectedSize) {
+    Book.fromXhr(name, xhr, expectedSize).then(book => {
+      this.readingStack_.show(true);
+      this.readingStack_.addBook(book);
+    });
+  }
 
   /**
    * @param {string} name
@@ -289,6 +294,7 @@ class KthoomApp {
    */
   loadSingleBookFromArrayBuffer(name, ab) {
     Book.fromArrayBuffer(name, ab).then(book => {
+      this.readingStack_.show(true);
       this.readingStack_.addBook(book);
     });
   }
