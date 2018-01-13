@@ -12,18 +12,14 @@ const SWIPE_THRESHOLD = 50; // TODO: Tweak this?
 export class BookViewer {
   constructor() {
     this.currentBook_ = null;
-    this.currentPage_ = null;
     this.currentPageNum_ = -1;
-
     this.rotateTimes_ = 0;
     this.hflip_ = false;
     this.vflip_ = false;
     this.fitMode_ = Key.B;
-
+    this.lastCompletion_ = 0;
     this.wheelTimer_ = null;
     this.wheelTurnedPageAt_ = 0;
-
-    this.lastCompletion_ = 0;
 
     this.initProgressMeter_();
     this.initSwipe_();
@@ -33,7 +29,7 @@ export class BookViewer {
   initProgressMeter_() {
     const pdiv = getElem('progress');
     const svg = getElem('svgprogress');
-    svg.onclick = (evt) => {
+    svg.addEventListener('click',  (evt) => {
       let l = 0;
       const docEl = document.documentElement;
       for (let el = pdiv; el != docEl; el = el.parentNode) {
@@ -43,7 +39,7 @@ export class BookViewer {
       const page = Math.max(1, Math.ceil(((evt.clientX - l)/pdiv.offsetWidth) * totalPages)) - 1;
       this.currentPageNum_ = page;
       this.updatePage();
-    };
+    });
   }
 
   /** @private */
@@ -106,22 +102,6 @@ export class BookViewer {
       if (evt.pageNum == 1) {
         this.updatePage();
       }
-    }
-  }
-
-  // TODO: Use timer ids here to prevent cancelling an earlier operation.
-  /** @private */
-  showHeaderPreview_() {
-    const header = getElem('header');
-    if (header.classList.contains('fullscreen')) {
-      header.classList.remove('previewout');
-      header.classList.add('preview');
-      setTimeout(() => {
-        header.classList.add('previewout');
-        setTimeout(() => {
-          header.classList.remove('preview', 'previewout');
-        }, 1000);
-      }, 1337);
     }
   }
 
@@ -217,7 +197,6 @@ export class BookViewer {
 
       this.currentBook_ = book;
       book.subscribe(this, (evt) => this.handleBookEvent_(evt));
-      this.currentPage_ = book.getPage(0);
       this.currentPageNum_ = 0;
 
       if (!book.isUnarchived() && book.isLoaded()) {
@@ -238,8 +217,8 @@ export class BookViewer {
 
     this.lastCompletion_ = 0;
 
-    getElem('nav').className = 'hide';
-    getElem('progress').className = 'hide';
+    getElem('nav').classList.add('hide');
+    getElem('progress').classList.add('hide');
     getElem('meter').setAttribute('width', '0%');
 
     this.setProgressMeter(0);
@@ -272,7 +251,6 @@ export class BookViewer {
 
     this.currentPageNum_--;
     this.updatePage();
-    this.showHeaderPreview_();
     return true;
   }
 
@@ -282,7 +260,6 @@ export class BookViewer {
 
     this.currentPageNum_++;
     this.updatePage();
-    this.showHeaderPreview_();
     return true;
   }
 
@@ -292,7 +269,6 @@ export class BookViewer {
     }
     this.currentPageNum_ = n;
     this.updatePage();
-    this.showHeaderPreview_();
   }
 
   // TODO: Rework the math in here, it's funky, particularly when no book is set.
@@ -335,8 +311,8 @@ export class BookViewer {
     title.appendChild(document.createTextNode((this.currentPageNum_ + 1) + '/' + totalPages));
 
     if (pct > 0) {
-      getElem('nav').className = '';
-      getElem('progress').className = '';
+      getElem('nav').classList.remove('hide');
+      getElem('progress').classList.remove('hide');
     }
   }
 
