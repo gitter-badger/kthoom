@@ -1,4 +1,12 @@
 /**
+ * kthoom-ipfs.js
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2018 Google Inc.
+ */
+
+ /**
  * Code for handling file access through IPFS.
  */
 

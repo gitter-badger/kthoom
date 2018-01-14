@@ -1,3 +1,11 @@
+/**
+ * book-viewer.js
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2018 Google Inc.
+ */
+
 import { Book, BookEvent, Page, LoadCompleteEvent, LoadProgressEvent,
   UnarchiveProgressEvent, UnarchivePageExtractedEvent, UnarchiveCompleteEvent } from './book.js';
 import { Key, getElem } from './helpers.js';

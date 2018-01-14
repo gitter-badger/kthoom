@@ -1,3 +1,10 @@
+/**
+ * reading-stack.js
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2018 Google Inc.
+ */
 import { getElem } from './helpers.js';
 
 // TODO: Have the ReadingStack subscribe to all of its book events.

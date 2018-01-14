@@ -1,3 +1,10 @@
+/**
+ * book.js
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2018 Google Inc.
+ */
 import { createURLFromArray } from './helpers.js';
 
 const LoadState = {

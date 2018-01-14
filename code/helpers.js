@@ -1,3 +1,10 @@
+/**
+ * helpers.js
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2018 Google Inc.
+ */
 
 export const Key = {
   ESCAPE: 27,
