@@ -1,4 +1,12 @@
 /**
+ * kthoom-ipfs.js
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2018 Google Inc.
+ */
+
+/**
  * Code for handling file access through IPFS.
  */
 
@@ -37,7 +45,7 @@ kthoom.ipfs = {
 
         // TODO: The API says this will be a Buffer, but I'm seeing an Uint8Array.
         if (data instanceof Uint8Array) {
-          kthoom.getApp().loadFromArrayBuffer(data.buffer);
+          kthoom.getApp().loadSingleBookFromArrayBuffer(ipfshash, data.buffer);
         }
       });  
     });
