@@ -21,13 +21,6 @@ const UnarchiveState = {
   UNARCHIVING_ERROR: 3,
 };
 
-const FormatType = {
-  UNKNOWN: 0,
-  ZIP: 1,
-  RAR: 2,
-  TAR: 3,
-};
-
 export class BookEvent {
   constructor(book) { this.book = book; }
 }
@@ -94,7 +87,6 @@ export class Book {
   constructor(name) {
     this.name_ = name;
 
-    this.formatType_ = FormatType.UNKNOWN;
     this.loadState_ = LoadState.NOT_LOADED;
     this.unarchiveState_ = UnarchiveState.NOT_UNARCHIVED;
 
@@ -113,19 +105,15 @@ export class Book {
   isUnarchived() { return this.unarchiveState_ === UnarchiveState.UNARCHIVED; }
 
   getName() { return this.name_; }
-  getFormatType() { return this.formatType_; }
   getLoadingPercentage() { return this.loadingPercentage_; }
   getUnarchivingPercentage() { return this.unarchivingPercentage_; }
   getNumberOfPages() { return this.totalPages_; }
   getNumberOfPagesReady() { return this.pages_.length; }
   getPage(i) {
-    let numPages = this.totalPages_;
     // TODO: This is a bug in the unarchivers.  The only time totalPages_ is set is
     // upon getting a UnarchiveEvent.Type.PROGRESS which has the total number of files.
     // In some books, we get an EXTRACT event before we get the first PROGRESS event.
-    if (numPages == 0 && this.pages_.length > 0) {
-      numPages = this.pages_.length;
-    }
+    const numPages = this.totalPages_ || this.pages_.length;
     if (i < 0 || i >= numPages) {
       return null;
     }
@@ -159,7 +147,6 @@ export class Book {
   }
 
   setArrayBuffer(ab) {
-    this.formatType_ = FormatType.UNKNOWN;
     this.unarchiver_ = null;
     this.totalPages_ = 0;
     this.pages_ = [];
@@ -168,29 +155,19 @@ export class Book {
     this.unarchiveState_ = UnarchiveState.NOT_UNARCHIVED;
     this.unarchivingPercentage_ = 0.0;
 
+    // TODO: Figure out if we want to keep single JPEG file handling.
+    /*
     const h = new Uint8Array(ab, 0, 10);
-    const pathToBitJS = 'code/bitjs/';
-    if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { // Rar!
-      this.formatType_ = FormatType.RAR;
-      this.unarchiver_ = new bitjs.archive.Unrarrer(ab, pathToBitJS);
-    } else if (h[0] == 0x50 && h[1] == 0x4B) { // PK (Zip)
-      this.formatType_ = FormatType.ZIP;
-      this.unarchiver_ = new bitjs.archive.Unzipper(ab, pathToBitJS);
-    } else if (h[0] == 255 && h[1] == 216) { // JPEG
-      // TODO: Figure out if we want to keep this.
-      /*
+    if (h[0] == 255 && h[1] == 216) { // JPEG
       this.totalPages_ = 1;
       this.setProgressMeter(1, 'Archive Missing');
       const dataURI = createURLFromArray(new Uint8Array(ab), 'image/jpeg');
       this.setImage(dataURI);
       // hide logo
       getElem('logo').setAttribute('style', 'display:none');
-      */
-      return;
-    } else { // Try with tar
-      this.formatType_ = FormatType.TAR;
-      this.unarchiver_ = new bitjs.archive.Untarrer(ab, pathToBitJS);
     }
+    */
+    this.unarchiver_ = bitjs.archive.GetUnarchiver(ab, 'code/bitjs/');
   }
 
   unarchive() {
