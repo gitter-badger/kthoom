@@ -101,7 +101,6 @@ export class Book {
     this.loadingPercentage_ = 0.0;
     this.unarchivingPercentage_ = 0.0;
 
-    this.ab_ = null;
     this.unarchiver_ = null;
 
     this.totalPages_ = 0;
@@ -153,7 +152,6 @@ export class Book {
   }
 
   setArrayBuffer(ab) {
-    this.ab_ = ab;
     this.formatType_ = FormatType.UNKNOWN;
     this.unarchiver_ = null;
     this.totalPages_ = 0;
@@ -162,24 +160,21 @@ export class Book {
     this.loadingPercentage_ = 1.0;
     this.unarchiveState_ = UnarchiveState.NOT_UNARCHIVED;
     this.unarchivingPercentage_ = 0.0;
-  }
 
-  unarchive() {
-    const start = (new Date).getTime();
-    const h = new Uint8Array(this.ab_, 0, 10);
+    const h = new Uint8Array(ab, 0, 10);
     const pathToBitJS = 'code/bitjs/';
     if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { // Rar!
       this.formatType_ = FormatType.RAR;
-      this.unarchiver_ = new bitjs.archive.Unrarrer(this.ab_, pathToBitJS);
+      this.unarchiver_ = new bitjs.archive.Unrarrer(ab, pathToBitJS);
     } else if (h[0] == 0x50 && h[1] == 0x4B) { // PK (Zip)
       this.formatType_ = FormatType.ZIP;
-      this.unarchiver_ = new bitjs.archive.Unzipper(this.ab_, pathToBitJS);
+      this.unarchiver_ = new bitjs.archive.Unzipper(ab, pathToBitJS);
     } else if (h[0] == 255 && h[1] == 216) { // JPEG
       // TODO: Figure out if we want to keep this.
       /*
       this.totalPages_ = 1;
       this.setProgressMeter(1, 'Archive Missing');
-      const dataURI = createURLFromArray(new Uint8Array(this.ab_), 'image/jpeg');
+      const dataURI = createURLFromArray(new Uint8Array(ab), 'image/jpeg');
       this.setImage(dataURI);
       // hide logo
       getElem('logo').setAttribute('style', 'display:none');
@@ -187,11 +182,13 @@ export class Book {
       return;
     } else { // Try with tar
       this.formatType_ = FormatType.TAR;
-      this.unarchiver_ = new bitjs.archive.Untarrer(this.ab_, pathToBitJS);
+      this.unarchiver_ = new bitjs.archive.Untarrer(ab, pathToBitJS);
     }
+  }
 
-    // Listen for UnarchiveEvents.
-    // TODO: Error if no unarchiver.
+  unarchive() {
+    const start = (new Date).getTime();
+
     if (this.unarchiver_) {
       this.unarchiveState_ = UnarchiveState.UNARCHIVING;
 
@@ -223,7 +220,8 @@ export class Book {
       });
       this.unarchiver_.start();
     } else {
-      alert('Some error');
+      alert('Error:  Could not determine the type of comic book archive file.  ' +
+        'kthoom only supports cbz, cbr and cbt files.');
     }
   }
 
