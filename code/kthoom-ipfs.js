@@ -6,7 +6,7 @@
  * Copyright(c) 2018 Google Inc.
  */
 
- /**
+/**
  * Code for handling file access through IPFS.
  */
 

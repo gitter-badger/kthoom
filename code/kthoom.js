@@ -7,8 +7,7 @@
  * Copyright(c) 2011 antimatter15
  */
 
-import { Book, BookEvent, Page, UnarchiveProgressEvent, UnarchivePageExtractedEvent,
-         UnarchiveCompleteEvent } from './book.js';
+import { Book } from './book.js';
 import { BookViewer } from './book-viewer.js';
 import { ReadingStack } from './reading-stack.js';
 import { Key, getElem, createURLFromArray } from './helpers.js';
@@ -268,7 +267,6 @@ class KthoomApp {
     const filelist = evt.target.files;
 
     const bookPromises = [];
-    // TODO: Use Array.from(filelist).map(...) once IE11 is no longer a concern.
     for (let fileNum = 0; fileNum < filelist.length; ++fileNum) {
       bookPromises.push(Book.fromFile(filelist[fileNum]));
     }

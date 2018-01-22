@@ -126,8 +126,11 @@ export class Book {
     return this.pages_[i];
   }
 
-  // TODO: Add a load() method and emit LOADING events?
   loadFromXhr(xhr, expectedSize) {
+    if (this.loadState_ !== LoadState.NOT_LOADED) {
+      throw 'Cannot try to load via XHR when the Book is already loading';
+    }
+
     xhr.responseType = 'arraybuffer';
     xhr.onprogress = (evt) => {
       let pct = undefined;
