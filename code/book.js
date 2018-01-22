@@ -119,7 +119,14 @@ export class Book {
   getNumberOfPages() { return this.totalPages_; }
   getNumberOfPagesReady() { return this.pages_.length; }
   getPage(i) {
-    if (i < 0 || i >= this.totalPages_) {
+    let numPages = this.totalPages_;
+    // TODO: This is a bug in the unarchivers.  The only time totalPages_ is set is
+    // upon getting a UnarchiveEvent.Type.PROGRESS which has the total number of files.
+    // In some books, we get an EXTRACT event before we get the first PROGRESS event.
+    if (numPages == 0 && this.pages_.length > 0) {
+      numPages = this.pages_.length;
+    }
+    if (i < 0 || i >= numPages) {
       return null;
     }
     return this.pages_[i];
