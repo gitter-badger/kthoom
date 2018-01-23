@@ -279,8 +279,27 @@ class KthoomApp {
     });
   }
 
+  /**
+   * @param {string} name The book name.
+   * @param {XMLHttpRequest} xhr XHR ready with the method, url and header.
+   * @param {number} expectedSize Unarchived size in bytes.
+   */
   loadSingleBookFromXHR(name, xhr, expectedSize) {
     Book.fromXhr(name, xhr, expectedSize).then(book => {
+      this.readingStack_.show(true);
+      this.readingStack_.addBook(book);
+    });
+  }
+
+  /**
+   * @param {string} name The book name.
+   * @param {string} url The resource to fetch.
+   * @param {Object} init An object to initialize the Fetch API.
+   * @param {number} expectedSize Unarchived size in bytes.
+   */
+  loadSingleBookFromFetch(name, url, init, expectedSize) {
+    console.error('loadSingleBookFromFetch() not fully implemented yet');
+    Book.fromFetch(name, url, init, expectedSize).then(book => {
       this.readingStack_.show(true);
       this.readingStack_.addBook(book);
     });

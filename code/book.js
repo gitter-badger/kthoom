@@ -101,9 +101,6 @@ export class Book {
     this.subscribers_ = {};
   }
 
-  isLoaded() { return this.loadState_ === LoadState.LOADED; }
-  isUnarchived() { return this.unarchiveState_ === UnarchiveState.UNARCHIVED; }
-
   getName() { return this.name_; }
   getLoadingPercentage() { return this.loadingPercentage_; }
   getUnarchivingPercentage() { return this.unarchivingPercentage_; }
@@ -122,7 +119,7 @@ export class Book {
 
   loadFromXhr(xhr, expectedSize) {
     if (this.loadState_ !== LoadState.NOT_LOADED) {
-      throw 'Cannot try to load via XHR when the Book is already loading';
+      throw 'Cannot try to load via XHR when the Book is already loading or loaded';
     }
 
     xhr.responseType = 'arraybuffer';
@@ -140,18 +137,54 @@ export class Book {
     }
     xhr.onload = (evt) => {
       const arrayBuffer = evt.target.response;
-      this.setArrayBuffer(arrayBuffer);
+      this.setArrayBuffer(arrayBuffer, 1.0);
       this.notify_(new LoadCompleteEvent(this));
     };
     xhr.send(null);
   }
 
-  setArrayBuffer(ab) {
+  loadFromFetch(url, init, expectedSize) {
+    if (this.loadState_ !== LoadState.NOT_LOADED) {
+      throw 'Cannot try to load via XHR when the Book is already loading or loaded';
+    }
+
+    fetch(url, init).then(response => {
+      const reader = response.body.getReader();
+      let bytesRead = 0;
+      const readAndProcessNextChunk = () => {
+        reader.read().then(({done, value}) => {
+          if (!done) {
+            // value is a chunk of the file as a Uint8Array.
+            bytesRead += value.length;
+            let pct = bytesRead / expectedSize;
+
+            if (!this.unarchiver_) {
+              this.setArrayBuffer(value.buffer, pct);
+              // At this point, the Unarchiver should be created and we should have
+              // enough to get started on the unarchiving process.
+            }
+
+            this.notify_(new LoadProgressEvent(this, pct));
+
+            readAndProcessNextChunk();
+          }
+        });
+      };
+      readAndProcessNextChunk();
+    });
+  }
+
+  /**
+   * Creates the Unarchiver and kicks off the unarchive() process.
+   * @param {ArrayBuffer} ab
+   * @param {number} pctLoaded
+   */
+  setArrayBuffer(ab, pctLoaded) {
     this.unarchiver_ = null;
     this.totalPages_ = 0;
     this.pages_ = [];
-    this.loadState_ = LoadState.LOADED;
-    this.loadingPercentage_ = 1.0;
+    this.loadState_ = pctLoaded < 1.0 ? LoadState.LOADING : LoadState.LOADED;
+    this.loadingPercentage_ = pctLoaded;
     this.unarchiveState_ = UnarchiveState.NOT_UNARCHIVED;
     this.unarchivingPercentage_ = 0.0;
 
@@ -168,6 +201,7 @@ export class Book {
     }
     */
     this.unarchiver_ = bitjs.archive.GetUnarchiver(ab, 'code/bitjs/');
+    this.unarchive();
   }
 
   unarchive() {
@@ -240,7 +274,7 @@ Book.fromFile = function(file) {
 
     const fr = new FileReader();
     fr.onload = () => {
-      book.setArrayBuffer(fr.result);
+      book.setArrayBuffer(fr.result, 1.0);
       resolve(book);
     };
     fr.readAsArrayBuffer(file);
@@ -263,13 +297,28 @@ Book.fromXhr = function(name, xhr, expectedSize) {
 
 /**
  * @param {string} name The book name.
+ * @param {string} url The resource to fetch.
+ * @param {Object} init An object to initialize the Fetch API.
+ * @param {number} expectedSize Unarchived size in bytes.
+ * @return {Promise<Book>}
+ */
+Book.fromFetch = function(name, url, init, expectedSize) {
+  return new Promise((resolve, reject) => {
+    const book = new Book(name);
+    book.loadFromFetch(url, init, expectedSize);
+    resolve(book);
+  });
+};
+
+/**
+ * @param {string} name The book name.
  * @param {ArrayBuffer} ab The ArrayBuffer filled with the unarchived bytes.
  * @return {Promise<Book>}
  */
 Book.fromArrayBuffer = function(name, ab) {
   return new Promise((resolve, reject) => {
     const book = new Book(name);
-    book.setArrayBuffer(ab);
+    book.setArrayBuffer(ab, 1.0);
     resolve(book);
   });
 };

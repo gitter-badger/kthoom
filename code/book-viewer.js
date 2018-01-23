@@ -100,8 +100,6 @@ export class BookViewer {
     if (evt instanceof LoadProgressEvent) {
       this.lastCompletion_ = evt.percentage * 100;
       this.setProgressMeter(evt.percentage, 'Loading');
-    } else if (evt instanceof LoadCompleteEvent) {
-      this.currentBook_.unarchive();
     } else if (evt instanceof UnarchiveProgressEvent) {
       this.lastCompletion_ = evt.percentage * 100;
       this.setProgressMeter(evt.percentage, 'Unzipping');
@@ -206,13 +204,8 @@ export class BookViewer {
       this.currentBook_ = book;
       book.subscribe(this, (evt) => this.handleBookEvent_(evt));
       this.currentPageNum_ = 0;
-
-      if (!book.isUnarchived() && book.isLoaded()) {
-        book.unarchive();
-      } else {
-        this.setProgressMeter(1);
-        this.updatePage();
-      }
+      this.setProgressMeter(1);
+      this.updatePage();
     }
   }
 
