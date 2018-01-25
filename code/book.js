@@ -16,25 +16,21 @@ const LoadState = {
 
 const UnarchiveState = {
   NOT_UNARCHIVED: 0,
-  UNARCHIVING: 1,
-  UNARCHIVED: 2,
-  UNARCHIVING_ERROR: 3,
+  READY_FOR_UNARCHIVING: 1,
+  UNARCHIVING: 2,
+  UNARCHIVED: 3,
+  UNARCHIVING_ERROR: 4,
 };
 
 export class BookEvent {
   constructor(book) { this.book = book; }
 }
 
-// TODO: Add newBytes to this event?
 export class LoadProgressEvent extends BookEvent {
   constructor(book, pct) {
     super(book);
     this.percentage = pct;
   }
-}
-
-export class LoadCompleteEvent extends BookEvent {
-  constructor(book) { super(book); }
 }
 
 export class UnarchiveProgressEvent extends BookEvent {
@@ -116,6 +112,7 @@ export class Book {
     }
     return this.pages_[i];
   }
+  isReadyToUnarchive() { return this.unarchiveState_ === UnarchiveState.READY_FOR_UNARCHIVING; }
 
   loadFromXhr(xhr, expectedSize) {
     if (this.loadState_ !== LoadState.NOT_LOADED) {
@@ -138,7 +135,6 @@ export class Book {
     xhr.onload = (evt) => {
       const arrayBuffer = evt.target.response;
       this.setArrayBuffer(arrayBuffer, 1.0);
-      this.notify_(new LoadCompleteEvent(this));
     };
     xhr.send(null);
   }
@@ -159,9 +155,12 @@ export class Book {
             let pct = bytesRead / expectedSize;
 
             if (!this.unarchiver_) {
-              this.setArrayBuffer(value.buffer, pct);
               // At this point, the Unarchiver should be created and we should have
               // enough to get started on the unarchiving process.
+              this.setArrayBuffer(value.buffer, pct);
+            } else {
+              // Update the unarchiver with more bytes.
+              this.unarchiver_.update(value.buffer);
             }
 
             this.notify_(new LoadProgressEvent(this, pct));
@@ -175,7 +174,7 @@ export class Book {
   }
 
   /**
-   * Creates the Unarchiver and kicks off the unarchive() process.
+   * Creates the Unarchiver.
    * @param {ArrayBuffer} ab
    * @param {number} pctLoaded
    */
@@ -185,7 +184,7 @@ export class Book {
     this.pages_ = [];
     this.loadState_ = pctLoaded < 1.0 ? LoadState.LOADING : LoadState.LOADED;
     this.loadingPercentage_ = pctLoaded;
-    this.unarchiveState_ = UnarchiveState.NOT_UNARCHIVED;
+    this.unarchiveState_ = UnarchiveState.READY_FOR_UNARCHIVING;
     this.unarchivingPercentage_ = 0.0;
 
     // TODO: Figure out if we want to keep single JPEG file handling.
@@ -201,7 +200,11 @@ export class Book {
     }
     */
     this.unarchiver_ = bitjs.archive.GetUnarchiver(ab, 'code/bitjs/');
-    this.unarchive();
+
+    if (!this.unarchiver_) {
+      alert('Could not determine the unarchiver to use for the file');
+      throw 'Could not determine the unarchiver to use for the file'
+    }
   }
 
   unarchive() {
@@ -230,11 +233,19 @@ export class Book {
           }
       });
       this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, (e) => {
-          this.unarchiveState_ = UnarchiveState.UNARCHIVED;
-          this.unarchivingPercentage_ = 1.0;
-          const diff = ((new Date).getTime() - start)/1000;
-          console.log('Unarchiving done in ' + diff + 's');
-          this.notify_(new UnarchiveCompleteEvent(this));
+        // TODO: Consider sorting the files of the archive here and adding all pages
+        //     instead of in the EXTRACT event handler.  This is because with streaming
+        //     support, the files are unarchived in byte-order, not by alphabetized filename.
+        this.unarchiveState_ = UnarchiveState.UNARCHIVED;
+        this.unarchivingPercentage_ = 1.0;
+        const diff = ((new Date).getTime() - start)/1000;
+        console.log('Unarchiving done in ' + diff + 's');
+        this.notify_(new UnarchiveCompleteEvent(this));
+
+        // Stop the Unarchiver (which will kill the worker) and then delete the unarchiver
+        // which should free up some memory, including the unarchived array buffer.
+        this.unarchiver_.stop();
+        this.unarchiver_ = null;
       });
       this.unarchiver_.start();
     } else {

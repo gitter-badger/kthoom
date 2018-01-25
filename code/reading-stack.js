@@ -40,6 +40,7 @@ export class ReadingStack {
   }
 
   /**
+   * Always changes to the newly added book.
    * @param {Book} book
    */
   addBook(book) {
@@ -50,14 +51,17 @@ export class ReadingStack {
 
   /**
    * @param {Array<Book>} books
+   * @param {boolean} switchToFirst Whether to switch to the first book in this new set.
    */
-  addBooks(books) {
+  addBooks(books, switchToFirst) {
     if (books.length > 0) {
       const newCurrentBook = this.books_.length;
       for (const book of books) {
         this.books_.push(book);
       }
-      this.changeToBook_(newCurrentBook);
+      if (switchToFirst) {
+        this.changeToBook_(newCurrentBook);
+      }
       this.renderStack_();
     }
   }

@@ -1,3 +1,7 @@
+// TODO: Sort out progress bar situation (loading and unarchiving)
+// TODO: Sort books after they finish unarchiving and reposition the user.
+//       or rework unarchiving to only show pages once unarchiving is complete.
+
 /*
  * kthoom.js
  *
@@ -266,17 +270,26 @@ class KthoomApp {
   loadLocalFiles_(evt) {
     const filelist = evt.target.files;
 
-    const bookPromises = [];
-    for (let fileNum = 0; fileNum < filelist.length; ++fileNum) {
-      bookPromises.push(Book.fromFile(filelist[fileNum]));
+    // Add the first book immediately so it unarchives asap.
+    if (filelist.length >= 1) {
+      Book.fromFile(filelist[0]).then(book => {
+        this.readingStack_.addBook(book);
+        this.readingStack_.show(true);
+      });
     }
 
-    Promise.all(bookPromises).then(books => {
-      if (books.length > 0) {
-        this.readingStack_.show(true);
-        this.readingStack_.addBooks(books);
+    if (filelist.length > 1) {
+      const bookPromises = [];
+      for (let fileNum = 1; fileNum < filelist.length; ++fileNum) {
+        bookPromises.push(Book.fromFile(filelist[fileNum]));
       }
-    });
+
+      Promise.all(bookPromises).then(books => {
+        if (books.length > 0) {
+          this.readingStack_.addBooks(books, false /* switchToFirst */);
+        }
+      });
+    }
   }
 
   /**
@@ -298,7 +311,6 @@ class KthoomApp {
    * @param {number} expectedSize Unarchived size in bytes.
    */
   loadSingleBookFromFetch(name, url, init, expectedSize) {
-    console.error('loadSingleBookFromFetch() not fully implemented yet');
     Book.fromFetch(name, url, init, expectedSize).then(book => {
       this.readingStack_.show(true);
       this.readingStack_.addBook(book);

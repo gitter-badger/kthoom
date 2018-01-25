@@ -6,8 +6,8 @@
  * Copyright(c) 2018 Google Inc.
  */
 
-import { Book, BookEvent, Page, LoadCompleteEvent, LoadProgressEvent,
-  UnarchiveProgressEvent, UnarchivePageExtractedEvent, UnarchiveCompleteEvent } from './book.js';
+import { Book, BookEvent, Page, LoadProgressEvent, UnarchiveProgressEvent,
+    UnarchivePageExtractedEvent, UnarchiveCompleteEvent } from './book.js';
 import { Key, getElem } from './helpers.js';
 
 const SWIPE_THRESHOLD = 50; // TODO: Tweak this?
@@ -97,6 +97,12 @@ export class BookViewer {
    * @private
    */
   handleBookEvent_(evt) {
+    // If any event comes in and we are suddenly ready to unarchive,
+    // then kick that off.
+    if (this.currentBook_.isReadyToUnarchive()) {
+      this.currentBook_.unarchive();
+    }
+
     if (evt instanceof LoadProgressEvent) {
       this.lastCompletion_ = evt.percentage * 100;
       this.setProgressMeter(evt.percentage, 'Loading');
@@ -206,6 +212,11 @@ export class BookViewer {
       this.currentPageNum_ = 0;
       this.setProgressMeter(1);
       this.updatePage();
+
+      // If the book is immediately ready to unarchive, kick that off.
+      if (this.currentBook_.isReadyToUnarchive()) {
+        this.currentBook_.unarchive();
+      }
     }
   }
 
