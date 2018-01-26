@@ -33,6 +33,10 @@ export class LoadProgressEvent extends BookEvent {
   }
 }
 
+export class ReadyToUnarchiveEvent extends BookEvent {
+  constructor(book) { super(book); }
+}
+
 export class UnarchiveProgressEvent extends BookEvent {
   constructor(book, pct) {
     super(book);
@@ -205,6 +209,8 @@ export class Book {
       alert('Could not determine the unarchiver to use for the file');
       throw 'Could not determine the unarchiver to use for the file'
     }
+
+    this.notify_(new ReadyToUnarchiveEvent(this));
   }
 
   unarchive() {

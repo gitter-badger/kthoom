@@ -311,6 +311,10 @@ class KthoomApp {
    * @param {number} expectedSize Unarchived size in bytes.
    */
   loadSingleBookFromFetch(name, url, init, expectedSize) {
+    if (!window['fetch'] || !window['Response'] || !window['ReadableStream']) {
+      throw 'No browser support for fetch/ReadableStream';
+    }
+
     Book.fromFetch(name, url, init, expectedSize).then(book => {
       this.readingStack_.show(true);
       this.readingStack_.addBook(book);
