@@ -355,7 +355,7 @@ export class BookViewer {
         ctx.font = '32px sans-serif';
         ctx.strokeStyle = 'black';
         const page = this.currentBook_.getPage(this.currentPageNum_);
-        const imageFilename = page.imageFile.filename;
+        const imageFilename = page.filename;
         ctx.fillText('Page #' + (this.currentPageNum_ + 1) + ' (' + imageFilename + ')', 100, 100);
 
         if (/(html|htm)$/.test(page.imageFile.filename)) {

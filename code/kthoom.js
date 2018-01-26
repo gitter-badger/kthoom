@@ -1,6 +1,4 @@
 // TODO: Sort out progress bar situation (loading and unarchiving)
-// TODO: Sort books after they finish unarchiving and reposition the user.
-//       or rework unarchiving to only show pages once unarchiving is complete.
 
 /*
  * kthoom.js

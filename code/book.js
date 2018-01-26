@@ -70,8 +70,8 @@ export class ImageFile {
 }
 
 export class Page {
-  constructor(imageFilename, imageFile) {
-    this.imageFilename = imageFilename;
+  constructor(filename, imageFile) {
+    this.filename = filename;
     this.imageFile = imageFile;
   }
 }
@@ -228,24 +228,31 @@ export class Book {
       });
       this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO, (e) => console.log(e.msg));
       this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT, (e) => {
-          // convert DecompressedFile into a bunch of ImageFiles
+          // Convert each unarchived file into a Page.
           // TODO: Error if not present?
           if (e.unarchivedFile) {
             const f = e.unarchivedFile;
             const newPage = new Page(f.filename, new ImageFile(f));
             // TODO: Error if we have more pages than totalPages_.
             this.pages_.push(newPage);
-            this.notify_(new UnarchivePageExtractedEvent(this, newPage, this.pages_.length));
+
+            // Do not send extracted events yet, because the pages may not be in the correct order.
+            //this.notify_(new UnarchivePageExtractedEvent(this, newPage, this.pages_.length));
           }
       });
       this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, (e) => {
-        // TODO: Consider sorting the files of the archive here and adding all pages
-        //     instead of in the EXTRACT event handler.  This is because with streaming
-        //     support, the files are unarchived in byte-order, not by alphabetized filename.
         this.unarchiveState_ = UnarchiveState.UNARCHIVED;
         this.unarchivingPercentage_ = 1.0;
         const diff = ((new Date).getTime() - start)/1000;
         console.log('Unarchiving done in ' + diff + 's');
+
+        // Sort the book's pages based on filename, issuing an extract event for each page in
+        // its proper order.
+        this.pages_.sort((a,b) => a.filename.toLowerCase() > b.filename.toLowerCase() ? 1 : -1);
+        for (let i = 0; i < this.pages_.length; ++i) {
+          this.notify_(new UnarchivePageExtractedEvent(this, this.pages_[i], i + 1));
+        }
+
         this.notify_(new UnarchiveCompleteEvent(this));
 
         // Stop the Unarchiver (which will kill the worker) and then delete the unarchiver
