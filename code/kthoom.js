@@ -1,5 +1,3 @@
-// TODO: Sort out progress bar situation (loading and unarchiving)
-
 /*
  * kthoom.js
  *
@@ -229,8 +227,8 @@ class KthoomApp {
     });
   }
 
-  setProgressMeter(pct, opt_label) {
-    this.bookViewer_.setProgressMeter(pct, opt_label);
+  setProgressMeter({loadPct = 0, unzipPct = 0, label = ''} = {}) {
+    this.bookViewer_.setProgressMeter({loadPct, unzipPct, label});
   }
 
   // TODO: Move all 'header' management into BookViewer.
