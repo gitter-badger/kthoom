@@ -25,9 +25,11 @@ export class BookViewer {
     this.hflip_ = false;
     this.vflip_ = false;
     this.fitMode_ = Key.B;
-    this.lastCompletion_ = 0;
     this.wheelTimer_ = null;
     this.wheelTurnedPageAt_ = 0;
+
+    this.lastCompletion_ = 0;
+    this.progressBarAnimationPromise_ = Promise.resolve(true);
 
     this.initProgressMeter_();
     this.initSwipe_();
@@ -281,8 +283,26 @@ export class BookViewer {
     this.updatePage();
   }
 
-  // TODO: Make this animate smoothly again.
+  animateUnzipMeterTo_(pct) {
+    if (this.lastCompletion_ >= pct) return;
+
+    this.progressBarAnimationPromise_ = this.progressBarAnimationPromise_.then(() => {
+      let partway = (pct - this.lastCompletion_) / 2;
+      if (partway < 0.001) {
+        partway = pct - this.lastCompletion_;
+      }
+      this.lastCompletion_ = Math.min(this.lastCompletion_ + partway, pct);
+
+      getElem('zipmeter').setAttribute('width', this.lastCompletion_ + '%');
+
+      if (this.lastCompletion_ < pct) {
+        setTimeout(() => this.animateUnzipMeterTo_(pct), 50);
+      }
+    });
+  }
+
   setProgressMeter({loadPct = 0, unzipPct = 0, label = ''} = {}) {
+    const previousUnzippingPct = this.lastCompletion_;
     let loadingPct = loadPct;
     let unzippingPct = unzipPct;
     if (this.currentBook_) {
@@ -293,7 +313,7 @@ export class BookViewer {
     unzippingPct = Math.max(0, Math.min(100 * unzippingPct, 100));
 
     getElem('loadmeter').setAttribute('width', loadingPct + '%');
-    getElem('zipmeter').setAttribute('width', unzippingPct + '%');
+    this.animateUnzipMeterTo_(unzippingPct);
 
     let title = getElem('progress_title');
     while (title.firstChild) title.removeChild(title.firstChild);

@@ -1,3 +1,5 @@
+// TODO: Figure out why unarchiving is still slower than the old version.
+// TODO: Make the code live.
 /*
  * kthoom.js
  *
