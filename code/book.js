@@ -50,7 +50,6 @@ export class UnarchiveCompleteEvent extends BookEvent {
 // Stores an image filename and its data: URI.
 export class ImageFile {
   constructor(file) {
-    this.data = file;
     this.filename = file.filename;
     const fileExtension = file.filename.split('.').pop().toLowerCase();
     const mimeType = fileExtension == 'png' ? 'image/png' :
@@ -231,7 +230,10 @@ export class Book {
         this.unarchiveState_ = UnarchiveState.UNARCHIVED;
         this.unarchivingPercentage_ = 1.0;
         const diff = ((new Date).getTime() - start)/1000;
-        console.log('Unarchiving done in ' + diff + 's');
+        console.log(`Book = '${this.name_}'`);
+        console.log(`  number of pages = ${this.getNumberOfPages()}`);
+        console.log(`  using ${this.unarchiver_.getScriptFileName()}`);
+        console.log(`  unarchiving done in ${diff}s`);
 
         // Sort the book's pages based on filename, issuing an extract event for each page in
         // its proper order.

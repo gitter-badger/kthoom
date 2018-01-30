@@ -369,18 +369,17 @@ export class BookViewer {
           }
           xhr.send(null);
         } else if (!/(jpg|jpeg|png|gif)$/.test(imageFilename)) {
-          const fileSize = (page.imageFile.data.fileData.length);
-          if (fileSize < 10*1024) {
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', url, true);
-            xhr.onload = () => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', url, true);
+          xhr.onload = () => {
+            if (xhr.responseText.length < 10*1024) {
               getElem('mainText').style.display = '';
               getElem('mainText').innerText = xhr.responseText;
-            };
-            xhr.send(null);
-          } else {
-            ctx.fillText('Cannot display this type of file', 100, 200);
-          }
+            } else {
+              ctx.fillText('Cannot display this type of file', 100, 200);
+            }
+          };
+          xhr.send(null);
         }
       };
       img.onload = () => {
