@@ -6,8 +6,8 @@
  * Copyright(c) 2018 Google Inc.
  */
 
-import { Book, BookEvent, Page, LoadCompleteEvent, LoadProgressEvent,
-  UnarchiveProgressEvent, UnarchivePageExtractedEvent, UnarchiveCompleteEvent } from './book.js';
+import { Book, BookEvent, BookProgressEvent, Page,
+    UnarchivePageExtractedEvent, UnarchiveCompleteEvent } from './book.js';
 import { Key, getElem } from './helpers.js';
 
 const SWIPE_THRESHOLD = 50; // TODO: Tweak this?
@@ -25,9 +25,11 @@ export class BookViewer {
     this.hflip_ = false;
     this.vflip_ = false;
     this.fitMode_ = Key.B;
-    this.lastCompletion_ = 0;
     this.wheelTimer_ = null;
     this.wheelTurnedPageAt_ = 0;
+
+    this.lastCompletion_ = 0;
+    this.progressBarAnimationPromise_ = Promise.resolve(true);
 
     this.initProgressMeter_();
     this.initSwipe_();
@@ -97,14 +99,14 @@ export class BookViewer {
    * @private
    */
   handleBookEvent_(evt) {
-    if (evt instanceof LoadProgressEvent) {
-      this.lastCompletion_ = evt.percentage * 100;
-      this.setProgressMeter(evt.percentage, 'Loading');
-    } else if (evt instanceof LoadCompleteEvent) {
+    // If any event comes in and we are suddenly ready to unarchive,
+    // then kick that off.
+    if (this.currentBook_.isReadyToUnarchive()) {
       this.currentBook_.unarchive();
-    } else if (evt instanceof UnarchiveProgressEvent) {
-      this.lastCompletion_ = evt.percentage * 100;
-      this.setProgressMeter(evt.percentage, 'Unzipping');
+    }
+
+    if (evt instanceof BookProgressEvent) {
+      this.setProgressMeter({label: 'Opening'});
     } else if (evt instanceof UnarchivePageExtractedEvent) {
       // Display first page if we haven't yet.
       if (evt.pageNum == 1) {
@@ -206,12 +208,12 @@ export class BookViewer {
       this.currentBook_ = book;
       book.subscribe(this, (evt) => this.handleBookEvent_(evt));
       this.currentPageNum_ = 0;
+      this.setProgressMeter({label: 'Opening'});
+      this.updatePage();
 
-      if (!book.isUnarchived() && book.isLoaded()) {
-        book.unarchive();
-      } else {
-        this.setProgressMeter(1);
-        this.updatePage();
+      // If the book is immediately ready to unarchive, kick that off.
+      if (this.currentBook_.isReadyToUnarchive()) {
+        this.currentBook_.unarchive();
       }
     }
   }
@@ -227,9 +229,11 @@ export class BookViewer {
 
     getElem('nav').classList.add('hide');
     getElem('progress').classList.add('hide');
-    getElem('meter').setAttribute('width', '0%');
+    getElem('loadmeter').setAttribute('width', '0%');
+    getElem('zipmeter').setAttribute('width', '0%');
+    getElem('pagemeter').setAttribute('width', '0%');
 
-    this.setProgressMeter(0);
+    this.setProgressMeter();
     this.updatePage();
   }
 
@@ -243,7 +247,7 @@ export class BookViewer {
     while (title.firstChild) title.removeChild(title.firstChild);
     title.appendChild(document.createTextNode((pageNum + 1) + '/' + numPages));
 
-    getElem('meter2').setAttribute('width',
+    getElem('pagemeter').setAttribute('width',
         100 * (numPages == 0 ? 0 : ((pageNum + 1) / numPages)) + '%');
     const page = this.currentBook_.getPage(pageNum);
     if (page && page.imageFile) {
@@ -279,46 +283,48 @@ export class BookViewer {
     this.updatePage();
   }
 
-  // TODO: Rework the math in here, it's funky, particularly when no book is set.
-  setProgressMeter(pct, opt_label) {
-    const totalPages = this.currentBook_ ? this.currentBook_.getNumberOfPages() : 0;
-    const numPagesReady = this.currentBook_ ? this.currentBook_.getNumberOfPagesReady() : 0;
+  animateUnzipMeterTo_(pct) {
+    if (this.lastCompletion_ >= pct) return;
 
-    pct = (pct*100);
-    if (isNaN(pct)) pct = 1;
-    const part = 1 / totalPages;
-    const remain = ((pct - this.lastCompletion_)/100)/part;
-    const fract = Math.min(1, remain);
-    let smartpct = ((numPagesReady / totalPages) + fract * part )* 100;
-    if (totalPages == 0) smartpct = pct;
+    this.progressBarAnimationPromise_ = this.progressBarAnimationPromise_.then(() => {
+      let partway = (pct - this.lastCompletion_) / 2;
+      if (partway < 0.001) {
+        partway = pct - this.lastCompletion_;
+      }
+      this.lastCompletion_ = Math.min(this.lastCompletion_ + partway, pct);
 
-    let oldval = parseFloat(getElem('meter').getAttribute('width'));
-    if (isNaN(oldval)) oldval = 0;
-    const weight = 0.5;
-    smartpct = (weight * smartpct + (1-weight) * oldval);
-    if (pct == 100) smartpct = 100;
+      getElem('zipmeter').setAttribute('width', this.lastCompletion_ + '%');
 
-    if (!isNaN(smartpct)) {
-      getElem('meter').setAttribute('width', smartpct + '%');
+      if (this.lastCompletion_ < pct) {
+        setTimeout(() => this.animateUnzipMeterTo_(pct), 50);
+      }
+    });
+  }
+
+  setProgressMeter({loadPct = 0, unzipPct = 0, label = ''} = {}) {
+    const previousUnzippingPct = this.lastCompletion_;
+    let loadingPct = loadPct;
+    let unzippingPct = unzipPct;
+    if (this.currentBook_) {
+      loadingPct = this.currentBook_.getLoadingPercentage();
+      unzippingPct = this.currentBook_.getUnarchivingPercentage();
     }
+    loadingPct = Math.max(0, Math.min(100 * loadingPct, 100));
+    unzippingPct = Math.max(0, Math.min(100 * unzippingPct, 100));
+
+    getElem('loadmeter').setAttribute('width', loadingPct + '%');
+    this.animateUnzipMeterTo_(unzippingPct);
 
     let title = getElem('progress_title');
     while (title.firstChild) title.removeChild(title.firstChild);
 
-    let labelText = pct.toFixed(2) + '% ' + numPagesReady + '/' + totalPages + '';
-    if (opt_label) {
-      labelText = opt_label + ' ' + labelText;
+    let labelText = unzippingPct.toFixed(2) + '% ';
+    if (label.length > 0) {
+      labelText = label + ' ' + labelText;
     }
     title.appendChild(document.createTextNode(labelText));
 
-    getElem('meter2').setAttribute('width',
-        100 * (totalPages == 0 ? 0 : ((this.currentPageNum_ + 1) / totalPages)) + '%');
-
-    title = getElem('page');
-    while (title.firstChild) title.removeChild(title.firstChild);
-    title.appendChild(document.createTextNode((this.currentPageNum_ + 1) + '/' + totalPages));
-
-    if (pct > 0) {
+    if (loadingPct > 0 || unzippingPct > 0) {
       getElem('nav').classList.remove('hide');
       getElem('progress').classList.remove('hide');
     }
@@ -351,7 +357,7 @@ export class BookViewer {
         ctx.font = '32px sans-serif';
         ctx.strokeStyle = 'black';
         const page = this.currentBook_.getPage(this.currentPageNum_);
-        const imageFilename = page.imageFile.filename;
+        const imageFilename = page.filename;
         ctx.fillText('Page #' + (this.currentPageNum_ + 1) + ' (' + imageFilename + ')', 100, 100);
 
         if (/(html|htm)$/.test(page.imageFile.filename)) {
@@ -363,18 +369,17 @@ export class BookViewer {
           }
           xhr.send(null);
         } else if (!/(jpg|jpeg|png|gif)$/.test(imageFilename)) {
-          const fileSize = (page.imageFile.data.fileData.length);
-          if (fileSize < 10*1024) {
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', url, true);
-            xhr.onload = () => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', url, true);
+          xhr.onload = () => {
+            if (xhr.responseText.length < 10*1024) {
               getElem('mainText').style.display = '';
               getElem('mainText').innerText = xhr.responseText;
-            };
-            xhr.send(null);
-          } else {
-            ctx.fillText('Cannot display this type of file', 100, 200);
-          }
+            } else {
+              ctx.fillText('Cannot display this type of file', 100, 200);
+            }
+          };
+          xhr.send(null);
         }
       };
       img.onload = () => {

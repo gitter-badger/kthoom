@@ -1,4 +1,11 @@
 /**
+ * kthoom-google.js
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2018 Google Inc.
+ */
+/**
  * Code for handling file access through Google Drive.
  */
 
@@ -85,10 +92,30 @@ kthoom.google = {
           'fileId': data.docs[0].id,
       });
       gRequest.execute(function(response) {
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', response.downloadUrl, true);
-        xhr.setRequestHeader('Authorization', 'OAuth ' + kthoom.google.oathToken);
-        kthoom.getApp().loadSingleBookFromXHR(data.docs[0].name, xhr, fullSize);
+        const bookName = data.docs[0].name;
+        const bookUrl = response.downloadUrl;
+        // Try to download using fetch, otherwise use XHR.
+        try {
+          const myHeaders = new Headers();
+          myHeaders.append('Authorization', 'OAuth ' + kthoom.google.oathToken);
+          const myInit = {
+            method: 'GET',
+            headers: myHeaders,
+            mode: 'cors',
+            cache: 'default',
+          };
+
+          kthoom.getApp().loadSingleBookFromFetch(bookName, bookUrl, myInit, fullSize);
+        } catch (e) {
+          if (typeof e === 'string' && e.startsWith('No browser support')) {
+            console.log(e);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', bookUrl, true);
+            xhr.setRequestHeader('Authorization', 'OAuth ' + kthoom.google.oathToken);
+            kthoom.getApp().loadSingleBookFromXHR(bookName, xhr, fullSize);
+          }
+        }
       });
     }
   },

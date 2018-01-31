@@ -1,3 +1,5 @@
+// TODO: Figure out why unarchiving is still slower than the old version.
+// TODO: Make the code live.
 /*
  * kthoom.js
  *
@@ -227,8 +229,8 @@ class KthoomApp {
     });
   }
 
-  setProgressMeter(pct, opt_label) {
-    this.bookViewer_.setProgressMeter(pct, opt_label);
+  setProgressMeter({loadPct = 0, unzipPct = 0, label = ''} = {}) {
+    this.bookViewer_.setProgressMeter({loadPct, unzipPct, label});
   }
 
   // TODO: Move all 'header' management into BookViewer.
@@ -266,21 +268,52 @@ class KthoomApp {
   loadLocalFiles_(evt) {
     const filelist = evt.target.files;
 
-    const bookPromises = [];
-    for (let fileNum = 0; fileNum < filelist.length; ++fileNum) {
-      bookPromises.push(Book.fromFile(filelist[fileNum]));
+    // Add the first book immediately so it unarchives asap.
+    if (filelist.length >= 1) {
+      Book.fromFile(filelist[0]).then(book => {
+        this.readingStack_.addBook(book);
+        this.readingStack_.show(true);
+      });
     }
 
-    Promise.all(bookPromises).then(books => {
-      if (books.length > 0) {
-        this.readingStack_.show(true);
-        this.readingStack_.addBooks(books);
+    if (filelist.length > 1) {
+      const bookPromises = [];
+      for (let fileNum = 1; fileNum < filelist.length; ++fileNum) {
+        bookPromises.push(Book.fromFile(filelist[fileNum]));
       }
+
+      Promise.all(bookPromises).then(books => {
+        if (books.length > 0) {
+          this.readingStack_.addBooks(books, false /* switchToFirst */);
+        }
+      });
+    }
+  }
+
+  /**
+   * @param {string} name The book name.
+   * @param {XMLHttpRequest} xhr XHR ready with the method, url and header.
+   * @param {number} expectedSize Unarchived size in bytes.
+   */
+  loadSingleBookFromXHR(name, xhr, expectedSize) {
+    Book.fromXhr(name, xhr, expectedSize).then(book => {
+      this.readingStack_.show(true);
+      this.readingStack_.addBook(book);
     });
   }
 
-  loadSingleBookFromXHR(name, xhr, expectedSize) {
-    Book.fromXhr(name, xhr, expectedSize).then(book => {
+  /**
+   * @param {string} name The book name.
+   * @param {string} url The resource to fetch.
+   * @param {Object} init An object to initialize the Fetch API.
+   * @param {number} expectedSize Unarchived size in bytes.
+   */
+  loadSingleBookFromFetch(name, url, init, expectedSize) {
+    if (!window['fetch'] || !window['Response'] || !window['ReadableStream']) {
+      throw 'No browser support for fetch/ReadableStream';
+    }
+
+    Book.fromFetch(name, url, init, expectedSize).then(book => {
       this.readingStack_.show(true);
       this.readingStack_.addBook(book);
     });

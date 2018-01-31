@@ -21,7 +21,6 @@ bitjs.archive.UnarchiveEvent = class {
   constructor(type) {
     /**
      * The event type.
-     *
      * @type {string}
      */
     this.type = type;
@@ -52,7 +51,6 @@ bitjs.archive.UnarchiveInfoEvent = class extends bitjs.archive.UnarchiveEvent {
 
     /**
      * The information message.
-     *
      * @type {string}
      */
     this.msg = msg;
@@ -71,7 +69,6 @@ bitjs.archive.UnarchiveErrorEvent = class extends bitjs.archive.UnarchiveEvent {
 
     /**
      * The information message.
-     *
      * @type {string}
      */
     this.msg = msg;
@@ -107,9 +104,11 @@ bitjs.archive.UnarchiveProgressEvent = class extends bitjs.archive.UnarchiveEven
    * @param {number} currentBytesUnarchived
    * @param {number} totalUncompressedBytesInArchive
    * @param {number} totalFilesInArchive
+   * @param {number} totalCompressedBytesRead
    */
   constructor(currentFilename, currentFileNumber, currentBytesUnarchivedInFile,
-      currentBytesUnarchived, totalUncompressedBytesInArchive, totalFilesInArchive) {
+      currentBytesUnarchived, totalUncompressedBytesInArchive, totalFilesInArchive,
+      totalCompressedBytesRead) {
     super(bitjs.archive.UnarchiveEvent.Type.PROGRESS);
 
     this.currentFilename = currentFilename;
@@ -118,6 +117,7 @@ bitjs.archive.UnarchiveProgressEvent = class extends bitjs.archive.UnarchiveEven
     this.totalFilesInArchive = totalFilesInArchive;
     this.currentBytesUnarchived = currentBytesUnarchived;
     this.totalUncompressedBytesInArchive = totalUncompressedBytesInArchive;
+    this.totalCompressedBytesRead = totalCompressedBytesRead;
   }
 }
 
@@ -270,7 +270,21 @@ bitjs.archive.Unarchiver = class {
         }
       };
 
-      this.worker_.postMessage({file: this.ab});
+      const ab = this.ab;
+      this.worker_.postMessage({
+        file: ab,
+        logToConsole: false,
+      });
+      this.ab = null;
+    }
+  }
+
+  /**
+   * Adds more bytes to the unarchiver's Worker thread.
+   */
+  update(ab) {
+    if (this.worker_) {
+      this.worker_.postMessage({bytes: ab});
     }
   }
 
@@ -335,7 +349,7 @@ bitjs.archive.GetUnarchiver = function(ab, opt_pathToBitJS) {
 
   if (h[0] == 0x52 && h[1] == 0x61 && h[2] == 0x72 && h[3] == 0x21) { // Rar!
     unarchiver = new bitjs.archive.Unrarrer(ab, pathToBitJS);
-  } else if (h[0] == 80 && h[1] == 75) { // PK (Zip)
+  } else if (h[0] == 0x50 && h[1] == 0x4B) { // PK (Zip)
     unarchiver = new bitjs.archive.Unzipper(ab, pathToBitJS);
   } else { // Try with tar
     unarchiver = new bitjs.archive.Untarrer(ab, pathToBitJS);
