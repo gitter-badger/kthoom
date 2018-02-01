@@ -1,5 +1,3 @@
-// TODO: Figure out why unarchiving is still slower than the old version.
-// TODO: Make the code live.
 /*
  * kthoom.js
  *
@@ -19,6 +17,8 @@ if (window.kthoom == undefined) {
 }
 
 const LOCAL_STORAGE_KEY = 'kthoom_settings';
+const BOOK_VIEWER_ELEM_ID = 'mainContent';
+const READING_STACK_ELEM_ID = 'readingStack';
 
 /**
  * The main class for the kthoom reader.
@@ -50,6 +50,7 @@ class KthoomApp {
     this.initDragDrop_();
     this.initClickHandlers_();
     this.initResizeHandler_();
+    this.initWheelScroll_();
 
     document.addEventListener('keydown', (e) => this.keyHandler_(e), false);
 
@@ -127,6 +128,25 @@ class KthoomApp {
       getElem('header').className = f ? 'fullscreen' : '';
       this.bookViewer_.updateScale();
     }, false);
+  }
+
+  /** @private */
+  initWheelScroll_() {
+    window.addEventListener('wheel', (evt) => {
+      let target = evt.target;
+      while (target != window) {
+        if (target.id === BOOK_VIEWER_ELEM_ID) {
+          // Deliver the wheel event to the Book Viewer to deal with swipes.
+          this.bookViewer_.handleSwipeEvent(evt);
+          return;
+        } else if (target.id === READING_STACK_ELEM_ID) {
+          // Do nothing, let the scroll happen on the ReadingStack.
+          return;
+        }
+        target = target.parentElement;
+      }
+      evt.preventDefault();
+    }, true);
   }
 
   /** @private */

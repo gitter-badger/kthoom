@@ -7,7 +7,6 @@
  */
 import { getElem } from './helpers.js';
 
-// TODO: Have the ReadStack scrollable for long reading lists.
 // TODO: Have a removeBook() method that unsubscribes, removes and re-renders.
 // TODO: Have the ReadingStack subscribe to all of its book events.
 // TODO: Have the ReadingStack display progress bars in the pane as books load

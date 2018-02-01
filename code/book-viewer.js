@@ -10,7 +10,7 @@ import { Book, BookEvent, BookProgressEvent, Page,
     UnarchivePageExtractedEvent, UnarchiveCompleteEvent } from './book.js';
 import { Key, getElem } from './helpers.js';
 
-const SWIPE_THRESHOLD = 50; // TODO: Tweak this?
+const SWIPE_THRESHOLD = 50;
 
 /**
  * The BookViewer will be responsible for letting the user view a book, navigate its pages, update
@@ -32,7 +32,6 @@ export class BookViewer {
     this.progressBarAnimationPromise_ = Promise.resolve(true);
 
     this.initProgressMeter_();
-    this.initSwipe_();
   }
 
   /** @private */
@@ -53,45 +52,43 @@ export class BookViewer {
   }
 
   /** @private */
-  initSwipe_() {
-    window.addEventListener('wheel', (evt) => {
-      evt.preventDefault();
+  handleSwipeEvent(evt) {
+    evt.preventDefault();
 
-      // Keep the timer going if it has been started.
-      if (this.wheelTimer_) {
-        clearTimeout(this.wheelTimer_);
-      }
-      // If we haven't received wheel events for some time, reset things.
-      this.wheelTimer_ = setTimeout(() => {
-        this.wheelTimer_ = null;
+    // Keep the timer going if it has been started.
+    if (this.wheelTimer_) {
+      clearTimeout(this.wheelTimer_);
+    }
+    // If we haven't received wheel events for some time, reset things.
+    this.wheelTimer_ = setTimeout(() => {
+      this.wheelTimer_ = null;
+      this.wheelTurnedPageAt_ = 0;
+    }, 200);
+
+    // Determine what delta is relevant based on orientation.
+    const delta = (this.rotateTimes_ %2 == 0 ? evt.deltaX : evt.deltaY);
+
+    // If we turned the page, we won't let the page turn again until the delta
+    // is below the hysteresis threshold (i.e. the swipe has lost its momentum).
+    if (this.wheelTurnedPageAt_ !== 0) {
+      if (Math.abs(delta) < SWIPE_THRESHOLD / 3) {
         this.wheelTurnedPageAt_ = 0;
-      }, 200);
-
-      // Determine what delta is relevant based on orientation.
-      const delta = (this.rotateTimes_ %2 == 0 ? evt.deltaX : evt.deltaY);
-
-      // If we turned the page, we won't let the page turn again until the delta
-      // is below the hysteresis threshold (i.e. the swipe has lost its momentum).
-      if (this.wheelTurnedPageAt_ !== 0) {
-        if (Math.abs(delta) < SWIPE_THRESHOLD / 3) {
-          this.wheelTurnedPageAt_ = 0;
-        }
-      } else {
-        // If we haven't turned the page yet, see if this delta would turn the page.
-        let turnPageFn = null;
-        if (this.rotateTimes_ <= 1) {
-          if (delta > SWIPE_THRESHOLD) turnPageFn = () => this.showNextPage();
-          else if (delta < -SWIPE_THRESHOLD) turnPageFn = () => this.showPrevPage();
-        } else if (this.rotateTimes_ <= 3) {
-          if (delta < -SWIPE_THRESHOLD) turnPageFn = () => this.showNextPage();
-          else if (delta > SWIPE_THRESHOLD) turnPageFn = () => this.showPrevPage();
-        }
-        if (turnPageFn) {
-          turnPageFn();
-          this.wheelTurnedPageAt_ = delta;
-        }
       }
-    }, true);
+    } else {
+      // If we haven't turned the page yet, see if this delta would turn the page.
+      let turnPageFn = null;
+      if (this.rotateTimes_ <= 1) {
+        if (delta > SWIPE_THRESHOLD) turnPageFn = () => this.showNextPage();
+        else if (delta < -SWIPE_THRESHOLD) turnPageFn = () => this.showPrevPage();
+      } else if (this.rotateTimes_ <= 3) {
+        if (delta < -SWIPE_THRESHOLD) turnPageFn = () => this.showNextPage();
+        else if (delta > SWIPE_THRESHOLD) turnPageFn = () => this.showPrevPage();
+      }
+      if (turnPageFn) {
+        turnPageFn();
+        this.wheelTurnedPageAt_ = delta;
+      }
+    }
   }
 
   /**
