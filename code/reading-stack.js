@@ -7,7 +7,7 @@
  */
 import { getElem } from './helpers.js';
 
-// TODO: Have a removeBook() method that unsubscribes, removes and re-renders.
+// TODO: Have the Reading Stack pane always be the right height, even when a book is loading.
 // TODO: Have the ReadingStack subscribe to all of its book events.
 // TODO: Have the ReadingStack display progress bars in the pane as books load
 //       and unarchive.
@@ -33,6 +33,7 @@ export class ReadingStack {
     return this.currentBookNum_ != -1 ? this.books_[this.currentBookNum_] : null;
   }
 
+  /** @param {number} i */
   getBook(i) {
     if (i < 0 || i >= this.books_.length) return null;
     return this.books_[i];
@@ -62,6 +63,32 @@ export class ReadingStack {
         this.changeToBook_(newCurrentBook);
       }
       this.renderStack_();
+    }
+  }
+
+  /** @param {number} i */
+  removeBook(i) {
+    // Cannot remove the very last book.
+    if (this.books_.length > 1 && i < this.books_.length) {
+      this.books_.splice(i, 1);
+
+      // If we are removing the book we are on, pick a new current book.
+      if (i === this.currentBookNum_) {
+        // Default to going to the next book unless we were on the last book
+        // (in which case you go to the previous book).
+        if (i >= this.books_.length) {
+          i = this.books_.length - 1;
+        }
+
+        this.changeToBook_(i);
+      } else {
+        // Might have to update the current book number if the book removed
+        // was above the current one.
+        if (i < this.currentBookNum_) {
+          this.currentBookNum_--;
+        }
+        this.renderStack_();
+      }
     }
   }
 
@@ -124,9 +151,15 @@ export class ReadingStack {
           bookDiv.classList.add('current');
         }
         bookDiv.dataset.index = i;
-        bookDiv.innerHTML = book.getName();
+        bookDiv.innerHTML = '<span>' + book.getName() +
+            '</span><div class="readingStackBookCloseButton" title="Remove book from stack">x</div>';
         bookDiv.addEventListener('click', (evt) => {
-          this.changeToBook_(parseInt(evt.target.dataset.index, 10));
+          const i = parseInt(evt.currentTarget.dataset.index, 10);
+          if (evt.target.classList.contains('readingStackBookCloseButton')) {
+            this.removeBook(i);
+          } else {
+            this.changeToBook_(i);
+          }
         });
         libDiv.appendChild(bookDiv);
       }

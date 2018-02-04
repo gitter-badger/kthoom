@@ -12,6 +12,9 @@ import { Key, getElem } from './helpers.js';
 
 const SWIPE_THRESHOLD = 50;
 
+// TODO: Sometimes the first page is not rendered properly.
+// TODO: If text pages are long, the viewer overflows.  Make it scrollable within the app
+//     boundaries, but not push the ReadingStack height higher.
 /**
  * The BookViewer will be responsible for letting the user view a book, navigate its pages, update
  * the orientation / flip / and fit-mode of the viewer.  The BookViewer has a current book and is

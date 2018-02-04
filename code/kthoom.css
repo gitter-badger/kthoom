@@ -234,6 +234,16 @@ body {
   border-top: solid 1px yellow;
 }
 
+.readingStackBookCloseButton {
+  color: black;
+  float: right;
+  font-weight: bold;
+}
+
+.readingStackBookCloseButton:hover {
+  color: yellow;
+}
+
 /* Menu styling */
 /*
   border-radius: 5px;
