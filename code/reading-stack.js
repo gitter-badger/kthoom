@@ -7,7 +7,6 @@
  */
 import { getElem } from './helpers.js';
 
-// TODO: Have the Reading Stack pane always be the right height, even when a book is loading.
 // TODO: Have the ReadingStack subscribe to all of its book events.
 // TODO: Have the ReadingStack display progress bars in the pane as books load
 //       and unarchive.
@@ -151,8 +150,11 @@ export class ReadingStack {
           bookDiv.classList.add('current');
         }
         bookDiv.dataset.index = i;
-        bookDiv.innerHTML = '<span>' + book.getName() +
-            '</span><div class="readingStackBookCloseButton" title="Remove book from stack">x</div>';
+        bookDiv.innerHTML =
+            '<div class="readingStackBookInner" title="' + book.getName() + '">' +
+              book.getName() +
+            '</div>' +
+            '<div class="readingStackBookCloseButton" title="Remove book from stack">x</div>';
         bookDiv.addEventListener('click', (evt) => {
           const i = parseInt(evt.currentTarget.dataset.index, 10);
           if (evt.target.classList.contains('readingStackBookCloseButton')) {

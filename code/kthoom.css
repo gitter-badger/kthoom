@@ -162,7 +162,7 @@ body {
   display: flex;
   margin-right: -316px;
   opacity: 0.875;
-  position: absolute;
+  position: fixed;
   right: 0px;
   top: 30px;
   -moz-user-select: none;
@@ -214,12 +214,18 @@ body {
   margin-right: 0;
 }
 
+.readingStackBookInner {
+  float: left;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .readingStackBook {
   border-bottom: solid 1px grey;
   border-top: solid 1px black;
   overflow: hidden;
   padding: 4px;
-  text-overflow: ellipsis;
 }
 
 .readingStackBook:hover {
