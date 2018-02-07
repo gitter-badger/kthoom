@@ -103,6 +103,9 @@ body {
 	display: none !important;
 }
 
+#mainContent {
+}
+
 #mainText {
   text-align: left;
   width: 90%;

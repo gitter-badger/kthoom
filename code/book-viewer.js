@@ -56,6 +56,11 @@ export class BookViewer {
 
   /** @private */
   handleSwipeEvent(evt) {
+    // Let scroll events happen if we are displaying text.
+    if (evt.target.id === 'mainText') {
+      return;
+    }
+
     evt.preventDefault();
 
     // Keep the timer going if it has been started.
@@ -335,6 +340,7 @@ export class BookViewer {
     const prevImage = getElem('prevImage');
     const ctx = canvas.getContext('2d');
     getElem('mainText').style.display = 'none';
+    getElem('mainImage').style.display = '';
     if (url == 'loading') {
       this.updateScale(true);
       canvas.width = window.innerWidth - 100;
@@ -364,6 +370,7 @@ export class BookViewer {
           const xhr = new XMLHttpRequest();
           xhr.open('GET', url, true);
           xhr.onload = () => {
+            getElem('mainImage').style.display = 'none';
             getElem('mainText').style.display = '';
             getElem('mainText').innerHTML = '<iframe style="width:100%;height:700px;border:0" src="data:text/html,'+escape(xhr.responseText)+'"></iframe>';
           }
@@ -373,6 +380,7 @@ export class BookViewer {
           xhr.open('GET', url, true);
           xhr.onload = () => {
             if (xhr.responseText.length < 10*1024) {
+              getElem('mainImage').style.display = 'none';
               getElem('mainText').style.display = '';
               getElem('mainText').innerText = xhr.responseText;
             } else {
