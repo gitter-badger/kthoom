@@ -43,7 +43,7 @@ kthoom.ipfs = {
       node.files.cat(ipfshash, (err, data) => {
         if (err) throw err;
 
-        // TODO: The API says this will be a Buffer, but I'm seeing an Uint8Array.
+        // NOTE: The API says this will be a Buffer, but I'm seeing an Uint8Array.
         if (data instanceof Uint8Array) {
           kthoom.getApp().loadSingleBookFromArrayBuffer(ipfshash, data.buffer);
         }

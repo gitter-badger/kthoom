@@ -124,7 +124,6 @@ class KthoomApp {
     window.addEventListener('resize', () => {
       const f = (window.screen.width - window.innerWidth < 4 &&
                  window.screen.height - window.innerHeight < 4);
-      // TODO: Move all 'header' management into BookViewer.
       getElem('header').className = f ? 'fullscreen' : '';
       this.bookViewer_.updateScale();
     }, false);
@@ -253,7 +252,6 @@ class KthoomApp {
     this.bookViewer_.setProgressMeter({loadPct, unzipPct, label});
   }
 
-  // TODO: Move all 'header' management into BookViewer.
   toggleToolbar() {
     getElem('header').classList.toggle('fullscreen');
     this.bookViewer_.updateScale();
