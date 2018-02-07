@@ -109,6 +109,11 @@ export class Book {
   }
   isReadyToUnarchive() { return this.unarchiveState_ === UnarchiveState.READY_FOR_UNARCHIVING; }
 
+  /**
+   * Starts an XHR and progressively loads in the book.
+   * @param {XMLHttpRequest} xhr An XMLHttpRequest object with the method, url and header defined.
+   * @param {Number} expectedSize If -1, the total field from the XHR Progress event is used.
+   */
   loadFromXhr(xhr, expectedSize) {
     if (this.loadState_ !== LoadState.NOT_LOADED) {
       throw 'Cannot try to load via XHR when the Book is already loading or loaded';
@@ -118,6 +123,9 @@ export class Book {
 
     xhr.responseType = 'arraybuffer';
     xhr.onprogress = (evt) => {
+      if (expectedSize == -1 && evt.total) {
+        this.expectedSizeInBytes_ = expectedSize = evt.total;
+      }
       let pct = evt.loaded / expectedSize;
       if (pct) {
         this.loadingPercentage_ = pct;

@@ -1,6 +1,6 @@
-# Kthoom
+# kthoom
 
-Kthoom is a comic book archive reader that runs in the browser using client-side open web technologies such as JavaScript, HTML5, the File API, Web Workers, and Typed Arrays.
+kthoom is a comic book archive reader that runs in the browser using client-side open web technologies such as JavaScript, HTML5, the File API, Web Workers, and Typed Arrays.  It can open files from your local hard drive, IPFS, or Google Drive.
 
 [OPEN KTHOOM COMIC BOOK READER](https://codedread.github.io/kthoom/index.html).
 
@@ -23,8 +23,6 @@ Kthoom is a comic book archive reader that runs in the browser using client-side
   * X: Toggle progress bar visibility
   * F: Flip one way, then the other, then restore orientation
   * ?: Bring up Help screen
-
-If kthoom thinks the browser is in full-screen mode, it will hide the progress bar.
 
 You can tell kthoom to open as many books as you like in the Choose Files dialog (shift-select all the books you want to open). Then navigate between books using the square bracket keys or use the Library drawer.
 

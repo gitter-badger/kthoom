@@ -64,6 +64,7 @@ class KthoomApp {
   initMenu_() {
     getElem('menu').addEventListener('click', (e) => e.currentTarget.classList.toggle('opened'));
     getElem('menu-open-local-files').addEventListener('change', (e) => this.loadLocalFiles_(e), false);
+    getElem('menu-open-url').addEventListener('click', (e) => this.loadFileViaUrl_(e), false);
     getElem('menu-open-google-drive').addEventListener('click', kthoom.google.doDrive, false);
     getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow, false);
     getElem('menu-help').addEventListener('click', this.showOrHideHelp_, false);
@@ -309,9 +310,22 @@ class KthoomApp {
   }
 
   /**
+   * Asks the user for a URL to load and then loads it.
+   */
+  loadFileViaUrl_(evt) {
+    const bookUrl = window.prompt('Enter the URL of the book to load');
+    if (bookUrl) {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', bookUrl, true);
+      this.loadSingleBookFromXHR(bookUrl, xhr, -1);
+    }
+  }
+
+  /**
    * @param {string} name The book name.
    * @param {XMLHttpRequest} xhr XHR ready with the method, url and header.
-   * @param {number} expectedSize Unarchived size in bytes.
+   * @param {number} expectedSize Unarchived size in bytes.  If -1, then the
+   *     data from the XHR progress events is used.
    */
   loadSingleBookFromXHR(name, xhr, expectedSize) {
     Book.fromXhr(name, xhr, expectedSize).then(book => {
