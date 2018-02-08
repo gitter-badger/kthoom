@@ -7,8 +7,8 @@ kthoom is a comic book archive reader that runs in the browser using client-side
 You can specify a comic book to load via the ?bookUri parameter.  Some examples:
 
   * https://codedread.github.io/kthoom?bookUri=/example/book.cbz
-  * https://codedread.github.io/kthoom?bookUri=ipfs://<HASH GOES HERE>
-  * https://codedread.github.io/kthoom?bookUri=dweb:/ipfs/<HASH GOES HERE>
+  * https://codedread.github.io/kthoom?bookUri=ipfs://YOUR_HASH_HERE
+  * https://codedread.github.io/kthoom?bookUri=dweb:/ipfs/YOUR_HASH_HERE
 
 ## Documentation
 
