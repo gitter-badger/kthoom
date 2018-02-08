@@ -29,3 +29,17 @@ export const createURLFromArray = function(array, mimeType) {
   let blob = new Blob([array], {type: mimeType}).slice(offset, offset + len, mimeType);
   return URL.createObjectURL(blob);
 };
+
+// Parse the URL parameters the first time this module is loaded.
+export const Params = {};
+const search = document.location.search;
+if (search && search[0] === '?') {
+  const args = search.substring(1).split('&');
+  for (let arg of args) {
+    const kv = arg.split('=');
+    if (kv.length == 2) {
+      Params[kv[0]] = (kv[1] === 'on' || kv[1] === 'true' || kv[1] === 'yes' || kv[1] === '1')
+          ? true : kv[1];
+    }
+  }
+}

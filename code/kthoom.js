@@ -10,7 +10,7 @@
 import { Book } from './book.js';
 import { BookViewer } from './book-viewer.js';
 import { ReadingStack } from './reading-stack.js';
-import { Key, getElem, createURLFromArray } from './helpers.js';
+import { Key, Params, getElem, createURLFromArray } from './helpers.js';
 
 if (window.kthoom == undefined) {
   window.kthoom = {};
@@ -55,7 +55,7 @@ class KthoomApp {
     document.addEventListener('keydown', (e) => this.keyHandler_(e), false);
 
     this.loadSettings_();
-    this.loadHash_();
+    this.parseParams_();
 
     console.log('kthoom initialized');
   }
@@ -150,11 +150,31 @@ class KthoomApp {
   }
 
   /** @private */
-  loadHash_() {
-    const hashcontent = window.location.hash.substr(1);
-    if (hashcontent.lastIndexOf('ipfs', 0) === 0) {
-      const ipfshash = hashcontent.substr(4);
-      kthoom.ipfs.loadHash(ipfshash);
+  parseParams_() {
+    // We prefer URL parameters over hashes on the URL.
+    const bookUri = Params['bookUri'];
+    if (bookUri) {
+      // See https://gist.github.com/lgierth/4b2969583b3c86081a907ef5bd682137 for the
+      // eventual migration steps for IPFS addressing.  We will support two versions
+      // for now, ipfs://$hash and dweb:/ipfs/$hash.
+      if (bookUri.indexOf('ipfs://') === 0) {
+        kthoom.ipfs.loadHash(bookUri.substr(7));
+      } else if (bookUri.indexOf('dweb:/ipfs/') === 0) {
+        kthoom.ipfs.loadHash(bookUri.substr(11));
+      } else {
+        // Else, we assume it is a URL that XHR can handle.
+        // TODO: Try fetch first?
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', bookUri, true);
+        this.loadSingleBookFromXHR(bookUri, xhr, -1);
+      }
+    } else {
+      // TODO: Eventually get rid of this and just rely on the bookUri param.
+      const hashcontent = window.location.hash.substr(1);
+      if (hashcontent.lastIndexOf('ipfs', 0) === 0) {
+        const ipfshash = hashcontent.substr(4);
+        kthoom.ipfs.loadHash(ipfshash);
+      }
     }
   }
 
