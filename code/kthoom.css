@@ -21,47 +21,51 @@ body {
 #overlay {
   background-color: rgba(50, 50, 50, 0.95);
   border-radius: 1em;
-  bottom: 50px;
+  bottom: 25px;
   color: yellow;
   font-size: 1.2em;
-  left: 100px;
+  left: 50px;
   overflow: scroll;
   padding: 25px 50px 25px 50px;
   position: absolute;
-  right: 100px;
-  top: 50px;
+  right: 50px;
+  top: 25px;
 }
 
-#overlay h1 {
-  font-size: 1.5em;
+.helpSection {
+  display: inline-block;
+}
+
+.helpSection h2 {
+  color: orange;
+  font-size: 18px;
   text-align: center;
 }
 
-.helplist {
-  width: 100%;
+dl.helplist {
+  display: flex;
+  flex-flow: row;
+  flex-wrap: wrap;
+  max-width: 400px;
+  min-width: 300px;
+  overflow: visible;
 }
 
-.helplist dt, .helplist dd {
-  padding-left: 2em;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
-.helplist dt {
+dl.helplist dt {
   color: orange;
-  float: left;
+  flex: 0 0 30%;
   font-weight: bold;
-  width: 15%;
+  text-align: center;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
-.helplist dd {
-  margin-bottom: 0.5em;
-  width: 80%;
-}
-
-.helpCallout {
-  color: #e00;
-  font-weight: bold;
+dl.helplist dd {
+  flex: 0 0 70%;
+  margin-left: auto;
+  text-align: left;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 #nav {

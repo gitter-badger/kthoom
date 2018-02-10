@@ -64,7 +64,7 @@ class KthoomApp {
   initMenu_() {
     getElem('menu').addEventListener('click', (e) => e.currentTarget.classList.toggle('opened'));
     getElem('menu-open-local-files').addEventListener('change', (e) => this.loadLocalFiles_(e), false);
-    getElem('menu-open-url').addEventListener('click', (e) => this.loadFileViaUrl_(e), false);
+    getElem('menu-open-url').addEventListener('click', (e) => this.loadFileViaUrl_(), false);
     getElem('menu-open-google-drive').addEventListener('click', kthoom.google.doDrive, false);
     getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow, false);
     getElem('menu-help').addEventListener('click', this.showOrHideHelp_, false);
@@ -205,9 +205,13 @@ class KthoomApp {
     if (code == Key.O) {
       getElem('menu-open-local-files-input').click();
       getElem('menu').classList.remove('opened');
-    } else if (code == Key.G) {
+    } else if (code === Key.U) {
+      this.loadFileViaUrl_();
+    } else if (code === Key.G) {
       kthoom.google.doDrive();
-    } else if (code == Key.QUESTION_MARK) {
+    } else if (code === Key.I) {
+      kthoom.ipfs.ipfsHashWindow();
+    } else if (code === Key.QUESTION_MARK) {
       this.showOrHideHelp_(true);
     }
 
@@ -332,7 +336,7 @@ class KthoomApp {
   /**
    * Asks the user for a URL to load and then loads it.
    */
-  loadFileViaUrl_(evt) {
+  loadFileViaUrl_() {
     const bookUrl = window.prompt('Enter the URL of the book to load');
     if (bookUrl) {
       const xhr = new XMLHttpRequest();

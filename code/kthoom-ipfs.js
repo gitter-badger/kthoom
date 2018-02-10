@@ -51,7 +51,9 @@ kthoom.ipfs = {
     });
   },
   ipfsHashWindow: function() {
-    const ipfshash = window.prompt("Please Enter The IPFS hash of the book");
-    kthoom.ipfs.loadHash(ipfshash);
+    const ipfshash = window.prompt("Enter the IPFS hash of the book to load");
+    if (ipfshash) {
+      kthoom.ipfs.loadHash(ipfshash);
+    }
   },
 };
