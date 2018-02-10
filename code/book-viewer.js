@@ -54,6 +54,10 @@ export class BookViewer {
 
   /** @private */
   handleSwipeEvent(evt) {
+    if (!this.currentBook_) {
+      return;
+    }
+
     // Let scroll events happen if we are displaying text.
     if (evt.target.id === 'mainText') {
       return;
@@ -262,7 +266,9 @@ export class BookViewer {
 
   /** @return {boolean} If the next page was shown. */
   showPrevPage() {
-    if (this.currentPageNum_ == 0) return false;
+    if (!this.currentBook_ || this.currentPageNum_ == 0) {
+      return false;
+    }
 
     this.currentPageNum_--;
     this.updatePage();
@@ -271,7 +277,10 @@ export class BookViewer {
 
   /** @return {boolean} If the next page was shown. */
   showNextPage() {
-    if (this.currentPageNum_ == this.currentBook_.getNumberOfPages() - 1) return false;
+    if (!this.currentBook_ ||
+        this.currentPageNum_ == this.currentBook_.getNumberOfPages() - 1) {
+      return false;
+    }
 
     this.currentPageNum_++;
     this.updatePage();
@@ -279,7 +288,8 @@ export class BookViewer {
   }
 
   showPage(n) {
-    if (n < 0 || n >= this.currentBook_.getNumberOfPages() || n == this.currentPageNum_) {
+    if (!this.currentBook_ ||
+        (n < 0 || n >= this.currentBook_.getNumberOfPages() || n == this.currentPageNum_)) {
       return;
     }
     this.currentPageNum_ = n;

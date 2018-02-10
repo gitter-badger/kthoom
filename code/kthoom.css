@@ -55,14 +55,21 @@ dl.helplist dt {
   color: orange;
   flex: 0 0 30%;
   font-weight: bold;
+  padding-bottom: 5px;
   text-align: center;
   text-overflow: ellipsis;
   overflow: hidden;
 }
 
+dl.helplist dt span.separator {
+  font-weight: normal;
+  opacity: 0.75;
+}
+
 dl.helplist dd {
   flex: 0 0 70%;
   margin-left: auto;
+  padding-bottom: 5px;
   text-align: left;
   text-overflow: ellipsis;
   overflow: hidden;
