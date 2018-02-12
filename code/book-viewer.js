@@ -6,17 +6,17 @@
  * Copyright(c) 2018 Google Inc.
  */
 
-import { Book, BookEvent, BookProgressEvent, Page,
-    UnarchivePageExtractedEvent, UnarchiveCompleteEvent } from './book.js';
+import { Book, BookEvent, BookProgressEvent, UnarchivePageExtractedEvent,
+         UnarchiveCompleteEvent } from './book.js';
 import { Key, getElem } from './helpers.js';
+import { ImagePage, TextPage } from './page.js';
 
 const SWIPE_THRESHOLD = 50;
 
 // TODO: Sometimes the first page is not rendered properly.
 /**
- * The BookViewer will be responsible for letting the user view a book, navigate its pages, update
- * the orientation / flip / and fit-mode of the viewer.  The BookViewer has a current book and is
- * responsible for the display of the current page.
+ * The BookViewer is responsible for letting the user view the current book, navigate its pages,
+ * update the orientation / flip / and fit-mode of the viewer.
  */
 export class BookViewer {
   constructor() {
@@ -31,6 +31,8 @@ export class BookViewer {
 
     this.lastCompletion_ = 0;
     this.progressBarAnimationPromise_ = Promise.resolve(true);
+
+    this.numPagesInViewer_ = 1;
 
     this.initProgressMeter_();
   }
@@ -184,18 +186,39 @@ export class BookViewer {
     this.updateScale();
   }
 
+  /**
+   * Sets the number of pages in the viewer (1- or 2-page viewer are supported).
+   * @param {Number} numPages Can be 1 or 2
+   */
+  setPagesInViewer(numPages) {
+    numPages = parseInt(numPages, 10);
+    if (numPages < 1 || numPages > 2) return;
+
+    this.numPagesInViewer_ = numPages;
+    alert('not yet');
+  }
+
+  /**
+   * Updates the scale on the Book Viewer's image so that it matches the scale mode.
+   * @param {boolean} clear Clears the styles and returns immediately.
+   */
   updateScale(clear = false) {
     const mainImageStyle = getElem('mainImage').style;
     mainImageStyle.width = '';
     mainImageStyle.height = '';
     mainImageStyle.maxWidth = '';
     mainImageStyle.maxHeight = '';
+
+    if (clear) {
+      return;
+    }
+
     let maxheight = window.innerHeight - 15;
-    if (!/fullscreen/.test(getElem('header').className)) {
+    if (!getElem('header').classList.contains('fullscreen')) {
       maxheight -= 25;
     }
-    if (clear || this.fitMode_ == Key.N) {
-    } else if (this.fitMode_ == Key.B) {
+
+    if (this.fitMode_ == Key.B) {
       mainImageStyle.maxWidth = '100%';
       mainImageStyle.maxHeight = maxheight + 'px';
     } else if (this.fitMode_ == Key.H) {
@@ -244,24 +267,19 @@ export class BookViewer {
     this.updatePage();
   }
 
-  // TODO: Remove this for just showPage(n) to simplify the interface?
+  /**
+   * Updates the viewer and page meter to display the current page.
+   */
   updatePage() {
     if (!this.currentBook_) return;
 
     const pageNum = this.currentPageNum_;
     const numPages = this.currentBook_.getNumberOfPages();
-    const title = getElem('page');
-    while (title.firstChild) title.removeChild(title.firstChild);
-    title.appendChild(document.createTextNode((pageNum + 1) + '/' + numPages));
-
+    getElem('page').innerHTML = (pageNum + 1) + '/' + numPages;
     getElem('pagemeter').setAttribute('width',
         100 * (numPages == 0 ? 0 : ((pageNum + 1) / numPages)) + '%');
-    const page = this.currentBook_.getPage(pageNum);
-    if (page && page.imageFile) {
-      this.setImage(page.imageFile.dataURI);
-    } else {
-      this.setImage('loading');
-    }
+
+    this.setPage(this.currentBook_.getPage(pageNum));
   }
 
   /** @return {boolean} If the next page was shown. */
@@ -343,13 +361,15 @@ export class BookViewer {
     }
   }
 
-  setImage(url) {
+  /**
+   * @param {Page} page The page to load. If not set, the viewer shows a loading message.
+   */
+  setPage(page = undefined) {
     const canvas = getElem('mainImage');
-    const prevImage = getElem('prevImage');
     const ctx = canvas.getContext('2d');
     getElem('mainText').style.display = 'none';
     getElem('mainImage').style.display = '';
-    if (url == 'loading') {
+    if (!page) {
       this.updateScale(true);
       canvas.width = window.innerWidth - 100;
       canvas.height = 200;
@@ -357,82 +377,63 @@ export class BookViewer {
       ctx.font = '50px sans-serif';
       ctx.strokeStyle = 'black';
       ctx.fillText('Loading Page #' + (this.currentPageNum_ + 1), 100, 100);
+      return;
+    }
+
+    if (document.body.scrollHeight / window.innerHeight > 1) {
+      document.body.style.overflowY = 'scroll';
+    }
+
+    if (page instanceof ImagePage) {
+      const img = page.img;
+      const h = img.height;
+      const w = img.width;
+      let sw = w;
+      let sh = h;
+      if (this.rotateTimes_ % 2 == 1) { sh = w; sw = h; }
+
+      canvas.height = sh;
+      canvas.width = sw;
+
+      ctx.save();
+
+      // Account for rotation.
+      ctx.translate(sw/2, sh/2);
+      ctx.rotate(Math.PI/2 * this.rotateTimes_);
+      ctx.translate(-w/2, -h/2);
+
+      // Account for flip.
+      if (this.vflip_) {
+        ctx.scale(1, -1);
+        ctx.translate(0, -h);
+      }
+      if (this.hflip_) {
+        ctx.scale(-1, 1);
+        ctx.translate(-w, 0);
+      }
+
+      ctx.drawImage(img, 0, 0);
+
+      ctx.restore();
+
+      this.updateScale();
+
+      // Scroll back to the top (in case there was a long text page previously)
+      window.scrollTo(0,0);
+      document.body.style.overflowY = '';
+    } else if (page instanceof TextPage) {
+      getElem('mainImage').style.display = 'none';
+      getElem('mainText').style.display = '';
+      getElem('mainText').innerText = page.rawText;
+    } else if (page instanceof HtmlPage) {
+      getElem('mainImage').style.display = 'none';
+      getElem('mainText').style.display = '';
+      getElem('mainText').innerHTML =
+          '<iframe style="width:100%;height:700px;border:0" src="data:text/html,' +
+          page.escapedHtml +
+          '"></iframe>';
     } else {
-      if (document.body.scrollHeight / window.innerHeight > 1) {
-        document.body.style.overflowY = 'scroll';
-      }
-
-      const img = new Image();
-      img.onerror = (e) => {
-        canvas.width = window.innerWidth - 100;
-        canvas.height = 300;
-        this.updateScale(true);
-        ctx.fillStyle = 'orange';
-        ctx.font = '32px sans-serif';
-        ctx.strokeStyle = 'black';
-        const page = this.currentBook_.getPage(this.currentPageNum_);
-        const imageFilename = page.filename;
-        ctx.fillText('Page #' + (this.currentPageNum_ + 1) + ' (' + imageFilename + ')', 100, 100);
-
-        if (/(html|htm)$/.test(page.imageFile.filename)) {
-          const xhr = new XMLHttpRequest();
-          xhr.open('GET', url, true);
-          xhr.onload = () => {
-            getElem('mainImage').style.display = 'none';
-            getElem('mainText').style.display = '';
-            getElem('mainText').innerHTML = '<iframe style="width:100%;height:700px;border:0" src="data:text/html,'+escape(xhr.responseText)+'"></iframe>';
-          }
-          xhr.send(null);
-        } else if (!/(jpg|jpeg|png|gif)$/.test(imageFilename)) {
-          const xhr = new XMLHttpRequest();
-          xhr.open('GET', url, true);
-          xhr.onload = () => {
-            if (xhr.responseText.length < 10*1024) {
-              getElem('mainImage').style.display = 'none';
-              getElem('mainText').style.display = '';
-              getElem('mainText').innerText = xhr.responseText;
-            } else {
-              ctx.fillText('Cannot display this type of file', 100, 200);
-            }
-          };
-          xhr.send(null);
-        }
-      };
-      img.onload = () => {
-        const h = img.height;
-        const w = img.width;
-        let sw = w;
-        let sh = h;
-        this.rotateTimes_ = (4 + this.rotateTimes_) % 4;
-        ctx.save();
-        if (this.rotateTimes_ % 2 == 1) { sh = w; sw = h;}
-        canvas.height = sh;
-        canvas.width = sw;
-        ctx.translate(sw/2, sh/2);
-        ctx.rotate(Math.PI/2 * this.rotateTimes_);
-        ctx.translate(-w/2, -h/2);
-        if (this.vflip_) {
-          ctx.scale(1, -1)
-          ctx.translate(0, -h);
-        }
-        if (this.hflip_) {
-          ctx.scale(-1, 1)
-          ctx.translate(-w, 0);
-        }
-        canvas.style.display = 'none';
-        window.scrollTo(0,0);
-        ctx.drawImage(img, 0, 0);
-
-        this.updateScale();
-
-        canvas.style.display = '';
-        document.body.style.overflowY = '';
-        ctx.restore();
-      };
-      if (img.src) {
-        prevImage.setAttribute('src', img.src);
-      }
-      img.src = url;
-    };
+      ctx.fillText('Cannot display this type of file', 100, 200);
+    }
   }
 }

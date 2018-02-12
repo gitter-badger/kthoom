@@ -10,7 +10,7 @@
 import { Book } from './book.js';
 import { BookViewer } from './book-viewer.js';
 import { ReadingStack } from './reading-stack.js';
-import { Key, Params, getElem, createURLFromArray } from './helpers.js';
+import { Key, Params, getElem } from './helpers.js';
 
 if (window.kthoom == undefined) {
   window.kthoom = {};
@@ -201,7 +201,7 @@ class KthoomApp {
       return;
     }
 
-    // Handle keystrokes that do not depend on whether a document is loaded.
+    // Handle keystrokes that do not depend on whether a book is loaded.
     if (code == Key.O) {
       getElem('menu-open-local-files-input').click();
       getElem('menu').classList.remove('opened');
@@ -218,7 +218,7 @@ class KthoomApp {
     if (getComputedStyle(getElem('progress')).display == 'none') return;
 
     let canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
-    let canKeyPrev = (scrollX <= 0);
+    let canKeyPrev = (window.scrollX <= 0);
 
     if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
     switch(code) {
@@ -250,6 +250,8 @@ class KthoomApp {
         this.bookViewer_.setFitMode(code);
         this.saveSettings_();
         break;
+      case Key.NUM_1: case Key.NUM_2:
+        this.bookViewer_.setPagesInViewer(code - Key.NUM_1 + 1);
       default:
         break;
     }

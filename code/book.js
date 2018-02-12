@@ -5,7 +5,7 @@
  *
  * Copyright(c) 2018 Google Inc.
  */
-import { createURLFromArray } from './helpers.js';
+import { Page, createPageFromFile } from './page.js';
 
 const LoadState = {
   NOT_LOADED: 0,
@@ -47,25 +47,6 @@ export class UnarchiveCompleteEvent extends BookEvent {
   constructor(book) { super(book); }
 }
 
-// Stores an image filename and its data: URI.
-export class ImageFile {
-  constructor(file) {
-    this.filename = file.filename;
-    const fileExtension = file.filename.split('.').pop().toLowerCase();
-    const mimeType = fileExtension == 'png' ? 'image/png' :
-        (fileExtension == 'jpg' || fileExtension == 'jpeg') ? 'image/jpeg' :
-        fileExtension == 'gif' ? 'image/gif' : undefined;
-    this.dataURI = createURLFromArray(file.fileData, mimeType);
-  }
-}
-
-export class Page {
-  constructor(filename, imageFile) {
-    this.filename = filename;
-    this.imageFile = imageFile;
-  }
-}
-
 /**
  * A Book has a name, a set of pages, and a loading and unarchiving state.  It is responsible for
  * unarchiving itself and emitting events to any subscribers as interesting things happen to it.
@@ -87,7 +68,15 @@ export class Book {
     this.unarchiver_ = null;
 
     this.totalPages_ = 0;
+
+    /** @private {Array<Page>} */
     this.pages_ = [];
+
+    // As each file becomes available from the Unarchiver, we kick off an async operation
+    // to construct a Page object.  After all pages are retrieved, we sort and then add
+    // to the pages_ array.
+    /** @private {Promise<Page>} */
+    this.pagePromises_ = [];
 
     this.subscribers_ = {};
   }
@@ -175,16 +164,18 @@ export class Book {
   }
 
   /**
-   * Creates the Unarchiver.
+   * Resets the book and creates the Unarchiver.
    * @param {ArrayBuffer} ab
    * @param {number} pctLoaded
    * @param {number} expectedSizeInBytes
    */
   setArrayBuffer(ab, pctLoaded, expectedSizeInBytes) {
+    // Reset the book completely.
     this.unarchiver_ = null;
     this.expectedSizeInBytes_ = expectedSizeInBytes;
     this.totalPages_ = 0;
     this.pages_ = [];
+    this.pagePromises_ = [];
     this.loadState_ = pctLoaded < 1.0 ? LoadState.LOADING : LoadState.LOADED;
     this.loadingPercentage_ = pctLoaded;
     this.unarchiveState_ = UnarchiveState.READY_FOR_UNARCHIVING;
@@ -225,10 +216,8 @@ export class Book {
           // Convert each unarchived file into a Page.
           // TODO: Error if not present?
           if (e.unarchivedFile) {
-            const f = e.unarchivedFile;
-            const newPage = new Page(f.filename, new ImageFile(f));
             // TODO: Error if we have more pages than totalPages_.
-            this.pages_.push(newPage);
+            this.pagePromises_.push(createPageFromFile(e.unarchivedFile));
 
             // Do not send extracted events yet, because the pages may not be in the correct order.
             //this.notify_(new UnarchivePageExtractedEvent(this, newPage, this.pages_.length));
@@ -243,19 +232,25 @@ export class Book {
         console.log(`  using ${this.unarchiver_.getScriptFileName()}`);
         console.log(`  unarchiving done in ${diff}s`);
 
-        // Sort the book's pages based on filename, issuing an extract event for each page in
-        // its proper order.
-        this.pages_.sort((a,b) => a.filename.toLowerCase() > b.filename.toLowerCase() ? 1 : -1);
-        for (let i = 0; i < this.pages_.length; ++i) {
-          this.notify_(new UnarchivePageExtractedEvent(this, this.pages_[i], i + 1));
-        }
+        Promise.all(this.pagePromises_).then(pages => {
+          // Sort the book's pages based on filename.
+          this.pages_ = pages.slice(0).sort((a,b) => {
+            return a.filename.toLowerCase() > b.filename.toLowerCase() ? 1 : -1;
+          });
 
-        this.notify_(new UnarchiveCompleteEvent(this));
+          // Issuing an extract event for each page in its proper order.
+          for (let i = 0; i < this.pages_.length; ++i) {
+            this.notify_(new UnarchivePageExtractedEvent(this, this.pages_[i], i + 1));
+          }
 
-        // Stop the Unarchiver (which will kill the worker) and then delete the unarchiver
-        // which should free up some memory, including the unarchived array buffer.
-        this.unarchiver_.stop();
-        this.unarchiver_ = null;
+          // Emit a complete event.
+          this.notify_(new UnarchiveCompleteEvent(this));
+
+          // Stop the Unarchiver (which will kill the worker) and then delete the unarchiver
+          // which should free up some memory, including the unarchived array buffer.
+          this.unarchiver_.stop();
+          this.unarchiver_ = null;
+        });
       });
       this.unarchiver_.start();
     } else {
