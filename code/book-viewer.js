@@ -6,31 +6,45 @@
  * Copyright(c) 2018 Google Inc.
  */
 
-import { Book, BookEvent, BookProgressEvent, Page,
-    UnarchivePageExtractedEvent, UnarchiveCompleteEvent } from './book.js';
-import { Key, getElem } from './helpers.js';
+import { Book, BookEvent, BookProgressEvent, UnarchivePageExtractedEvent,
+         UnarchiveCompleteEvent } from './book.js';
+import { assert, getElem } from './helpers.js';
+import { ImagePage, TextPage } from './page.js';
 
+const BOOK_VIEWER_ELEM_ID = 'bookViewer';
+const ID_PAGE_1 = 'page1';
+const ID_PAGE_2 = 'page2';
+const FIRST_IMAGE = 'firstImage';
+const SECOND_IMAGE = 'secondImage';
 const SWIPE_THRESHOLD = 50;
+
+export const FitMode = {
+  Width: 1,
+  Height: 2,
+  Best: 3,
+}
+
+const px = v => v + 'px';
 
 // TODO: Sometimes the first page is not rendered properly.
 /**
- * The BookViewer will be responsible for letting the user view a book, navigate its pages, update
- * the orientation / flip / and fit-mode of the viewer.  The BookViewer has a current book and is
- * responsible for the display of the current page.
+ * The BookViewer is responsible for letting the user view the current book, navigate its pages,
+ * update the orientation, page-mode and fit-mode of the viewer.
  */
 export class BookViewer {
   constructor() {
     this.currentBook_ = null;
     this.currentPageNum_ = -1;
     this.rotateTimes_ = 0;
-    this.hflip_ = false;
-    this.vflip_ = false;
-    this.fitMode_ = Key.B;
+    /** @type {!FitMode} */
+    this.fitMode_ = FitMode.Best;
     this.wheelTimer_ = null;
     this.wheelTurnedPageAt_ = 0;
 
     this.lastCompletion_ = 0;
     this.progressBarAnimationPromise_ = Promise.resolve(true);
+
+    this.numPagesInViewer_ = 1;
 
     this.initProgressMeter_();
   }
@@ -48,7 +62,7 @@ export class BookViewer {
       const totalPages = this.currentBook_.getNumberOfPages();
       const page = Math.max(1, Math.ceil(((evt.clientX - l)/pdiv.offsetWidth) * totalPages)) - 1;
       this.currentPageNum_ = page;
-      this.updatePage();
+      this.updateLayout();
     });
   }
 
@@ -59,7 +73,7 @@ export class BookViewer {
     }
 
     // Let scroll events happen if we are displaying text.
-    if (evt.target.id === 'mainText') {
+    if (evt.target.id === 'firstText') {
       return;
     }
 
@@ -117,7 +131,7 @@ export class BookViewer {
     } else if (evt instanceof UnarchivePageExtractedEvent) {
       // Display first page if we haven't yet.
       if (evt.pageNum == 1) {
-        this.updatePage();
+        this.updateLayout();
       }
     }
   }
@@ -125,83 +139,235 @@ export class BookViewer {
   getRotateTimes() { return this.rotateTimes_; }
 
   setRotateTimes(n) {
-    if (n >= 0 && n <= 3 && n !== this.rotateTimes_) {
+    n = parseInt(n, 10) % 4;
+    if (n < 0) n += 4;
+
+    if (this.rotateTimes_ !== n) {
       this.rotateTimes_ = n;
-      this.updatePage();
+      this.updateLayout();
     }
   }
 
   rotateCounterClockwise() {
-    this.rotateTimes_--;
-    if (this.rotateTimes_ < 0) {
-      this.rotateTimes_ = 3;
-    }
-    this.updatePage();
+    this.setRotateTimes(this.rotateTimes_ - 1);
   }
 
   rotateClockwise() {
-    this.rotateTimes_++;
-    if (this.rotateTimes_ > 3) {
-      this.rotateTimes_ = 0;
-    }
-    this.updatePage();
-  }
-
-  isHflip() { return this.hflip_; }
-
-  setHflip(f) {
-    if (this.hflip_ !== f) {
-      this.hflip_ = f;
-    }
-    this.updatePage();
-  }
-
-  isVflip() { return this.vflip_; }
-
-  setVflip(f) {
-    if (this.vflip_ !== f) {
-      this.vflip_ = f;
-    }
-    this.updatePage();
-  }
-
-  flip() {
-    if (!this.hflip_ && !this.vflip_) {
-      this.hflip_ = true;
-    } else if(this.hflip_ == true) {
-      this.vflip_ = true;
-      this.hflip_ = false;
-    } else if(this.vflip_ == true) {
-      this.vflip_ = false;
-    }
-    this.updatePage();
+    this.setRotateTimes(this.rotateTimes_ + 1);
   }
 
   getFitMode() { return this.fitMode_; }
 
   setFitMode(m) {
     this.fitMode_ = m;
-    this.updateScale();
+    this.updateLayout();
   }
 
-  updateScale(clear = false) {
-    const mainImageStyle = getElem('mainImage').style;
-    mainImageStyle.width = '';
-    mainImageStyle.height = '';
-    mainImageStyle.maxWidth = '';
-    mainImageStyle.maxHeight = '';
-    let maxheight = window.innerHeight - 15;
-    if (!/fullscreen/.test(getElem('header').className)) {
-      maxheight -= 25;
+  getNumPagesInViewer() { return this.numPagesInViewer_; }
+
+  /**
+   * Sets the number of pages in the viewer (1- or 2-page viewer are supported).
+   * @param {Number} numPages Can be 1 or 2
+   */
+  setNumPagesInViewer(numPages) {
+    numPages = parseInt(numPages, 10);
+    if (numPages < 1 || numPages > 2) return;
+
+    if (this.numPagesInViewer_ !== numPages) {
+      this.numPagesInViewer_ = numPages;
+      getElem(ID_PAGE_2).style.display = (numPages === 2) ? '' : 'none';
+      this.updateLayout();
     }
-    if (clear || this.fitMode_ == Key.N) {
-    } else if (this.fitMode_ == Key.B) {
-      mainImageStyle.maxWidth = '100%';
-      mainImageStyle.maxHeight = maxheight + 'px';
-    } else if (this.fitMode_ == Key.H) {
-      mainImageStyle.height = maxheight + 'px';
-    } else if (this.fitMode_ == Key.W) {
-      mainImageStyle.width = '100%';
+  }
+
+  /**
+   * Updates the layout based on window size, scale mode, fit mode and page mode
+   * and then sets the page contents based on the current page of the current book.
+   */
+  updateLayout() {
+    if (!this.currentBook_) {
+      console.log('updateLayout() before currentBook_');
+      return;
+    }
+    if (this.currentPageNum_ === -1) {
+      console.log('updateLayout() before currentPageNum_');
+      return;
+    }
+
+    const pageNum = this.currentPageNum_;
+    const numPages = this.currentBook_.getNumberOfPages();
+    getElem('page').innerHTML = (pageNum + 1) + '/' + numPages;
+    getElem('pagemeter').setAttribute('width',
+        100 * (numPages == 0 ? 0 : ((pageNum + 1) / numPages)) + '%');
+
+    const page = this.currentBook_.getPage(this.currentPageNum_);
+    if (!page) {
+      console.log('updateLayout() before current page is loaded');
+      return;
+    }
+
+    const portraitMode = (this.rotateTimes_ % 2 === 0);
+    const par = portraitMode ? page.getAspectRatio() : 1 / page.getAspectRatio();
+
+    const bvElem = getElem(BOOK_VIEWER_ELEM_ID);
+    const bv = {
+      left: 5,
+      width: bvElem.offsetWidth - 10,
+      top: bvElem.offsetTop + 5,
+      height: window.innerHeight - bvElem.offsetTop - 10,
+      ar: (bvElem.offsetWidth) / (window.innerHeight - bvElem.offsetTop),
+    };
+    assert(bv.width, 'bv.width not set');
+    assert(bv.height, 'bv.height not set');
+
+    const page1 = getElem(ID_PAGE_1);
+    const page2 = getElem(ID_PAGE_2);
+    // Single page viewer mode.
+    if (this.numPagesInViewer_ === 1) {
+      page2.style.display = 'none';
+
+      // fit-width, 1-page
+      // fit-best, 1-page
+      if (this.fitMode_ === FitMode.Width ||
+          (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
+        page1.style.left = px(bv.left);
+        page1.style.width = px(bv.width);
+        const ph = bv.width / par;
+        page1.style.height = px(ph);
+        if (par > bv.ar) {
+          page1.style.top = px(bv.top + bv.height / 2 - ph / 2);
+        } else {
+          page1.style.top = px(bv.top);
+        }
+      } else {
+        // fit-height, 1-page
+        // fit-best, 1-page
+        page1.style.top = px(bv.top);
+        page1.style.height = px(bv.height);
+        const pw = bv.height * par;
+        page1.style.width = px(pw);
+        if (par < bv.ar) {
+          page1.style.left = px(bv.left + bv.width / 2 - pw / 2);
+        } else {
+          page1.style.left = px(bv.left);
+        }
+      }
+
+      this.setPageContents_(page1, this.currentPageNum_);
+    } else if (this.numPagesInViewer_ === 2) {
+      // Two-page viewer mode.
+      page2.style.display = '';
+
+      if (portraitMode) {
+        const bv1 = {
+          left: bv.left,
+          width: bv.width / 2,
+          top: bv.top,
+          height: bv.height,
+          ar: (bv.width / 2) / bv.height,
+        };
+        const bv2 = { ...bv1, left: bv.left + (bv.width / 2) };
+
+        // portrait, fit-width, 2-page
+        // portrait, fit-best, 1-page
+        if (this.fitMode_ === FitMode.Width ||
+            (this.fitMode_ === FitMode.Best && bv1.ar <= par)) {
+          page1.style.left = px(bv1.left);
+          page1.style.width = px(bv1.width);
+          const ph = bv1.width / par;
+          page1.style.height = px(ph);
+          if (par > bv1.ar) {
+            page1.style.top = px(bv1.top + bv1.height / 2 - ph / 2);
+          } else {
+            page1.style.top = px(bv1.top);
+          }
+
+          page2.style.left = px(bv2.left);
+          page2.style.width = px(bv2.width);
+          page2.style.height = px(ph);
+          if (par > bv2.ar) {
+            page2.style.top = px(bv2.top + bv2.height / 2 - ph / 2);
+          } else {
+            page2.style.top = px(bv2.top);
+          }
+        } else {
+          // portrait, fit-height, 2-page
+          // portrait, fit-best, 2-page
+          page1.style.top = px(bv1.top);
+          page1.style.height = px(bv1.height);
+          const pw = bv1.height * par;
+          page1.style.width = px(pw);
+          let p1left;
+          if (par < bv1.ar) {
+            p1left = bv1.left + bv1.width - pw;
+          } else {
+            p1left = bv1.left;
+          }
+          page1.style.left = px(p1left);
+
+          page2.style.top = px(bv2.top);
+          page2.style.height = px(bv2.height);
+          page2.style.width = px(pw);
+          page2.style.left = px(p1left + pw);
+        }
+      } else {
+        const bv1 = {
+          left: bv.left,
+          width: bv.width,
+          top: bv.top,
+          height: (bv.height / 2),
+          ar: bv.width / (bv.height / 2),
+        };
+        const bv2 = { ...bv1, top: bv.top + (bv.height / 2) };
+
+        // landscape, fit-width, 2-page
+        // landscape, fit-best, 2-page
+        if (this.fitMode_ === FitMode.Width ||
+            (this.fitMode_ === FitMode.Best && bv1.ar <= par)) {
+          page1.style.left = px(bv1.left);
+          page1.style.width = px(bv1.width);
+          const ph = bv1.width / par;
+          page1.style.height = px(ph);
+          let p1top;
+          if (par > bv1.ar) {
+            p1top = bv1.top + bv1.height / 2 - ph / 2;
+          } else {
+            p1top = bv1.top;
+          }
+          page1.style.top = px(p1top);
+
+          page2.style.left = px(bv2.left);
+          page2.style.width = px(bv2.width);
+          page2.style.height = px(ph);
+          page2.style.top = px(p1top + ph);
+        } else {
+          // landscape, fit-height, 2-page
+          // landscape, fit-best, 2-page
+          page1.style.top = px(bv1.top);
+          page1.style.height = px(bv1.height);
+          const pw = bv1.height * par;
+          page1.style.width = px(pw);
+          let p1left;
+          if (par < bv1.ar) {
+            p1left = bv1.left + bv1.width / 2 - pw / 2;
+          } else {
+            p1left = bv1.left;
+          }
+          page1.style.left = px(p1left);
+
+          page2.style.top = px(bv2.top);
+          page2.style.height = px(bv2.height);
+          page2.style.width = px(pw);
+          page2.style.left = px(p1left);
+        }
+      }
+
+      const pageA = (this.rotateTimes_ >= 2) ? page2 : page1;
+      const pageB = (this.rotateTimes_ >= 2) ? page1 : page2;
+      this.setPageContents_(pageA, this.currentPageNum_);
+      this.setPageContents_(pageB,
+        (this.currentPageNum_ < this.currentBook_.getNumberOfPages() - 1) ?
+        this.currentPageNum_ + 1 : 0);
     }
   }
 
@@ -216,7 +382,7 @@ export class BookViewer {
       book.subscribe(this, (evt) => this.handleBookEvent_(evt));
       this.currentPageNum_ = 0;
       this.setProgressMeter({label: 'Opening'});
-      this.updatePage();
+      this.updateLayout();
 
       // If the book is immediately ready to unarchive, kick that off.
       if (this.currentBook_.isReadyToUnarchive()) {
@@ -241,27 +407,7 @@ export class BookViewer {
     getElem('pagemeter').setAttribute('width', '0%');
 
     this.setProgressMeter();
-    this.updatePage();
-  }
-
-  // TODO: Remove this for just showPage(n) to simplify the interface?
-  updatePage() {
-    if (!this.currentBook_) return;
-
-    const pageNum = this.currentPageNum_;
-    const numPages = this.currentBook_.getNumberOfPages();
-    const title = getElem('page');
-    while (title.firstChild) title.removeChild(title.firstChild);
-    title.appendChild(document.createTextNode((pageNum + 1) + '/' + numPages));
-
-    getElem('pagemeter').setAttribute('width',
-        100 * (numPages == 0 ? 0 : ((pageNum + 1) / numPages)) + '%');
-    const page = this.currentBook_.getPage(pageNum);
-    if (page && page.imageFile) {
-      this.setImage(page.imageFile.dataURI);
-    } else {
-      this.setImage('loading');
-    }
+    this.updateLayout();
   }
 
   /** @return {boolean} If the next page was shown. */
@@ -271,7 +417,7 @@ export class BookViewer {
     }
 
     this.currentPageNum_--;
-    this.updatePage();
+    this.updateLayout();
     return true;
   }
 
@@ -283,7 +429,7 @@ export class BookViewer {
     }
 
     this.currentPageNum_++;
-    this.updatePage();
+    this.updateLayout();
     return true;
   }
 
@@ -293,7 +439,7 @@ export class BookViewer {
       return;
     }
     this.currentPageNum_ = n;
-    this.updatePage();
+    this.updateLayout();
   }
 
   animateUnzipMeterTo_(pct) {
@@ -314,6 +460,8 @@ export class BookViewer {
     });
   }
 
+  // The loadPct, unzipPct fields of the input params are not currently
+  // used (the values from the current book are used instead).
   setProgressMeter({loadPct = 0, unzipPct = 0, label = ''} = {}) {
     const previousUnzippingPct = this.lastCompletion_;
     let loadingPct = loadPct;
@@ -343,96 +491,55 @@ export class BookViewer {
     }
   }
 
-  setImage(url) {
-    const canvas = getElem('mainImage');
-    const prevImage = getElem('prevImage');
-    const ctx = canvas.getContext('2d');
-    getElem('mainText').style.display = 'none';
-    getElem('mainImage').style.display = '';
-    if (url == 'loading') {
-      this.updateScale(true);
-      canvas.width = window.innerWidth - 100;
-      canvas.height = 200;
-      ctx.fillStyle = 'red';
-      ctx.font = '50px sans-serif';
-      ctx.strokeStyle = 'black';
-      ctx.fillText('Loading Page #' + (this.currentPageNum_ + 1), 100, 100);
+  /**
+   * @param {Element} pageEl The div for the page.
+   * @param {Number} pageNum The page number to render into the div.
+   * @private
+   */
+  setPageContents_(pageEl, pageNum) {
+    assert(this.currentBook_, 'Current book not defined in setPageContents_()');
+    assert(this.currentBook_.getNumberOfPages() > pageNum,
+        'Book does not have enough pages in setPageContents_()');
+
+    const page = this.currentBook_.getPage(pageNum);
+    assert(page, 'Page not defined in setPageContents_()');
+    const textDiv = pageEl.querySelector('div');
+    const canvasEl = pageEl.querySelector('canvas');
+    assert(canvasEl, 'Canvas not found in pageEl in setPageContents_()');
+    const ctx = canvasEl.getContext('2d');
+
+    if (page instanceof ImagePage) {
+      canvasEl.style.display = '';
+      textDiv.style.display = 'none';
+      const img = page.img;
+      const h = img.height;
+      const w = img.width;
+      let sw = w;
+      let sh = h;
+      if (this.rotateTimes_ % 2 == 1) { sh = w; sw = h; }
+
+      canvasEl.height = sh;
+      canvasEl.width = sw;
+
+      ctx.save();
+      ctx.translate(sw/2, sh/2);
+      ctx.rotate(Math.PI/2 * this.rotateTimes_);
+      ctx.translate(-w/2, -h/2);
+      ctx.drawImage(img, 0, 0);
+      ctx.restore();
+    } else if (page instanceof TextPage) {
+      canvasEl.style.display = 'none';
+      textDiv.style.display = '';
+      textDiv.innerText = page.rawText;
+    } else if (page instanceof HtmlPage) {
+      canvasEl.style.display = 'none';
+      textDiv.style.display = '';
+      textDiv.innerHTML =
+          '<iframe style="width:100%;height:700px;border:0" src="data:text/html,' +
+          page.escapedHtml +
+          '"></iframe>';
     } else {
-      if (document.body.scrollHeight / window.innerHeight > 1) {
-        document.body.style.overflowY = 'scroll';
-      }
-
-      const img = new Image();
-      img.onerror = (e) => {
-        canvas.width = window.innerWidth - 100;
-        canvas.height = 300;
-        this.updateScale(true);
-        ctx.fillStyle = 'orange';
-        ctx.font = '32px sans-serif';
-        ctx.strokeStyle = 'black';
-        const page = this.currentBook_.getPage(this.currentPageNum_);
-        const imageFilename = page.filename;
-        ctx.fillText('Page #' + (this.currentPageNum_ + 1) + ' (' + imageFilename + ')', 100, 100);
-
-        if (/(html|htm)$/.test(page.imageFile.filename)) {
-          const xhr = new XMLHttpRequest();
-          xhr.open('GET', url, true);
-          xhr.onload = () => {
-            getElem('mainImage').style.display = 'none';
-            getElem('mainText').style.display = '';
-            getElem('mainText').innerHTML = '<iframe style="width:100%;height:700px;border:0" src="data:text/html,'+escape(xhr.responseText)+'"></iframe>';
-          }
-          xhr.send(null);
-        } else if (!/(jpg|jpeg|png|gif)$/.test(imageFilename)) {
-          const xhr = new XMLHttpRequest();
-          xhr.open('GET', url, true);
-          xhr.onload = () => {
-            if (xhr.responseText.length < 10*1024) {
-              getElem('mainImage').style.display = 'none';
-              getElem('mainText').style.display = '';
-              getElem('mainText').innerText = xhr.responseText;
-            } else {
-              ctx.fillText('Cannot display this type of file', 100, 200);
-            }
-          };
-          xhr.send(null);
-        }
-      };
-      img.onload = () => {
-        const h = img.height;
-        const w = img.width;
-        let sw = w;
-        let sh = h;
-        this.rotateTimes_ = (4 + this.rotateTimes_) % 4;
-        ctx.save();
-        if (this.rotateTimes_ % 2 == 1) { sh = w; sw = h;}
-        canvas.height = sh;
-        canvas.width = sw;
-        ctx.translate(sw/2, sh/2);
-        ctx.rotate(Math.PI/2 * this.rotateTimes_);
-        ctx.translate(-w/2, -h/2);
-        if (this.vflip_) {
-          ctx.scale(1, -1)
-          ctx.translate(0, -h);
-        }
-        if (this.hflip_) {
-          ctx.scale(-1, 1)
-          ctx.translate(-w, 0);
-        }
-        canvas.style.display = 'none';
-        window.scrollTo(0,0);
-        ctx.drawImage(img, 0, 0);
-
-        this.updateScale();
-
-        canvas.style.display = '';
-        document.body.style.overflowY = '';
-        ctx.restore();
-      };
-      if (img.src) {
-        prevImage.setAttribute('src', img.src);
-      }
-      img.src = url;
-    };
+      ctx.fillText('Cannot display this type of file', 100, 200);
+    }
   }
 }
