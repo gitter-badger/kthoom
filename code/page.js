@@ -11,6 +11,9 @@ export class Page {
     /** @type {string} */
     this.filename = file.filename;
   }
+
+  /** @return {Number} The width-height aspect ratio. */
+  getAspectRatio() { return 6.625 / 10.25; }
 }
 
 export class ImagePage extends Page {
@@ -22,6 +25,8 @@ export class ImagePage extends Page {
     super(file);
     this.img = img;
   }
+
+  getAspectRatio() { return this.img.naturalWidth / this.img.naturalHeight; }
 }
 
 export class TextPage extends Page {

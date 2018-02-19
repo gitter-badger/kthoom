@@ -12,6 +12,7 @@ body {
 	right: 5px;
 	text-align: center;
   top: 5px;
+  bottom: 5px;
 }
 
 #prevImage {
@@ -94,6 +95,7 @@ dl.helplist dd {
 #header {
   height: 30px;
   text-align: left;
+  z-index: 5;
 }
 
 #progress {
@@ -114,7 +116,18 @@ dl.helplist dd {
 	display: none !important;
 }
 
-#mainContent {
+#bookViewer {
+}
+
+#page1, #page2 {
+  overflow: scroll;
+  position: absolute;
+}
+
+#page1 canvas,
+#page2 canvas {
+  height: 100%;
+  width: 100%;
 }
 
 #mainText {

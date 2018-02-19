@@ -8,7 +8,7 @@
  */
 
 import { Book } from './book.js';
-import { BookViewer } from './book-viewer.js';
+import { BookViewer, FitMode } from './book-viewer.js';
 import { ReadingStack } from './reading-stack.js';
 import { Key, Params, getElem } from './helpers.js';
 
@@ -17,7 +17,7 @@ if (window.kthoom == undefined) {
 }
 
 const LOCAL_STORAGE_KEY = 'kthoom_settings';
-const BOOK_VIEWER_ELEM_ID = 'mainContent';
+const BOOK_VIEWER_ELEM_ID = 'bookViewer';
 const READING_STACK_ELEM_ID = 'readingStack';
 
 /**
@@ -84,11 +84,27 @@ class KthoomApp {
 
   /** @private */
   initClickHandlers_() {
-    getElem('mainImage').addEventListener('click', (evt) => {
+    // TODO: Move this click handler into BookViewer?
+    const bookViewerElem = getElem(BOOK_VIEWER_ELEM_ID);
+    const firstPageElem = getElem('page1');
+    bookViewerElem.addEventListener('click', (evt) => {
+      // Two-page viewer mode is simpler to figure out what the click means.
+      if (this.bookViewer_.getNumPagesInViewer() === 2) {
+        const inverted = (this.bookViewer_.getRotateTimes() >= 2);
+        if (evt.target === getElem('firstImage')) {
+          if (!inverted) this.showPrevPage();
+          else this.showNextPage();
+        } else if (evt.target === getElem('secondImage')) {
+          if (!inverted) this.showNextPage();
+          else this.showPrevPage();
+        }
+        return;
+      }
+
       // Firefox does not support offsetX/Y so we have to manually calculate
       // where the user clicked in the image.
-      const mainContentWidth = getElem('mainContent').clientWidth;
-      const mainContentHeight = getElem('mainContent').clientHeight;
+      const mainContentWidth = bookViewerElem.clientWidth;
+      const mainContentHeight = firstPageElem.clientHeight;
       const comicWidth = evt.target.clientWidth;
       const comicHeight = evt.target.clientHeight;
       const offsetX = (mainContentWidth - comicWidth) / 2;
@@ -126,7 +142,7 @@ class KthoomApp {
       const f = (window.screen.width - window.innerWidth < 4 &&
                  window.screen.height - window.innerHeight < 4);
       getElem('header').className = f ? 'fullscreen' : '';
-      this.bookViewer_.updateScale();
+      this.bookViewer_.updateLayout();
     }, false);
   }
 
@@ -184,9 +200,21 @@ class KthoomApp {
       if (localStorage[LOCAL_STORAGE_KEY].length < 10) return;
       const s = JSON.parse(localStorage[LOCAL_STORAGE_KEY]);
       this.bookViewer_.setRotateTimes(s.rotateTimes);
-      this.bookViewer_.setHflip(s.hflip);
-      this.bookViewer_.setVflip(s.vflip);
-      this.bookViewer_.setFitMode(s.fitMode);
+      // Obsolete settings:  hflip. vflip.
+
+      if (s.fitMode) {
+        // We used to store the key code for the mode... check for stale settings.
+        switch (s.fitMode) {
+          case Key.B: s.fitMode = FitMode.Best; break;
+          case Key.W: s.fitMode = FitMode.Width; break;
+          case Key.H: s.fitMode = FitMode.Height; break;
+        }
+        this.bookViewer_.setFitMode(s.fitMode);
+      }
+
+      if (s.numPagesInViewer) {
+        this.bookViewer_.setNumPagesInViewer(s.numPagesInViewer);
+      }
     } catch(err) {}
   }
 
@@ -239,19 +267,22 @@ class KthoomApp {
         break;
       case Key.L:
         this.bookViewer_.rotateCounterClockwise();
+        this.saveSettings_();
       break;
       case Key.R:
         this.bookViewer_.rotateClockwise();
-        break;
-      case Key.F:
-        this.bookViewer_.flip();
+        this.saveSettings_();
         break;
       case Key.W: case Key.H: case Key.B: case Key.N:
-        this.bookViewer_.setFitMode(code);
+        const fitMode =
+            code === Key.W ? FitMode.Width :
+            code === Key.H ? FitMode.Height :
+            code === Key.B ? FitMode.Best : undefined;
+        this.bookViewer_.setFitMode(fitMode);
         this.saveSettings_();
         break;
       case Key.NUM_1: case Key.NUM_2:
-        this.bookViewer_.setPagesInViewer(code - Key.NUM_1 + 1);
+        this.bookViewer_.setNumPagesInViewer(code - Key.NUM_1 + 1);
       default:
         break;
     }
@@ -269,9 +300,8 @@ class KthoomApp {
   saveSettings_() {
     localStorage[LOCAL_STORAGE_KEY] = JSON.stringify({
       rotateTimes: this.bookViewer_.getRotateTimes(),
-      hflip: this.bookViewer_.isHflip(),
-      vflip: this.bookViewer_.isVflip(),
       fitMode: this.bookViewer_.getFitMode(),
+      numPagesInViewer: this.bookViewer_.getNumPagesInViewer(),
     });
   }
 
@@ -281,7 +311,7 @@ class KthoomApp {
 
   toggleToolbar() {
     getElem('header').classList.toggle('fullscreen');
-    this.bookViewer_.updateScale();
+    this.bookViewer_.updateLayout();
   }
 
   showPrevPage() {
@@ -406,7 +436,6 @@ class KthoomApp {
 }
 
 const theApp = new KthoomApp();
-
 if (!window.kthoom.getApp) {
   window.kthoom.getApp = () => theApp;
 }
