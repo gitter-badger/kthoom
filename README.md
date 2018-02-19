@@ -26,8 +26,8 @@ You can specify a comic book to load via the ?bookUri parameter.  Some examples:
   * H/W: Scale to height/width
   * B: Best Fit mode
   * R/L: Rotate right/left
+  * 1/2: Show 1 or 2 pages side-by-side in the viewer.
   * X: Toggle progress bar visibility
-  * F: Flip one way, then the other, then restore orientation
   * ?: Bring up Help screen
 
 You can tell kthoom to open as many books as you like in the Choose Files dialog (shift-select all the books you want to open). Then navigate between books using the square bracket keys or use the Library drawer.
