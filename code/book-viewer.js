@@ -266,7 +266,13 @@ export class BookViewer {
           height: bv.height,
           ar: (bv.width / 2) / bv.height,
         };
-        const bv2 = { ...bv1, left: bv.left + (bv.width / 2) };
+        const bv2 = {
+          left: bv.left + (bv.width / 2),
+          width: bv1.width,
+          top: bv1.top,
+          height: bv1.height,
+          ar: bv1.ar,
+        };
 
         // portrait, fit-width, 2-page
         // portrait, fit-best, 1-page
@@ -318,7 +324,13 @@ export class BookViewer {
           height: (bv.height / 2),
           ar: bv.width / (bv.height / 2),
         };
-        const bv2 = { ...bv1, top: bv.top + (bv.height / 2) };
+        const bv2 = {
+          left: bv1.left,
+          width: bv1.width,
+          top: bv.top + (bv.height / 2),
+          height: bv1.height,
+          ar: bv1.ar,
+        };
 
         // landscape, fit-width, 2-page
         // landscape, fit-best, 2-page
