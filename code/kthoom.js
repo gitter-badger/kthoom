@@ -283,6 +283,7 @@ class KthoomApp {
         break;
       case Key.NUM_1: case Key.NUM_2:
         this.bookViewer_.setNumPagesInViewer(code - Key.NUM_1 + 1);
+        this.saveSettings_();
       default:
         break;
     }
