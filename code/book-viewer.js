@@ -127,12 +127,15 @@ export class BookViewer {
     }
 
     if (evt instanceof BookProgressEvent) {
+      getElem('header').classList.add('animating');
       this.setProgressMeter({label: 'Opening'});
     } else if (evt instanceof UnarchivePageExtractedEvent) {
       // Display first page if we haven't yet.
       if (evt.pageNum == 1) {
         this.updateLayout();
       }
+    } else if (evt instanceof UnarchiveCompleteEvent) {
+      getElem('header').classList.remove('animating');
     }
   }
 

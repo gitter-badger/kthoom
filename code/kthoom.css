@@ -156,6 +156,7 @@ dl.helplist dd {
   background: linear-gradient(to bottom, black 0%, black 30%, rgba(0,0,0,0) 100%);
 }
 
+#header.fullscreen.animating,
 #header.fullscreen:hover {
   opacity: 1;
 }
