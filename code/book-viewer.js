@@ -9,7 +9,7 @@
 import { Book, BookEvent, BookProgressEvent, UnarchivePageExtractedEvent,
          UnarchiveCompleteEvent } from './book.js';
 import { assert, getElem } from './helpers.js';
-import { ImagePage, TextPage } from './page.js';
+import { ImagePage, HtmlPage, TextPage } from './page.js';
 
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
 const ID_PAGE_1 = 'page1';
@@ -542,10 +542,6 @@ export class BookViewer {
       ctx.translate(-w/2, -h/2);
       ctx.drawImage(img, 0, 0);
       ctx.restore();
-    } else if (page instanceof TextPage) {
-      canvasEl.style.display = 'none';
-      textDiv.style.display = '';
-      textDiv.innerText = page.rawText;
     } else if (page instanceof HtmlPage) {
       canvasEl.style.display = 'none';
       textDiv.style.display = '';
@@ -553,6 +549,10 @@ export class BookViewer {
           '<iframe style="width:100%;height:700px;border:0" src="data:text/html,' +
           page.escapedHtml +
           '"></iframe>';
+    } else if (page instanceof TextPage) {
+      canvasEl.style.display = 'none';
+      textDiv.style.display = '';
+      textDiv.innerText = page.rawText;
     } else {
       ctx.fillText('Cannot display this type of file', 100, 200);
     }
