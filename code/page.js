@@ -52,6 +52,10 @@ export class HtmlPage extends TextPage {
 }
 
 const createURLFromArray = function(array, mimeType) {
+  if (mimeType === 'image/xml+svg') {
+    const xmlStr = new TextDecoder('utf-8').decode(array);
+    return 'data:image/svg+xml;utf8,' + xmlStr;
+  }
   const offset = array.byteOffset;
   const len = array.byteLength;
   let blob = new Blob([array], {type: mimeType}).slice(offset, offset + len, mimeType);
@@ -60,11 +64,14 @@ const createURLFromArray = function(array, mimeType) {
 
 const guessMimeType = function(filename) {
   const fileExtension = filename.split('.').pop().toLowerCase();
-  return (fileExtension === 'png') ? 'image/png' :
-      (fileExtension === 'jpg' || fileExtension === 'jpeg') ? 'image/jpeg' :
-      (fileExtension === 'gif') ? 'image/gif' :
-      (fileExtension === 'htm' || fileExtension === 'html') ? 'text/html' :
-      undefined;
+  switch (fileExtension) {
+    case 'png': return 'image/png';
+    case 'gif': return 'image/gif';
+    case 'svg': return 'image/xml+svg';
+    case 'jpg': case 'jpeg': return 'image/jpeg';
+    case 'htm': case 'html': return 'text/html';
+  }
+  return undefined;
 };
 
 /**
