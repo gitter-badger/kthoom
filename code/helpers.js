@@ -33,8 +33,9 @@ if (search && search[0] === '?') {
   for (let arg of args) {
     const kv = arg.split('=');
     if (kv.length == 2) {
-      Params[kv[0]] = (kv[1] === 'on' || kv[1] === 'true' || kv[1] === 'yes' || kv[1] === '1')
-          ? true : kv[1];
+      const key = decodeURIComponent(kv[0]);
+      const val = decodeURIComponent(kv[1]);
+      Params[key] = val;
     }
   }
 }
