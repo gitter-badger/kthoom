@@ -70,6 +70,8 @@ const guessMimeType = function(filename) {
     case 'svg': return 'image/xml+svg';
     case 'jpg': case 'jpeg': return 'image/jpeg';
     case 'htm': case 'html': return 'text/html';
+    case 'sfv': return 'text/x-sfv';
+    default: return 'text/plain';
   }
   return undefined;
 };
@@ -84,25 +86,23 @@ export const createPageFromFile = function(file) {
     const mimeType = guessMimeType(file.filename);
     const dataURI = createURLFromArray(file.fileData, mimeType);
 
-    if (mimeType) {
-      if (mimeType.indexOf('image/') === 0) {
-        const img = new Image();
-        img.onload = () => { resolve(new ImagePage(file, img)); };
-        img.onerror = (e) => { reject(e); };
-        img.src = dataURI;
-      } else if (mimeType === 'text/html') {
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', dataURI, true);
-        xhr.onload = () => { resolve(new HtmlPage(file, xhr.responseText)); };
-        xhr.onerror = (e) => { reject(e); };
-        xhr.send(null);
-      }
+    if (mimeType.indexOf('image/') === 0) {
+      const img = new Image();
+      img.onload = () => { resolve(new ImagePage(file, img)); };
+      img.onerror = (e) => { reject(e); };
+      img.src = dataURI;
+    } else if (mimeType === 'text/html') {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', dataURI, true);
+      xhr.onload = () => { resolve(new HtmlPage(file, xhr.responseText)); };
+      xhr.onerror = (e) => { reject(e); };
+      xhr.send(null);
     } else {
       // Try TextPage.
       const xhr = new XMLHttpRequest();
       xhr.open('GET', dataURI, true);
       xhr.onload = () => {
-        if (xhr.responseText.length < 10 * 1024) {
+        if (xhr.responseText.length < 1000 * 1024) {
           resolve(new TextPage(file, xhr.responseText));
         } else {
           reject('Could not create a new page from file ' + file.filename);
