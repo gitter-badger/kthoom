@@ -62,7 +62,12 @@ const createURLFromArray = function(array, mimeType) {
   return URL.createObjectURL(blob);
 };
 
-const guessMimeType = function(filename) {
+
+/**
+ * @param {string} filename
+ * @return {string|undefined} The MIME type or undefined if we could not guess it.
+ */
+function guessMimeType(filename) {
   const fileExtension = filename.split('.').pop().toLowerCase();
   switch (fileExtension) {
     case 'png': return 'image/png';
@@ -71,8 +76,14 @@ const guessMimeType = function(filename) {
     case 'jpg': case 'jpeg': return 'image/jpeg';
     case 'htm': case 'html': return 'text/html';
     case 'sfv': return 'text/x-sfv';
-    default: return 'text/plain';
+    case 'txt': return 'text/plain';
   }
+
+  // Skip over PAR files (.PAR, .P01, etc).
+  if (fileExtension === 'par' || /^p\d\d$/.test(fileExtension)) {
+    return 'application/octet-stream';
+  }
+
   return undefined;
 };
 
@@ -84,6 +95,11 @@ const guessMimeType = function(filename) {
 export const createPageFromFile = function(file) {
   return new Promise((resolve, reject) => {
     const mimeType = guessMimeType(file.filename);
+    if (!mimeType) {
+      resolve(new TextPage(file, 'Could not determine type of file "' + file.filename + '"'));
+      return;
+    }
+
     const dataURI = createURLFromArray(file.fileData, mimeType);
 
     if (mimeType.indexOf('image/') === 0) {
@@ -97,8 +113,8 @@ export const createPageFromFile = function(file) {
       xhr.onload = () => { resolve(new HtmlPage(file, xhr.responseText)); };
       xhr.onerror = (e) => { reject(e); };
       xhr.send(null);
-    } else {
-      // Try TextPage.
+    } else if (mimeType.startsWith('text/')) {
+      // TextPage.
       const xhr = new XMLHttpRequest();
       xhr.open('GET', dataURI, true);
       xhr.onload = () => {
@@ -110,6 +126,8 @@ export const createPageFromFile = function(file) {
       };
       xhr.onerror = (e) => { reject(e); };
       xhr.send(null);
+    } else if (mimeType === 'application/octet-stream') {
+      resolve(new TextPage(file, 'Could not display binary file "' + file.filename + '"'));
     }
   });
 };
