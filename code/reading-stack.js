@@ -95,9 +95,12 @@ export class ReadingStack {
     this.currentBookChangedCallbacks_.push(callback);
   }
 
-  /**
-   * @param {boolean} show
-   */
+  /** @return {boolean} show */
+  isShown() {
+    return getElem('readingStack').style.visibility === 'visible';
+  }
+
+  /** @param {boolean} show */
   show(show) {
     getElem('readingStack').style.visibility = (show ? 'visible' : 'hidden');
   }

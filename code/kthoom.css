@@ -38,7 +38,7 @@ body {
   left: 50px;
   overflow: scroll;
   padding: 25px 50px 25px 50px;
-  position: absolute;
+  position: fixed;
   right: 50px;
   top: 25px;
 }

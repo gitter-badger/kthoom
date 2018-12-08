@@ -131,7 +131,7 @@ class KthoomApp {
     // Toolbar
     getElem('prevBook').addEventListener('click', () => this.readingStack_.changeToPrevBook(), false);
     getElem('prev').addEventListener('click', () => this.showPrevPage(), false);
-    getElem('toolbarbutton').addEventListener('click', () => this.toggleToolbar(), false);
+    getElem('toolbarbutton').addEventListener('click', () => this.toggleUI(), false);
     getElem('next').addEventListener('click', () => this.showNextPage(), false);
     getElem('nextBook').addEventListener('click', () => this.readingStack_.changeToNextBook(), false);
   }
@@ -251,7 +251,7 @@ class KthoomApp {
     if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
     switch(code) {
       case Key.X:
-        this.toggleToolbar();
+        this.toggleUI();
         break;
       case Key.LEFT:
         if (canKeyPrev) this.showPrevPage();
@@ -310,8 +310,9 @@ class KthoomApp {
     this.bookViewer_.setProgressMeter({loadPct, unzipPct, label});
   }
 
-  toggleToolbar() {
+  toggleUI() {
     getElem('header').classList.toggle('fullscreen');
+    this.readingStack_.show(!this.readingStack_.isShown());
     this.bookViewer_.updateLayout();
   }
 
