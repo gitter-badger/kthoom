@@ -259,6 +259,12 @@ class KthoomApp {
       case Key.RIGHT:
         if (canKeyNext) this.showNextPage();
         break;
+      case Key.UP:
+        window.scrollBy(0, -5);
+        break;
+      case Key.DOWN:
+        window.scrollBy(0, 5);
+        break;
       case Key.LEFT_SQUARE_BRACKET:
         this.readingStack_.changeToPrevBook();
         break;
