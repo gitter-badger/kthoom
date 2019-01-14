@@ -24,12 +24,17 @@ kthoom.ipfs = {
         // Load in the IPFS script API.
         const ipfsScriptEl = document.createElement('script');
         ipfsScriptEl.addEventListener('load', () => {
-          kthoom.getApp().setProgressMeter({loadPct: 0.2, label: 'Creating IPFS node...'});
-          const node = window.Ipfs.createNode();
-          node.on('start', () => {
-            kthoom.ipfs.node_ = node;
-            resolve(node);
-          });
+          if (window.ipfs) {
+            kthoom.ipfs.node_ = window.ipfs;
+            resolve(window.ipfs);
+          } else {
+            kthoom.getApp().setProgressMeter({loadPct: 0.2, label: 'Creating IPFS node...'});
+            const node = window.Ipfs.createNode();
+            node.on('start', () => {
+              kthoom.ipfs.node_ = node;
+              resolve(node);
+            });
+          }
         });
         ipfsScriptEl.setAttribute('src', 'https://unpkg.com/ipfs@0.27.7/dist/index.js');
         document.body.appendChild(ipfsScriptEl);
