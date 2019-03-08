@@ -193,7 +193,6 @@ export class Book {
     this.unarchiver_ = bitjs.archive.GetUnarchiver(ab, 'code/bitjs/');
 
     if (!this.unarchiver_) {
-      alert('Could not determine the unarchiver to use for the file');
       throw 'Could not determine the unarchiver to use for the file'
     }
 
@@ -282,7 +281,7 @@ export class Book {
 
 /**
  * @param {File} file
- * @return {Promise<Book>}
+ * @return {Promise<Book|String>} Returns a Promise of the book, or an error.
  */
 Book.fromFile = function(file) {
   return new Promise((resolve, reject) => {
@@ -291,7 +290,13 @@ Book.fromFile = function(file) {
     const fr = new FileReader();
     fr.onload = () => {
       const ab = fr.result;
-      book.setArrayBuffer(ab, 1.0, ab.byteLength);
+      try {
+        book.setArrayBuffer(ab, 1.0, ab.byteLength);
+      } catch (err) {
+        const errMessage = err + ': ' + file.name;
+        console.error(errMessage);
+        resolve(errMessage);
+      }
       resolve(book);
     };
     fr.readAsArrayBuffer(file);

@@ -55,8 +55,17 @@ export class ReadingStack {
   addBooks(books, switchToFirst) {
     if (books.length > 0) {
       const newCurrentBook = this.books_.length;
+      let foundError = false;
       for (const book of books) {
-        this.books_.push(book);
+        // Don't add if the result is an error.
+        if (typeof book === 'string') {
+          foundError = true;
+        } else {
+          this.books_.push(book);
+        }
+      }
+      if (foundError) {
+        alert('Could not open all books. See the console for more info.');
       }
       if (switchToFirst) {
         this.changeToBook_(newCurrentBook);
@@ -149,6 +158,14 @@ export class ReadingStack {
         const book = this.books_[i];
         const bookDiv = document.createElement('div');
         bookDiv.classList.add('readingStackBook');
+        bookDiv.setAttribute('draggable', 'true');
+        bookDiv.addEventListener('dragstart', evt => {
+          evt.currentTarget.classList.add('dragging');
+        });
+        bookDiv.addEventListener('dragend', evt => {
+          debugger;
+          evt.currentTarget.classList.remove('dragging');
+        });
         if (this.currentBookNum_ == i) {
           bookDiv.classList.add('current');
         }

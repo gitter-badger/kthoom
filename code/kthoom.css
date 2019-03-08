@@ -274,6 +274,14 @@ dl.helplist dd {
   color: yellow;
 }
 
+[draggable] {
+  user-select: none;
+}
+
+.readingStackBook.dragging {
+  opacity: 0.4;
+}
+
 /* Menu styling */
 div#menu {
   display: inline-block;
