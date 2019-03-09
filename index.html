@@ -38,43 +38,13 @@
     </div>
     <div class="foreground">
       <div id="header">
-        <div id="menu" tabindex="1">
-          <a id="menu-open" class="menuButton" href="#">
-            <svg viewBox="0 0 100 100">
-              <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="30" y2="30"></line>
-              <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="50" y2="50"></line>
-              <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="70" y2="70"></line>
-            </svg>
-          </a>
-          <ul class="menuItems">
-            <li>
-              <a id="menu-open-local-files" href="#">
-                <input id="menu-open-local-files-input" type="file" multiple>
-                Open from Your Computer
-              </a>
-            </li>
-            <li>
-              <a id="menu-open-url" href="#">
-                Open from URL
-              </a>
-            </li>
-            <li>
-              <a id="menu-open-google-drive" href="#">
-                Open from Google Drive
-              </a>
-            </li>
-            <li>
-              <a id="menu-open-ipfs-hash" href="#">
-                Open from IPFS
-              </a>
-            </li>
-            <li>
-              <a id="menu-help" href="#">
-                Help (Keyboard Shortcuts)
-              </a>
-            </li>
-          </ul>
-        </div>
+        <a id="menu-open" class="menuButton" href="#">
+          <svg viewBox="0 0 100 100">
+            <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="30" y2="30"></line>
+            <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="50" y2="50"></line>
+            <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="70" y2="70"></line>
+          </svg>
+        </a>
         <div id="progress" class="hide">
           <svg id="svgprogress" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
             <defs>
@@ -122,7 +92,38 @@
         </div>
       </div> <!-- readingStack -->
     </div>
-    <div id="overlay" style="display:none">
+    <div id="menu">
+      <div id="menuOverlay"></div>
+      <ul class="menuItems">
+        <li class="menuItem current">
+          <a id="menu-open-local-files" href="#">
+            <input id="menu-open-local-files-input" type="file" multiple>
+            Open from Your Computer
+          </a>
+        </li>
+        <li class="menuItem">
+          <a id="menu-open-url" href="#">
+            Open from URL
+          </a>
+        </li>
+        <li class="menuItem">
+          <a id="menu-open-google-drive" href="#">
+            Open from Google Drive
+          </a>
+        </li>
+        <li class="menuItem">
+          <a id="menu-open-ipfs-hash" href="#">
+            Open from IPFS
+          </a>
+        </li>
+        <li class="menuItem">
+          <a id="menu-help" href="#">
+            Help (Keyboard Shortcuts)
+          </a>
+        </li>
+      </ul>
+    </div>
+    <div id="overlay">
       <section class="helpSection">
         <h2>Navigation</h2>
         <dl class="helplist">
@@ -135,11 +136,14 @@
           <dt>[ <span class="separator">/</span> ]</dt>
           <dd>Load previous / next book</dd>
 
-          <dt>X</dt>
-          <dd>Show/hide the UI (toolbars)</dd>
+          <dt>M</dt>
+          <dd>Open/close the Menu</dd>
 
           <dt>S</dt>
           <dd>Open/close the Reading stack</dd>
+
+          <dt>X</dt>
+          <dd>Show/hide the UI (toolbars)</dd>
         </dl>
       </section>
       <section class="helpSection">

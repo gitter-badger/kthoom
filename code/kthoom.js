@@ -62,12 +62,13 @@ class KthoomApp {
 
   /** @private */
   initMenu_() {
-    getElem('menu').addEventListener('click', (e) => e.currentTarget.classList.toggle('opened'));
+    getElem('menuOverlay').addEventListener('click', (e) => this.toggleMenuOpen_());
+    getElem('menu-open').addEventListener('click', (e) => this.toggleMenuOpen_());
     getElem('menu-open-local-files').addEventListener('change', (e) => this.loadLocalFiles_(e), false);
     getElem('menu-open-url').addEventListener('click', (e) => this.loadFileViaUrl_(), false);
     getElem('menu-open-google-drive').addEventListener('click', kthoom.google.doDrive, false);
     getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow, false);
-    getElem('menu-help').addEventListener('click', this.showOrHideHelp_, false);
+    getElem('menu-help').addEventListener('click', (e) => this.toggleHelpOpen_(), false);
   }
 
   /** @private */
@@ -131,7 +132,7 @@ class KthoomApp {
     // Toolbar
     getElem('prevBook').addEventListener('click', () => this.readingStack_.changeToPrevBook(), false);
     getElem('prev').addEventListener('click', () => this.showPrevPage(), false);
-    getElem('toolbarbutton').addEventListener('click', () => this.toggleUI(), false);
+    getElem('toolbarbutton').addEventListener('click', () => this.toggleUI_(), false);
     getElem('next').addEventListener('click', () => this.showNextPage(), false);
     getElem('nextBook').addEventListener('click', () => this.readingStack_.changeToNextBook(), false);
   }
@@ -163,6 +164,22 @@ class KthoomApp {
       }
       evt.preventDefault();
     }, true);
+  }
+
+  /**
+   * @return {boolean}
+   * @private
+   */
+  isHelpOpened_() {
+    return getElem('overlay').classList.contains('opened');
+  }
+
+  /**
+   * @return {boolean}
+   * @private
+   */
+  isMenuOpened_() {
+    return getElem('menu').classList.contains('opened');
   }
 
   /** @private */
@@ -223,37 +240,54 @@ class KthoomApp {
     const code = evt.keyCode;
 
     // If the overlay is shown, the only keystroke we handle is closing it.
-    const overlayShown = getElem('overlay').style.display != 'none';
-    if (overlayShown) {
-      this.showOrHideHelp_(false);
+    if (this.isHelpOpened_()) {
+      this.toggleHelpOpen_();
       return;
     }
 
+    const isMenuOpen = this.isMenuOpened_();
+
     // Handle keystrokes that do not depend on whether a book is loaded.
-    if (code == Key.O) {
-      getElem('menu-open-local-files-input').click();
-      getElem('menu').classList.remove('opened');
-    } else if (code === Key.U) {
-      this.loadFileViaUrl_();
-    } else if (code === Key.G) {
-      kthoom.google.doDrive();
-    } else if (code === Key.I) {
-      kthoom.ipfs.ipfsHashWindow();
-    } else if (code === Key.QUESTION_MARK) {
-      this.showOrHideHelp_(true);
+    switch (code) {
+      case Key.O:
+        getElem('menu-open-local-files-input').click();
+        if (isMenuOpen) {
+          this.toggleMenuOpen_();
+        }
+        break;
+      case Key.U:
+        this.loadFileViaUrl_();
+        break;
+      case Key.G:
+        kthoom.google.doDrive();
+        break;
+      case Key.I:
+        kthoom.ipfs.ipfsHashWindow();
+        break;
+      case Key.M:
+        this.toggleMenuOpen_();
+        break;
+      case Key.QUESTION_MARK:
+        this.toggleHelpOpen_();
+        break;
+      case Key.ESCAPE:
+        if (isMenuOpen) {
+          this.toggleMenuOpen_();
+        }
+        break;
     }
 
     if (getComputedStyle(getElem('progress')).display == 'none') return;
 
     const isReadingStackOpen = this.readingStack_.isShown() && this.readingStack_.isOpen();
-    let canKeyNext = !isReadingStackOpen &&
+    let canKeyNext = !isMenuOpen && !isReadingStackOpen &&
                      ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
-    let canKeyPrev = !isReadingStackOpen && (window.scrollX <= 0);
+    let canKeyPrev = !isMenuOpen && !isReadingStackOpen && (window.scrollX <= 0);
 
     if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
-    switch(code) {
+    switch (code) {
       case Key.X:
-        this.toggleUI();
+        this.toggleUI_();
         break;
       case Key.LEFT:
         if (canKeyPrev) this.showPrevPage();
@@ -262,19 +296,25 @@ class KthoomApp {
         if (canKeyNext) this.showNextPage();
         break;
       case Key.UP:
-        if (isReadingStackOpen) {
+        evt.preventDefault();
+        evt.stopPropagation();
+
+        if (isMenuOpen) {
+          // TODO: Change which menu item is selected.
+        } else if (isReadingStackOpen) {
           this.readingStack_.changeToPrevBook();
-          evt.preventDefault();
-          evt.stopPropagation();
         } else {
           window.scrollBy(0, -5);
         }
         break;
       case Key.DOWN:
-        if (isReadingStackOpen) {
+        evt.preventDefault();
+        evt.stopPropagation();
+
+        if (isMenuOpen) {
+          // TODO: Change which menu item is selected.
+        } else if (isReadingStackOpen) {
           this.readingStack_.changeToNextBook();
-          evt.preventDefault();
-          evt.stopPropagation();
         } else {
           window.scrollBy(0, 5);
         }
@@ -305,7 +345,9 @@ class KthoomApp {
         this.bookViewer_.setNumPagesInViewer(code - Key.NUM_1 + 1);
         this.saveSettings_();
       case Key.S:
-        this.readingStack_.toggleReadingStackOpen();
+        if (!isMenuOpen) {
+          this.readingStack_.toggleReadingStackOpen();
+        }
         break;
       case Key.ESCAPE:
         if (isReadingStackOpen) {
@@ -315,14 +357,6 @@ class KthoomApp {
       default:
         break;
     }
-  }
-
-  /**
-   * @param {boolean} show Whether to show help.  Defaults to true.
-   * @private
-   */
-  showOrHideHelp_(show = true) {
-    getElem('overlay').style.display = show ? 'block' : 'none';
   }
 
   /** @private */
@@ -338,7 +372,18 @@ class KthoomApp {
     this.bookViewer_.setProgressMeter({loadPct, unzipPct, label});
   }
 
-  toggleUI() {
+  /** @private */
+  toggleHelpOpen_() {
+    getElem('overlay').classList.toggle('opened');
+  }
+
+  /** @private */
+  toggleMenuOpen_() {
+    getElem('menu').classList.toggle('opened');
+  }
+
+  /** @private */
+  toggleUI_() {
     getElem('header').classList.toggle('fullscreen');
     this.readingStack_.show(!this.readingStack_.isShown());
     this.bookViewer_.updateLayout();
