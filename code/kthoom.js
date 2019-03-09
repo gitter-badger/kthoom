@@ -350,27 +350,42 @@ class KthoomApp {
    */
   loadLocalFiles_(evt) {
     const filelist = evt.target.files;
+    if (filelist.length <= 0) {
+      return;
+    }
 
-    // Add the first book immediately so it unarchives asap.
-    if (filelist.length >= 1) {
-      Book.fromFile(filelist[0]).then(book => {
-        this.readingStack_.addBook(book);
-        this.readingStack_.show(true);
+    const books = [];
+    let openedFirstBook = false;
+    let foundError = false;
+    let bookPromiseChain = Promise.resolve(true);
+    for (let fileNum = 0; fileNum < filelist.length; ++fileNum) {
+      bookPromiseChain = bookPromiseChain.then(() => {
+        return Book.fromFile(filelist[fileNum]).then(book => {
+          // Add the first book immediately so it unarchives asap.
+          if (!openedFirstBook) {
+            openedFirstBook = true;
+            this.readingStack_.addBook(book);
+            this.readingStack_.show(true);
+          } else {
+            books.push(book);
+          }
+        }).catch(() => {
+          foundError = true;
+        }).finally(() => {
+          // Ensures the chain keeps having results.
+          return true;
+        });
       });
     }
 
-    if (filelist.length > 1) {
-      const bookPromises = [];
-      for (let fileNum = 1; fileNum < filelist.length; ++fileNum) {
-        bookPromises.push(Book.fromFile(filelist[fileNum]));
+    bookPromiseChain.then(() => {
+      if (books.length > 0) {
+        this.readingStack_.addBooks(books, false /* switchToFirst */);
       }
-
-      Promise.all(bookPromises).then(books => {
-        if (books.length > 0) {
-          this.readingStack_.addBooks(books, false /* switchToFirst */);
-        }
-      });
-    }
+      if (foundError) {
+        alert('Could not open all books. See the console for more info.');
+      }
+    });
   }
 
   /**

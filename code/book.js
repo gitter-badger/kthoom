@@ -295,7 +295,7 @@ Book.fromFile = function(file) {
       } catch (err) {
         const errMessage = err + ': ' + file.name;
         console.error(errMessage);
-        resolve(errMessage);
+        reject(errMessage);
       }
       resolve(book);
     };
