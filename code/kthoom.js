@@ -245,8 +245,10 @@ class KthoomApp {
 
     if (getComputedStyle(getElem('progress')).display == 'none') return;
 
-    let canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
-    let canKeyPrev = (window.scrollX <= 0);
+    const isReadingStackOpen = this.readingStack_.isShown() && this.readingStack_.isOpen();
+    let canKeyNext = !isReadingStackOpen &&
+                     ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
+    let canKeyPrev = !isReadingStackOpen && (window.scrollX <= 0);
 
     if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
     switch(code) {
@@ -260,10 +262,22 @@ class KthoomApp {
         if (canKeyNext) this.showNextPage();
         break;
       case Key.UP:
-        window.scrollBy(0, -5);
+        if (isReadingStackOpen) {
+          this.readingStack_.changeToPrevBook();
+          evt.preventDefault();
+          evt.stopPropagation();
+        } else {
+          window.scrollBy(0, -5);
+        }
         break;
       case Key.DOWN:
-        window.scrollBy(0, 5);
+        if (isReadingStackOpen) {
+          this.readingStack_.changeToNextBook();
+          evt.preventDefault();
+          evt.stopPropagation();
+        } else {
+          window.scrollBy(0, 5);
+        }
         break;
       case Key.LEFT_SQUARE_BRACKET:
         this.readingStack_.changeToPrevBook();
@@ -290,6 +304,14 @@ class KthoomApp {
       case Key.NUM_1: case Key.NUM_2:
         this.bookViewer_.setNumPagesInViewer(code - Key.NUM_1 + 1);
         this.saveSettings_();
+      case Key.S:
+        this.readingStack_.toggleReadingStackOpen();
+        break;
+      case Key.ESCAPE:
+        if (isReadingStackOpen) {
+          this.readingStack_.toggleReadingStackOpen();
+        }
+        break;
       default:
         break;
     }

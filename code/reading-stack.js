@@ -23,7 +23,7 @@ export class ReadingStack {
     this.currentBookChangedCallbacks_ = [];
 
     getElem('readingStackTab')
-        .addEventListener('click', () => this.toggleReadingStackOpen_(), false);
+        .addEventListener('click', () => this.toggleReadingStackOpen(), false);
   }
 
   getNumberOfBooks() { return this.books_.length; }
@@ -95,7 +95,15 @@ export class ReadingStack {
     this.currentBookChangedCallbacks_.push(callback);
   }
 
-  /** @return {boolean} show */
+  /** @return {boolean} */
+  isOpen() {
+    return getElem('readingStack').classList.contains('opened');
+  }
+
+  /**
+   * Whether the reading stack is shown (if any books are loaded).
+   * @return {boolean}
+   */
   isShown() {
     return getElem('readingStack').style.visibility === 'visible';
   }
@@ -133,8 +141,7 @@ export class ReadingStack {
     }
   }
 
-  /** @private */
-  toggleReadingStackOpen_() {
+  toggleReadingStackOpen() {
     getElem('readingStack').classList.toggle('opened');
   }
 
