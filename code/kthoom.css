@@ -29,7 +29,7 @@ body {
   display: none;
 }
 
-#overlay {
+#helpOverlay {
   background-color: rgba(50, 50, 50, 0.95);
   border-radius: 1em;
   bottom: 25px;
@@ -44,7 +44,7 @@ body {
   top: 25px;
 }
 
-#overlay.opened {
+#helpOverlay.opened {
   display: block;
 }
 

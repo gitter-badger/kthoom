@@ -171,7 +171,7 @@ class KthoomApp {
    * @private
    */
   isHelpOpened_() {
-    return getElem('overlay').classList.contains('opened');
+    return getElem('helpOverlay').classList.contains('opened');
   }
 
   /**
@@ -374,7 +374,7 @@ class KthoomApp {
 
   /** @private */
   toggleHelpOpen_() {
-    getElem('overlay').classList.toggle('opened');
+    getElem('helpOverlay').classList.toggle('opened');
   }
 
   /** @private */
