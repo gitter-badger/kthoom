@@ -30,6 +30,12 @@ class KthoomApp {
 
     this.currentBook_ = null;
 
+    /**
+     * The currently selected menu item.
+     * @private {!Number}
+     */
+    this.currentlySelectedMenuItemNum_ = 0;
+
     // This Promise resolves when kthoom is ready.
     this.initializedPromise_ = new Promise((resolve, reject) => {
       // This Promise resolves when the DOM is ready.
@@ -275,6 +281,35 @@ class KthoomApp {
           this.toggleMenuOpen_();
         }
         break;
+      case Key.UP:
+        if (isMenuOpen) {
+          evt.preventDefault();
+          evt.stopPropagation();
+          this.selectMenuItem(-1);
+          return;
+        }
+        break;
+      case Key.DOWN:
+        if (isMenuOpen) {
+          evt.preventDefault();
+          evt.stopPropagation();
+          this.selectMenuItem(1);
+          return;
+        }
+        break;
+      case Key.ENTER:
+        if (isMenuOpen) {
+          const items = getElem('menuItems').querySelectorAll('.menuItem');
+          const menuItemTarget = items.item(this.currentlySelectedMenuItemNum_).firstElementChild;
+          if (menuItemTarget.id === 'menu-open-local-files') {
+            getElem('menu-open-local-files-input').click();
+          } else {
+            menuItemTarget.click();
+          }
+          this.toggleMenuOpen_();
+          return;
+        }
+        break;
     }
 
     if (getComputedStyle(getElem('progress')).display == 'none') return;
@@ -299,9 +334,7 @@ class KthoomApp {
         evt.preventDefault();
         evt.stopPropagation();
 
-        if (isMenuOpen) {
-          // TODO: Change which menu item is selected.
-        } else if (isReadingStackOpen) {
+        if (isReadingStackOpen) {
           this.readingStack_.changeToPrevBook();
         } else {
           window.scrollBy(0, -5);
@@ -311,9 +344,7 @@ class KthoomApp {
         evt.preventDefault();
         evt.stopPropagation();
 
-        if (isMenuOpen) {
-          // TODO: Change which menu item is selected.
-        } else if (isReadingStackOpen) {
+        if (isReadingStackOpen) {
           this.readingStack_.changeToNextBook();
         } else {
           window.scrollBy(0, 5);
@@ -366,6 +397,22 @@ class KthoomApp {
       fitMode: this.bookViewer_.getFitMode(),
       numPagesInViewer: this.bookViewer_.getNumPagesInViewer(),
     });
+  }
+
+  /** @private {Number} delta Can be negative (up) or positive (down) */
+  selectMenuItem(delta = 1) {
+    const items = getElem('menuItems').querySelectorAll('.menuItem');
+    items.item(this.currentlySelectedMenuItemNum_).classList.remove('current');
+
+    this.currentlySelectedMenuItemNum_ += delta;
+    while (this.currentlySelectedMenuItemNum_ >= items.length) {
+      this.currentlySelectedMenuItemNum_ -= items.length;
+    }
+    while (this.currentlySelectedMenuItemNum_ < 0){
+      this.currentlySelectedMenuItemNum_ += items.length;
+    }
+
+    items.item(this.currentlySelectedMenuItemNum_).classList.add('current');
   }
 
   setProgressMeter({loadPct = 0, unzipPct = 0, label = ''} = {}) {

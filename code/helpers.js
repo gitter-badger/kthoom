@@ -7,6 +7,7 @@
  */
 
 export const Key = {
+  ENTER: 13,
   ESCAPE: 27,
   LEFT: 37,
   UP: 38,
