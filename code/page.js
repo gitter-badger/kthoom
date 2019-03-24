@@ -54,7 +54,7 @@ export class HtmlPage extends TextPage {
 const createURLFromArray = function(array, mimeType) {
   if (mimeType === 'image/xml+svg') {
     const xmlStr = new TextDecoder('utf-8').decode(array);
-    return 'data:image/svg+xml;utf8,' + xmlStr;
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(xmlStr);
   }
   const offset = array.byteOffset;
   const len = array.byteLength;
