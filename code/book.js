@@ -231,7 +231,26 @@ export class Book {
         console.log(`  using ${this.unarchiver_.getScriptFileName()}`);
         console.log(`  unarchiving done in ${diff}s`);
 
-        Promise.all(this.pagePromises_).then(pages => {
+        const pages = [];
+        let foundError = false;
+        let pagePromiseChain = Promise.resolve(true);
+        for (let pageNum = 0; pageNum < this.pagePromises_.length; ++pageNum) {
+          pagePromiseChain = pagePromiseChain.then(() => {
+            return this.pagePromises_[pageNum]
+                .then(page => pages.push(page))
+                .catch(e => foundError = true)
+                .finally(() => true);
+          });
+        }
+
+        pagePromiseChain.then(() => {
+          // Update the total pages for only those pages that were valid.
+          this.totalPages_ = pages.length;
+
+          if (foundError) {
+            alert('Some pages had errors. See the console for more info.')
+          }
+
           // Sort the book's pages based on filename.
           this.pages_ = pages.slice(0).sort((a,b) => {
             return a.filename.toLowerCase() > b.filename.toLowerCase() ? 1 : -1;

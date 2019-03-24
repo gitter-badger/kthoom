@@ -105,7 +105,7 @@ export const createPageFromFile = function(file) {
     if (mimeType.indexOf('image/') === 0) {
       const img = new Image();
       img.onload = () => { resolve(new ImagePage(file, img)); };
-      img.onerror = (e) => { reject(e); };
+      img.onerror = (e) => { resolve(new TextPage(file, `Could not open file ${file.filename}`)); };
       img.src = dataURI;
     } else if (mimeType === 'text/html') {
       const xhr = new XMLHttpRequest();
