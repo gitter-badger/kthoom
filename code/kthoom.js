@@ -57,6 +57,7 @@ class KthoomApp {
     this.initClickHandlers_();
     this.initResizeHandler_();
     this.initWheelScroll_();
+    this.initUnloadHandler_();
 
     document.addEventListener('keydown', (e) => this.keyHandler_(e), false);
 
@@ -151,6 +152,18 @@ class KthoomApp {
       getElem('header').className = f ? 'fullscreen' : '';
       this.bookViewer_.updateLayout();
     }, false);
+  }
+
+  /** @private */
+  initUnloadHandler_() {
+    window.addEventListener('beforeunload', (event) => {
+      if (this.readingStack_.getNumberOfBooks() > 0) {
+        // Cancel the event as stated by the standard.
+        event.preventDefault();
+        // Chrome requires returnValue to be set.
+        event.returnValue = '';
+      }
+    });
   }
 
   /** @private */
@@ -375,6 +388,7 @@ class KthoomApp {
       case Key.NUM_1: case Key.NUM_2:
         this.bookViewer_.setNumPagesInViewer(code - Key.NUM_1 + 1);
         this.saveSettings_();
+        break;
       case Key.S:
         if (!isMenuOpen) {
           this.readingStack_.toggleReadingStackOpen();
