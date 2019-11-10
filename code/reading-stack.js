@@ -156,14 +156,6 @@ export class ReadingStack {
         const book = this.books_[i];
         const bookDiv = document.createElement('div');
         bookDiv.classList.add('readingStackBook');
-        bookDiv.setAttribute('draggable', 'true');
-        bookDiv.addEventListener('dragstart', evt => {
-          evt.currentTarget.classList.add('dragging');
-        });
-        bookDiv.addEventListener('dragend', evt => {
-          debugger;
-          evt.currentTarget.classList.remove('dragging');
-        });
         if (this.currentBookNum_ == i) {
           bookDiv.classList.add('current');
         }
@@ -173,6 +165,53 @@ export class ReadingStack {
               book.getName() +
             '</div>' +
             '<div class="readingStackBookCloseButton" title="Remove book from stack">x</div>';
+
+        // Handle drag-drop of books.
+        bookDiv.setAttribute('draggable', 'true');
+        bookDiv.addEventListener('dragstart', evt => {
+          evt.stopPropagation();
+          const thisBookDiv = evt.target;
+          thisBookDiv.classList.add('dragging');
+          evt.dataTransfer.effectAllowed = 'move';
+          evt.dataTransfer.setData('text/plain', thisBookDiv.dataset.index);
+        });
+        bookDiv.addEventListener('dragend', evt => {
+          evt.stopPropagation();
+          evt.target.classList.remove('dragging');
+        });
+        bookDiv.addEventListener('dragenter', evt => {
+          evt.stopPropagation();
+          console.log('dragenter');
+          console.dir(evt.target);
+          evt.target.classList.add('dropTarget');
+        });
+        bookDiv.addEventListener('dragleave', evt => {
+          evt.stopPropagation();
+          console.log('dragleave');
+          console.dir(evt.target);
+          evt.target.classList.remove('dropTarget');
+        });
+        bookDiv.addEventListener('dragover', evt => {
+          evt.stopPropagation();
+          evt.preventDefault();
+        });
+        bookDiv.addEventListener('drop', evt => {
+          evt.stopPropagation();
+
+          const dropBookDiv = evt.target;
+          const fromIndex = parseInt(evt.dataTransfer.getData('text/plain'), 10);
+          const toIndex = parseInt(dropBookDiv.dataset.index, 10);
+
+          if (fromIndex !== toIndex) {
+            const draggedBook = this.books_[fromIndex];
+            const currentBook = this.books_[this.currentBookNum_];
+            this.books_.splice(fromIndex, 1);
+            this.books_.splice(toIndex, 0, draggedBook);
+            this.currentBookNum_ = this.books_.indexOf(currentBook);
+            this.renderStack_();
+          }
+        });
+
         bookDiv.addEventListener('click', (evt) => {
           const i = parseInt(evt.currentTarget.dataset.index, 10);
           if (evt.target.classList.contains('readingStackBookCloseButton')) {

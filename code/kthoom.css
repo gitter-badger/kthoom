@@ -316,6 +316,7 @@ ul.menuItems {
   float: left;
   max-width: 280px;
   overflow: hidden;
+  pointer-events: none;
   text-overflow: ellipsis;
 }
 
@@ -355,4 +356,8 @@ ul.menuItems {
 
 .readingStackBook.dragging {
   opacity: 0.4;
+}
+
+.dropTarget {
+  border-top: solid 2px yellow;
 }
