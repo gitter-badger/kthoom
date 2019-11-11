@@ -75,6 +75,7 @@ class KthoomApp {
     getElem('menu-open-url').addEventListener('click', (e) => this.loadFileViaUrl_(), false);
     getElem('menu-open-google-drive').addEventListener('click', kthoom.google.doDrive, false);
     getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow, false);
+    getElem('menu-close-all').addEventListener('click', (e) => this.closeAll_());
     getElem('menu-help').addEventListener('click', (e) => this.toggleHelpOpen_(), false);
   }
 
@@ -529,6 +530,25 @@ class KthoomApp {
   }
 
   /**
+   * Closes all open files.
+   */
+  closeAll_() {
+    if (this.isMenuOpened_()) {
+      this.toggleMenuOpen_();
+    }
+
+    if (this.readingStack_.getNumberOfBooks() > 0) {
+      this.readingStack_.removeAll();
+      this.readingStack_.show(false);
+
+      this.bookViewer_.closeBook();
+      this.currentBook_ = null;
+      getElem('logo').setAttribute('style', '');
+      getElem('menu-close-all').parentElement.setAttribute('style', 'display:none');
+    }
+  }
+
+  /**
    * @param {string} name The book name.
    * @param {XMLHttpRequest} xhr XHR ready with the method, url and header.
    * @param {number} expectedSize Unarchived size in bytes.  If -1, then the
@@ -583,6 +603,8 @@ class KthoomApp {
       this.currentBook_ = book;
       this.bookViewer_.setCurrentBook(book);
     }
+    // Show the Close All menu item.
+    getElem('menu-close-all').parentElement.setAttribute('style', '');
   }
 }
 

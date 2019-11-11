@@ -65,6 +65,16 @@ export class ReadingStack {
     }
   }
 
+  /**
+   * Removes all books, resets the internal state, and re-renders.
+   * Does not remove the current book change callback.
+   */
+  removeAll() {
+    this.books_ = [];
+    this.currentBookNum_ = -1;
+    this.renderStack_();
+  }
+
   /** @param {number} i */
   removeBook(i) {
     // Cannot remove the very last book.
@@ -181,14 +191,10 @@ export class ReadingStack {
         });
         bookDiv.addEventListener('dragenter', evt => {
           evt.stopPropagation();
-          console.log('dragenter');
-          console.dir(evt.target);
           evt.target.classList.add('dropTarget');
         });
         bookDiv.addEventListener('dragleave', evt => {
           evt.stopPropagation();
-          console.log('dragleave');
-          console.dir(evt.target);
           evt.target.classList.remove('dropTarget');
         });
         bookDiv.addEventListener('dragover', evt => {

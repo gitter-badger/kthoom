@@ -14,8 +14,6 @@ import { ImagePage, HtmlPage, TextPage } from './page.js';
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
 const ID_PAGE_1 = 'page1';
 const ID_PAGE_2 = 'page2';
-const FIRST_IMAGE = 'firstImage';
-const SECOND_IMAGE = 'secondImage';
 const SWIPE_THRESHOLD = 50;
 
 export const FitMode = {
@@ -186,14 +184,11 @@ export class BookViewer {
   /**
    * Updates the layout based on window size, scale mode, fit mode and page mode
    * and then sets the page contents based on the current page of the current book.
+   * If there is no current book, we clear the contents of all the canvas elements.
    */
   updateLayout() {
-    if (!this.currentBook_) {
-      console.log('updateLayout() before currentBook_');
-      return;
-    }
-    if (this.currentPageNum_ === -1) {
-      console.log('updateLayout() before currentPageNum_');
+    if (!this.currentBook_ || this.currentPageNum_ === -1) {
+      this.clearPageContents_();
       return;
     }
 
@@ -406,11 +401,14 @@ export class BookViewer {
     }
   }
 
-  /** @private */
+  /**
+   * Close the current book.
+   */
   closeBook() {
     if (this.currentBook_) {
       this.currentBook_.unsubscribe(this);
       this.currentBook_ = null;
+      this.currentPageNum_ = -1;
     }
 
     this.lastCompletion_ = 0;
@@ -503,6 +501,20 @@ export class BookViewer {
     if (loadingPct > 0 || unzippingPct > 0) {
       getElem('nav').classList.remove('hide');
       getElem('progress').classList.remove('hide');
+    }
+  }
+
+  /**
+   * Wipes out the contents of all canvas elements.
+   */
+  clearPageContents_() {
+    const pageIds = [ID_PAGE_1, ID_PAGE_2];
+    for (const pageId of pageIds) {
+      const canvasEls = getElem(pageId).querySelectorAll('canvas');
+      for (let i = 0; i < canvasEls.length; ++i) {
+        const canvas = canvasEls.item(i);
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+      }
     }
   }
 
