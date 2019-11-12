@@ -477,7 +477,7 @@ class KthoomApp {
    * Attempts to read the files that the user has chosen.
    * @private
    */
-  loadLocalFiles_(evt) {
+  async loadLocalFiles_(evt) {
     const filelist = evt.target.files;
     if (filelist.length <= 0) {
       return;
@@ -486,28 +486,51 @@ class KthoomApp {
     const books = [];
     let openedFirstBook = false;
     let foundError = false;
-    let bookPromiseChain = Promise.resolve(true);
-    for (let fileNum = 0; fileNum < filelist.length; ++fileNum) {
-      bookPromiseChain = bookPromiseChain.then(() => {
-        return Book.fromFile(filelist[fileNum]).then(book => {
-          // Add the first book immediately so it unarchives asap.
-          if (!openedFirstBook) {
-            openedFirstBook = true;
-            this.readingStack_.addBook(book);
-            this.readingStack_.show(true);
-          } else {
-            books.push(book);
-          }
-        }).catch(() => {
-          foundError = true;
-        }).finally(() => {
-          // Ensures the chain keeps having results.
-          return true;
-        });
+
+    let promiseChain = Promise.resolve(true);
+    const receiveBookPromiseFn = (bookPromise) => {
+      return bookPromise.then(book => {
+        // Add the first book immediately so it unarchives asap.
+        if (!openedFirstBook) {
+          openedFirstBook = true;
+          this.readingStack_.addBook(book);
+          this.readingStack_.show(true);
+        } else {
+          books.push(book);
+        }
+      })
+      .catch(() => foundError = true)
+      .finally(() => {
+        // Ensures the chain keeps having results.
+        return true;
       });
+    };
+
+    for (let fileNum = 0; fileNum < filelist.length; ++fileNum) {
+      // First, try to load the file as a JSON Reading List.
+      if (filelist[fileNum].name.toLowerCase().endsWith('.jrl')) {
+        try {
+          const readingList = await this.loadBooksFromJSON_(filelist[fileNum]);
+          if (readingList) {
+            for (const item of readingList) {
+              promiseChain = promiseChain.then(() => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', item.uri, true);
+                // Use the name or the filename.
+                const bookName = item.name || item.uri.split('/').pop();
+                receiveBookPromiseFn(Book.fromXhr(bookName, xhr, -1));
+              });
+            }
+            continue;
+          }
+        } catch {}
+      }
+
+      // Else, assume the file is a single book and try to load it.
+      promiseChain = promiseChain.then(() => receiveBookPromiseFn(Book.fromFile(filelist[fileNum])));
     }
 
-    bookPromiseChain.then(() => {
+    promiseChain.then(() => {
       if (books.length > 0) {
         this.readingStack_.addBooks(books, false /* switchToFirst */);
       }
@@ -586,6 +609,46 @@ class KthoomApp {
     Book.fromArrayBuffer(name, ab).then(book => {
       this.readingStack_.show(true);
       this.readingStack_.addBook(book);
+    });
+  }
+
+  /**
+   * @param {string} jsonFile File containing a JSON Reading List that matches this minimum format:
+   * {
+   *   "items": [
+   *     {"uri": "http://foo/bar"},
+   *     ...
+   *   ]
+   * }
+   * Each item may contain a name string field as well.
+   * @return {Promise<Array<Object>>} Returns a Promise that will resolve with an array of item
+   *     objects (see format above), or rejects with a null result.
+   * @private
+   */
+  loadBooksFromJSON_(jsonFile) {
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => {
+        try {
+          const jsonContents = JSON.parse(fr.result);
+          if (!jsonContents.items || !Array.isArray(jsonContents.items) ||
+              jsonContents.items.length === 0) {
+            reject(null);
+          } else {
+            for (const item of jsonContents.items) {
+              // Each item object must at least have a uri string field.
+              if (!(item instanceof Object) || !item.uri || !(typeof item.uri === 'string')) {
+                reject(null);
+              }
+            }
+            resolve(jsonContents.items);
+          }
+        } catch (err) {
+          reject(null);
+        }
+      };
+      fr.onerror = () => reject(null);
+      fr.readAsText(jsonFile);
     });
   }
 

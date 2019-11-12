@@ -18,6 +18,7 @@ import { getElem } from './helpers.js';
  */
 export class ReadingStack {
   constructor() {
+    /** @typeof {Array<Book>} */
     this.books_ = [];
     this.currentBookNum_ = -1;
     this.currentBookChangedCallbacks_ = [];
