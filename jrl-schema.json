@@ -1,0 +1,25 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "items": {
+        "description": "The list of items in the reading list.",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "uri": {
+              "description": "The URI of the item in the reading list.",
+              "type": "string"
+            },
+            "name": {
+              "description": "An optional readable name for the item in the reading list.",
+              "type": "string"
+            }
+          },
+          "required": ["uri"]
+        }
+      }
+    },
+    "required": ["items"]
+}
