@@ -203,8 +203,7 @@ class KthoomApp {
   }
 
   /** @private */
-  parseParams_() {
-    // We prefer URL parameters over hashes on the URL.
+  async parseParams_() {
     const bookUri = Params['bookUri'];
     if (bookUri) {
       // See https://gist.github.com/lgierth/4b2969583b3c86081a907ef5bd682137 for the
@@ -221,12 +220,27 @@ class KthoomApp {
         this.loadSingleBookFromXHR(bookUri /* name */, bookUri /* url */, -1);
       }
     } else {
-      // TODO: Eventually get rid of this and just rely on the bookUri param.
+      // TODO: Eventually get rid of this and just rely on the query params.
       const hashcontent = window.location.hash.substr(1);
       if (hashcontent.lastIndexOf('ipfs', 0) === 0) {
-        console.error('Do not use the ipfs hash anymore, use the bookUri query parameter!')
+        alert('Do not use the ipfs hash anymore, use the bookUri query parameter!')
         const ipfshash = hashcontent.substr(4);
         kthoom.ipfs.loadHash(ipfshash);
+      }
+    }
+
+    const readingListUri = Params['readingListUri'];
+    if (readingListUri) {
+      try {
+        const readingList = await this.tryLoadingReadingListFromUrl_(readingListUri);
+        if (readingList) {
+          this.loadBooksFromPromises_(readingList.map(item => {
+            return Book.fromXhr(this.getNameForBook_(item), item.uri, -1);
+          }));
+          return;
+        }
+      } catch (err) {
+        console.error(err);
       }
     }
   }
@@ -436,6 +450,7 @@ class KthoomApp {
 
   /**
    * Attempts to load a ReadingList from a given URL.
+   * TODO: Move this to a separate module for processing JSON Reading Lists?
    * @param {string} url The URL of the file.
    * @returns {Promise<Array<Object>} A Promise that returns with the list of books or rejects
    *     with an error string.
@@ -496,6 +511,16 @@ class KthoomApp {
   }
 
   /**
+   * Finds a more readable display name for a book from a JSON Reading List.
+   * TODO: Move this to a separate module for processing JSON Reading Lists?
+   * @param {Object} item An item object from the JSON Reading List format.
+   * @return {string}
+   */
+  getNameForBook_(item) {
+    return item.name || item.uri.split('/').pop().split('.').slice(0, -1).join('.') || item.uri;
+  }
+
+  /**
    * Loads books into the reading stack, in serial.
    * @param {Array<Promise<Book>} bookPromises A list of promises, each of which will resolve to a
    *     book or error.
@@ -545,9 +570,7 @@ class KthoomApp {
           const readingList = await this.loadReadingList_(filelist[fileNum]);
           if (readingList) {
             this.loadBooksFromPromises_(readingList.map(item => {
-              // Use the name or the filename.
-              const bookName = item.name || item.uri.split('/').pop();
-              return Book.fromXhr(bookName, item.uri, -1);
+              return Book.fromXhr(this.getNameForBook_(item), item.uri, -1);
             }));
             continue;
           }
@@ -570,9 +593,7 @@ class KthoomApp {
           const readingList = await this.tryLoadingReadingListFromUrl_(bookUrl);
           if (readingList) {
             this.loadBooksFromPromises_(readingList.map(item => {
-              // Use the name or the filename.
-              const bookName = item.name || item.uri.split('/').pop();
-              return Book.fromXhr(bookName, item.uri, -1);
+              return Book.fromXhr(this.getNameForBook_(item), item.uri, -1);
             }));
             return;
           }
@@ -656,6 +677,7 @@ class KthoomApp {
    *   ]
    * }
    * Each item may also contain an optional name field.  See jrl-schema.json for the full schema.
+   * TODO: Move this to a separate module for processing JSON Reading Lists?
    * @param {Blob} jsonBlob The JSON blob.
    * @return {Promise<Array<Object>>} Returns a Promise that will resolve with an array of item
    *     objects (see format above), or rejects with an error string.
