@@ -8,16 +8,22 @@
         "items": {
           "type": "object",
           "properties": {
+            "type": {
+              "description": "The type of the item in the reading list.  Only 'book' is supported",
+              "type": "string",
+              "pattern": "book"
+            },
             "uri": {
-              "description": "The URI of the item in the reading list.",
-              "type": "string"
+              "description": "The absolute or relative URI of the item in the reading list.",
+              "type": "string",
+              "format": "uri-reference"
             },
             "name": {
               "description": "An optional readable name for the item in the reading list.",
               "type": "string"
             }
           },
-          "required": ["uri"]
+          "required": ["type", "uri"]
         }
       }
     },

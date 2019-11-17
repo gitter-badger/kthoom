@@ -216,6 +216,7 @@ class KthoomApp {
         kthoom.ipfs.loadHash(bookUri.substr(11));
       } else {
         // Else, we assume it is a URL that XHR can handle.
+        // TODO: Support loading a reading list file here.
         // TODO: Try fetch first?
         this.loadSingleBookFromXHR(bookUri /* name */, bookUri /* url */, -1);
       }
@@ -223,6 +224,7 @@ class KthoomApp {
       // TODO: Eventually get rid of this and just rely on the bookUri param.
       const hashcontent = window.location.hash.substr(1);
       if (hashcontent.lastIndexOf('ipfs', 0) === 0) {
+        console.error('Do not use the ipfs hash anymore, use the bookUri query parameter!')
         const ipfshash = hashcontent.substr(4);
         kthoom.ipfs.loadHash(ipfshash);
       }
@@ -432,6 +434,28 @@ class KthoomApp {
     this.bookViewer_.setProgressMeter({loadPct, unzipPct, label});
   }
 
+  /**
+   * Attempts to load a ReadingList from a given URL.
+   * @param {string} url The URL of the file.
+   * @returns {Promise<Array<Object>} A Promise that returns with the list of books or rejects
+   *     with an error string.
+   */
+  tryLoadingReadingListFromUrl_(url) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.responseType = 'blob';
+      xhr.onload = (evt) => {
+        resolve(this.loadReadingList_(evt.target.response));
+      };
+      xhr.onerror = (err) => {
+        console.error(err);
+        reject(err);
+      }
+      xhr.send(null);
+    });
+  }
+
   /** @private */
   toggleHelpOpen_() {
     getElem('helpOverlay').classList.toggle('opened');
@@ -472,6 +496,39 @@ class KthoomApp {
   }
 
   /**
+   * Loads books into the reading stack, in serial.
+   * @param {Array<Promise<Book>} bookPromises A list of promises, each of which will resolve to a
+   *     book or error.
+   */
+  async loadBooksFromPromises_(bookPromises) {
+    const books = [];
+    let openedFirstBook = false;
+    let foundError = false;
+    for (const bookPromise of bookPromises) {
+      try {
+        const book = await bookPromise;
+        // Add the first book immediately so it unarchives and displays asap.
+        if (!openedFirstBook) {
+          openedFirstBook = true;
+          this.readingStack_.addBook(book);
+          this.readingStack_.show(true);
+        } else {
+          books.push(book);
+        }
+      } catch (err) {
+        foundError = true;
+      }
+    }
+
+    if (books.length > 0) {
+      this.readingStack_.addBooks(books, false /* switchToFirst */);
+    }
+    if (foundError) {
+      alert('Could not open all books. See the console for more info.');
+    }
+  }
+
+  /**
    * Attempts to read the files that the user has chosen.
    * @private
    */
@@ -481,67 +538,49 @@ class KthoomApp {
       return;
     }
 
-    const books = [];
-    let openedFirstBook = false;
-    let foundError = false;
-
-    let promiseChain = Promise.resolve(true);
-    const receiveBookPromiseFn = (bookPromise) => {
-      return bookPromise.then(book => {
-        // Add the first book immediately so it unarchives asap.
-        if (!openedFirstBook) {
-          openedFirstBook = true;
-          this.readingStack_.addBook(book);
-          this.readingStack_.show(true);
-        } else {
-          books.push(book);
-        }
-      })
-      .catch(() => foundError = true)
-      .finally(() => {
-        // Ensures the chain keeps having results.
-        return true;
-      });
-    };
-
     for (let fileNum = 0; fileNum < filelist.length; ++fileNum) {
       // First, try to load the file as a JSON Reading List.
       if (filelist[fileNum].name.toLowerCase().endsWith('.jrl')) {
         try {
-          const readingList = await this.loadBooksFromJSON_(filelist[fileNum]);
+          const readingList = await this.loadReadingList_(filelist[fileNum]);
           if (readingList) {
-            for (const item of readingList) {
-              promiseChain = promiseChain.then(() => {
-                // Use the name or the filename.
-                const bookName = item.name || item.uri.split('/').pop();
-                receiveBookPromiseFn(Book.fromXhr(bookName, item.uri, -1));
-              });
-            }
+            this.loadBooksFromPromises_(readingList.map(item => {
+              // Use the name or the filename.
+              const bookName = item.name || item.uri.split('/').pop();
+              return Book.fromXhr(bookName, item.uri, -1);
+            }));
             continue;
           }
         } catch {}
       }
 
       // Else, assume the file is a single book and try to load it.
-      promiseChain = promiseChain.then(() => receiveBookPromiseFn(Book.fromFile(filelist[fileNum])));
+      this.loadBooksFromPromises_([Book.fromFile(filelist[fileNum])]);
     }
-
-    promiseChain.then(() => {
-      if (books.length > 0) {
-        this.readingStack_.addBooks(books, false /* switchToFirst */);
-      }
-      if (foundError) {
-        alert('Could not open all books. See the console for more info.');
-      }
-    });
   }
 
   /**
    * Asks the user for a URL to load and then loads it.
    */
-  loadFileViaUrl_() {
+  async loadFileViaUrl_() {
     const bookUrl = window.prompt('Enter the URL of the book to load');
     if (bookUrl) {
+      if (bookUrl.toLowerCase().endsWith('.jrl')) {
+        try {
+          const readingList = await this.tryLoadingReadingListFromUrl_(bookUrl);
+          if (readingList) {
+            this.loadBooksFromPromises_(readingList.map(item => {
+              // Use the name or the filename.
+              const bookName = item.name || item.uri.split('/').pop();
+              return Book.fromXhr(bookName, item.uri, -1);
+            }));
+            return;
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
       this.loadSingleBookFromXHR(bookUrl /* name */, bookUrl /* url */, -1);
     }
   }
@@ -567,12 +606,12 @@ class KthoomApp {
 
   /**
    * @param {string} name The book name.
-   * @param {String} url The URL to fetch.
+   * @param {string} url The URL to fetch.
    * @param {number} expectedSize Unarchived size in bytes.  If -1, then the
    *     data from the XHR progress events is used.
-   * @param {Object<String, String>} headerMap A map of request header keys and values.
+   * @param {Object<string, string>} headerMap A map of request header keys and values.
    */
-  f(name, url, expectedSize, headerMap = {}) {
+  loadSingleBookFromXHR(name, url, expectedSize, headerMap = {}) {
     Book.fromXhr(name, url, expectedSize, headerMap).then(book => {
       this.readingStack_.show(true);
       this.readingStack_.addBook(book);
@@ -608,19 +647,21 @@ class KthoomApp {
   }
 
   /**
-   * @param {string} jsonFile File containing a JSON Reading List that matches this minimum format:
+   * Loads the Reading List from the JSON blob.  The blob must contain a JSON Reading List that
+   * matches this minimum format:
    * {
    *   "items": [
-   *     {"uri": "http://foo/bar"},
+   *     {"type": "book", "uri": "http://foo/bar"},
    *     ...
    *   ]
    * }
-   * Each item may contain a name string field as well.
+   * Each item may also contain an optional name field.  See jrl-schema.json for the full schema.
+   * @param {Blob} jsonBlob The JSON blob.
    * @return {Promise<Array<Object>>} Returns a Promise that will resolve with an array of item
-   *     objects (see format above), or rejects with a null result.
+   *     objects (see format above), or rejects with an error string.
    * @private
    */
-  loadBooksFromJSON_(jsonFile) {
+  loadReadingList_(jsonBlob) {
     return new Promise((resolve, reject) => {
       const fr = new FileReader();
       fr.onload = () => {
@@ -631,19 +672,23 @@ class KthoomApp {
             reject(null);
           } else {
             for (const item of jsonContents.items) {
-              // Each item object must at least have a uri string field.
-              if (!(item instanceof Object) || !item.uri || !(typeof item.uri === 'string')) {
-                reject(null);
+              // Each item object must at least have a uri string field and be type=book.
+              if (!(item instanceof Object) ||
+                  !item.uri || !(typeof item.uri === 'string') ||
+                  !item.type || item.type !== 'book') {
+                console.error('Invalid item: ');
+                console.dir(item);
+                reject('Invalid item inside JSON Reading List file');
               }
             }
             resolve(jsonContents.items);
           }
         } catch (err) {
-          reject(null);
+          reject('Invalid JSON Reading List file: ' + err);
         }
       };
       fr.onerror = () => reject(null);
-      fr.readAsText(jsonFile);
+      fr.readAsText(jsonBlob);
     });
   }
 

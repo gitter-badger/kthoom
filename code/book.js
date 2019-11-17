@@ -110,9 +110,9 @@ export class Book {
 
   /**
    * Starts an XHR and progressively loads in the book.
-   * @param {String} url The URL to fetch.
+   * @param {string} url The URL to fetch.
    * @param {Number} expectedSize If -1, the total field from the XHR Progress event is used.
-   * @param {Object<String, String>} headerMap A map of request header keys and values.
+   * @param {Object<string, string>} headerMap A map of request header keys and values.
    */
   loadFromXhr(url, expectedSize, headerMap) {
     if (this.loadState_ !== LoadState.NOT_LOADED) {
@@ -344,9 +344,9 @@ Book.fromFile = function(file) {
 
 /**
  * @param {string} name The book name.
- * @param {String} url The URL to fetch.
+ * @param {string} url The URL to fetch.
  * @param {number} expectedSize Unarchived size in bytes.
- * @param {Object<String, String>} headerMap A map of request header keys and values.
+ * @param {Object<string, string>} headerMap A map of request header keys and values.
  * @return {Promise<Book>}
  */
 Book.fromXhr = function(name, url, expectedSize, headerMap) {
