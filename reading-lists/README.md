@@ -9,7 +9,7 @@ The format is simple:
 ```json
 {
   "items": [
-    {"type": "book", "uri": "/foo/bar.cbz", name="Optional name"},
+    {"type": "book", "uri": "/foo/bar.cbz", "name"="Optional name"},
     {"type": "book", "uri": "http://example.com/foo/baz.cbr"}
   ]
 }

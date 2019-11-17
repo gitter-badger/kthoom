@@ -36,3 +36,7 @@ You can tell kthoom to open as many books as you like in the Choose Files dialog
 ### Binary File Support
 
 NOTE: kthoom loads in local compressed files and decompresses them in the browser, which means that kthoom has an implementation of unzip, unrar and untar in JavaScript. This code has been migrated to its own library: [BitJS](https://github.com/codedread/bitjs), a more general purpose library to deal with binary file data in native JavaScript.
+
+### JSON Reading Lists
+
+kthoom loads reading lists of comic books.  See [JSON Reading Lists](https://codedread.github.io/kthoom/reading-lists) for more.
