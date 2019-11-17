@@ -56,7 +56,17 @@ export class Book {
    * @param {string} name
    */
   constructor(name) {
+    /**
+     * The name of the book (shown in the Reading Stack).
+     * @type {String}
+     */
     this.name_ = name;
+
+    /**
+     * The optional URL of the book (not set for a File).
+     * @type {String}
+     */
+    this.url_;
 
     this.loadState_ = LoadState.NOT_LOADED;
     this.unarchiveState_ = UnarchiveState.NOT_UNARCHIVED;
@@ -100,16 +110,24 @@ export class Book {
 
   /**
    * Starts an XHR and progressively loads in the book.
-   * @param {XMLHttpRequest} xhr An XMLHttpRequest object with the method, url and header defined.
+   * @param {String} url The URL to fetch.
    * @param {Number} expectedSize If -1, the total field from the XHR Progress event is used.
+   * @param {Object<String, String>} headerMap A map of request header keys and values.
    */
-  loadFromXhr(xhr, expectedSize) {
+  loadFromXhr(url, expectedSize, headerMap) {
     if (this.loadState_ !== LoadState.NOT_LOADED) {
       throw 'Cannot try to load via XHR when the Book is already loading or loaded';
     }
 
+    this.url_ = url;
     this.expectedSizeInBytes_ = expectedSize;
 
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    for (const headerKey in headerMap) {
+      xhr.setRequestHeader(headerKey, headerMap[headerKey]);
+    }
+  
     xhr.responseType = 'arraybuffer';
     xhr.onprogress = (evt) => {
       if (expectedSize == -1 && evt.total) {
@@ -132,6 +150,8 @@ export class Book {
     if (this.loadState_ !== LoadState.NOT_LOADED) {
       throw 'Cannot try to load via XHR when the Book is already loading or loaded';
     }
+
+    this.url_ = url;
 
     fetch(url, init).then(response => {
       const reader = response.body.getReader();
@@ -324,14 +344,15 @@ Book.fromFile = function(file) {
 
 /**
  * @param {string} name The book name.
- * @param {XMLHttpRequest} xhr XHR ready with the method, url and header.
+ * @param {String} url The URL to fetch.
  * @param {number} expectedSize Unarchived size in bytes.
+ * @param {Object<String, String>} headerMap A map of request header keys and values.
  * @return {Promise<Book>}
  */
-Book.fromXhr = function(name, xhr, expectedSize) {
+Book.fromXhr = function(name, url, expectedSize, headerMap) {
   return new Promise((resolve, reject) => {
     const book = new Book(name);
-    book.loadFromXhr(xhr, expectedSize);
+    book.loadFromXhr(url, expectedSize, headerMap);
     resolve(book);
   });
 };

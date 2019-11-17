@@ -217,9 +217,7 @@ class KthoomApp {
       } else {
         // Else, we assume it is a URL that XHR can handle.
         // TODO: Try fetch first?
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', bookUri, true);
-        this.loadSingleBookFromXHR(bookUri, xhr, -1);
+        this.loadSingleBookFromXHR(bookUri /* name */, bookUri /* url */, -1);
       }
     } else {
       // TODO: Eventually get rid of this and just rely on the bookUri param.
@@ -514,11 +512,9 @@ class KthoomApp {
           if (readingList) {
             for (const item of readingList) {
               promiseChain = promiseChain.then(() => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('GET', item.uri, true);
                 // Use the name or the filename.
                 const bookName = item.name || item.uri.split('/').pop();
-                receiveBookPromiseFn(Book.fromXhr(bookName, xhr, -1));
+                receiveBookPromiseFn(Book.fromXhr(bookName, item.uri, -1));
               });
             }
             continue;
@@ -546,9 +542,7 @@ class KthoomApp {
   loadFileViaUrl_() {
     const bookUrl = window.prompt('Enter the URL of the book to load');
     if (bookUrl) {
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', bookUrl, true);
-      this.loadSingleBookFromXHR(bookUrl, xhr, -1);
+      this.loadSingleBookFromXHR(bookUrl /* name */, bookUrl /* url */, -1);
     }
   }
 
@@ -573,12 +567,13 @@ class KthoomApp {
 
   /**
    * @param {string} name The book name.
-   * @param {XMLHttpRequest} xhr XHR ready with the method, url and header.
+   * @param {String} url The URL to fetch.
    * @param {number} expectedSize Unarchived size in bytes.  If -1, then the
    *     data from the XHR progress events is used.
+   * @param {Object<String, String>} headerMap A map of request header keys and values.
    */
-  loadSingleBookFromXHR(name, xhr, expectedSize) {
-    Book.fromXhr(name, xhr, expectedSize).then(book => {
+  f(name, url, expectedSize, headerMap = {}) {
+    Book.fromXhr(name, url, expectedSize, headerMap).then(book => {
       this.readingStack_.show(true);
       this.readingStack_.addBook(book);
     });

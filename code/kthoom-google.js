@@ -108,12 +108,9 @@ kthoom.google = {
           kthoom.getApp().loadSingleBookFromFetch(bookName, bookUrl, myInit, fullSize);
         } catch (e) {
           if (typeof e === 'string' && e.startsWith('No browser support')) {
-            console.log(e);
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', bookUrl, true);
-            xhr.setRequestHeader('Authorization', 'OAuth ' + kthoom.google.oathToken);
-            kthoom.getApp().loadSingleBookFromXHR(bookName, xhr, fullSize);
+            kthoom.getApp().loadSingleBookFromXHR(bookName, bookUrl, fullSize, {
+              'Authorization': ('OAuth ' + kthoom.google.oathToken),
+            });
           }
         }
       });
