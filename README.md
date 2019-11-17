@@ -39,4 +39,4 @@ NOTE: kthoom loads in local compressed files and decompresses them in the browse
 
 ### JSON Reading Lists
 
-kthoom supports loading lists of comic book files at once.  See [JSON Reading Lists](https://codedread.github.io/kthoom/reading-lists) for more.
+kthoom supports loading lists of comic book files at once.  See [JSON Reading Lists](https://github.com/codedread/kthoom/tree/master/reading-lists) for more.
