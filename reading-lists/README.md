@@ -19,4 +19,4 @@ The format is simple:
   * The "type" field must have the value "book".
   * The "name" field is optional and can be a short name for the comic book.
 
-The JSON schema for the JRL file format is [here](https://codedread.github.io/kthoom/reading-lists/jrl-schema.json).
+The JSON schema for the JRL file format is [here](https://github.com/codedread/kthoom/tree/master/reading-lists).
