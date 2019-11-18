@@ -113,39 +113,53 @@ export class Book {
    * @param {string} url The URL to fetch.
    * @param {Number} expectedSize If -1, the total field from the XHR Progress event is used.
    * @param {Object<string, string>} headerMap A map of request header keys and values.
+   * @return {Promise<Book>} A Promise that returns this book when done.
    */
   loadFromXhr(url, expectedSize, headerMap) {
     if (this.loadState_ !== LoadState.NOT_LOADED) {
       throw 'Cannot try to load via XHR when the Book is already loading or loaded';
     }
 
-    this.url_ = url;
-    this.expectedSizeInBytes_ = expectedSize;
+    return new Promise((resolve, reject) => {
+      this.url_ = url;
+      this.expectedSizeInBytes_ = expectedSize;
 
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    for (const headerKey in headerMap) {
-      xhr.setRequestHeader(headerKey, headerMap[headerKey]);
-    }
-  
-    xhr.responseType = 'arraybuffer';
-    xhr.onprogress = (evt) => {
-      if (expectedSize == -1 && evt.total) {
-        this.expectedSizeInBytes_ = expectedSize = evt.total;
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      for (const headerKey in headerMap) {
+        xhr.setRequestHeader(headerKey, headerMap[headerKey]);
       }
-      let pct = evt.loaded / expectedSize;
-      if (pct) {
-        this.loadingPercentage_ = pct;
-        this.notify_(new BookProgressEvent(this));
+
+      xhr.responseType = 'arraybuffer';
+      xhr.onprogress = (evt) => {
+        if (expectedSize == -1 && evt.total) {
+          this.expectedSizeInBytes_ = expectedSize = evt.total;
+        }
+        let pct = evt.loaded / expectedSize;
+        if (pct) {
+          this.loadingPercentage_ = pct;
+          this.notify_(new BookProgressEvent(this));
+        }
       }
-    }
-    xhr.onload = (evt) => {
-      const arrayBuffer = evt.target.response;
-      this.setArrayBuffer(arrayBuffer, 1.0, expectedSize);
-    };
-    xhr.send(null);
+      xhr.onload = (evt) => {
+        const arrayBuffer = evt.target.response;
+        this.setArrayBuffer(arrayBuffer, 1.0, expectedSize);
+        resolve(this);
+      };
+      xhr.onerror = (err) => {
+        reject(err);
+      }
+      xhr.send(null);
+    });
   }
 
+  /**
+   * Starts a fetch and progressively loads in the book.
+   * @param {string} url The URL to fetch.
+   * @param {Number} expectedSize If -1, the total field from the XHR Progress event is used.
+   * @param {Object<string, string>} headerMap A map of request header keys and values.
+   * @return {Promise<Book>} A Promise that returns this book when done.
+   */
   loadFromFetch(url, init, expectedSize) {
     if (this.loadState_ !== LoadState.NOT_LOADED) {
       throw 'Cannot try to load via XHR when the Book is already loading or loaded';
@@ -153,7 +167,7 @@ export class Book {
 
     this.url_ = url;
 
-    fetch(url, init).then(response => {
+    return fetch(url, init).then(response => {
       const reader = response.body.getReader();
       let bytesRead = 0;
       const readAndProcessNextChunk = () => {
@@ -350,11 +364,8 @@ Book.fromFile = function(file) {
  * @return {Promise<Book>}
  */
 Book.fromXhr = function(name, url, expectedSize, headerMap) {
-  return new Promise((resolve, reject) => {
-    const book = new Book(name);
-    book.loadFromXhr(url, expectedSize, headerMap);
-    resolve(book);
-  });
+  const book = new Book(name);
+  return book.loadFromXhr(url, expectedSize, headerMap);
 };
 
 /**
@@ -365,11 +376,8 @@ Book.fromXhr = function(name, url, expectedSize, headerMap) {
  * @return {Promise<Book>}
  */
 Book.fromFetch = function(name, url, init, expectedSize) {
-  return new Promise((resolve, reject) => {
-    const book = new Book(name);
-    book.loadFromFetch(url, init, expectedSize);
-    resolve(book);
-  });
+  const book = new Book(name);
+  return book.loadFromFetch(url, init, expectedSize);
 };
 
 /**

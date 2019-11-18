@@ -233,7 +233,13 @@ class KthoomApp {
     if (readingListUri) {
       try {
         const readingList = await this.tryLoadingReadingListFromUrl_(readingListUri);
-        if (readingList) {
+        if (readingList && readingList.length > 0) {
+          // Load the first book first - we do this so that the browser is not waiting
+          // for many pending XHRs before it can download the scripts it needs to start
+          // unarchiving the first book to show it.
+          const firstBook = readingList.shift();
+          await this.loadSingleBookFromXHR(this.getNameForBook_(firstBook), firstBook.uri, -1);
+
           this.loadBooksFromPromises_(readingList.map(item => {
             return Book.fromXhr(this.getNameForBook_(item), item.uri, -1);
           }));
@@ -527,19 +533,11 @@ class KthoomApp {
    */
   async loadBooksFromPromises_(bookPromises) {
     const books = [];
-    let openedFirstBook = false;
     let foundError = false;
     for (const bookPromise of bookPromises) {
       try {
         const book = await bookPromise;
-        // Add the first book immediately so it unarchives and displays asap.
-        if (!openedFirstBook) {
-          openedFirstBook = true;
-          this.readingStack_.addBook(book);
-          this.readingStack_.show(true);
-        } else {
-          books.push(book);
-        }
+        books.push(book);
       } catch (err) {
         foundError = true;
       }
@@ -568,7 +566,14 @@ class KthoomApp {
       if (filelist[fileNum].name.toLowerCase().endsWith('.jrl')) {
         try {
           const readingList = await this.loadReadingList_(filelist[fileNum]);
-          if (readingList) {
+          if (readingList && readingList.length > 0) {
+            // Load the first book first - we do this so that the browser is not waiting
+            // for many pending XHRs before it can download the scripts it needs to start
+            // unarchiving the first book to show it.
+            const firstBook = readingList.shift();
+            await this.loadSingleBookFromXHR(this.getNameForBook_(firstBook), firstBook.uri, -1);
+
+            // Now load in the rest of the books.
             this.loadBooksFromPromises_(readingList.map(item => {
               return Book.fromXhr(this.getNameForBook_(item), item.uri, -1);
             }));
@@ -591,7 +596,14 @@ class KthoomApp {
       if (bookUrl.toLowerCase().endsWith('.jrl')) {
         try {
           const readingList = await this.tryLoadingReadingListFromUrl_(bookUrl);
-          if (readingList) {
+          if (readingList && readingList.length > 0) {
+            // Load the first book first - we do this so that the browser is not waiting
+            // for many pending XHRs before it can download the scripts it needs to start
+            // unarchiving the first book to show it.
+            const firstBook = readingList.shift();
+            await this.loadSingleBookFromXHR(this.getNameForBook_(firstBook), firstBook.uri, -1);
+
+            // Load in rest of books.
             this.loadBooksFromPromises_(readingList.map(item => {
               return Book.fromXhr(this.getNameForBook_(item), item.uri, -1);
             }));
@@ -631,9 +643,10 @@ class KthoomApp {
    * @param {number} expectedSize Unarchived size in bytes.  If -1, then the
    *     data from the XHR progress events is used.
    * @param {Object<string, string>} headerMap A map of request header keys and values.
+   * @return {Promise<Book>}
    */
   loadSingleBookFromXHR(name, url, expectedSize, headerMap = {}) {
-    Book.fromXhr(name, url, expectedSize, headerMap).then(book => {
+    return Book.fromXhr(name, url, expectedSize, headerMap).then(book => {
       this.readingStack_.show(true);
       this.readingStack_.addBook(book);
     });
@@ -644,13 +657,14 @@ class KthoomApp {
    * @param {string} url The resource to fetch.
    * @param {Object} init An object to initialize the Fetch API.
    * @param {number} expectedSize Unarchived size in bytes.
+   * @return {Promise<Book>}
    */
   loadSingleBookFromFetch(name, url, init, expectedSize) {
     if (!window['fetch'] || !window['Response'] || !window['ReadableStream']) {
       throw 'No browser support for fetch/ReadableStream';
     }
 
-    Book.fromFetch(name, url, init, expectedSize).then(book => {
+    return Book.fromFetch(name, url, init, expectedSize).then(book => {
       this.readingStack_.show(true);
       this.readingStack_.addBook(book);
     });
@@ -659,9 +673,10 @@ class KthoomApp {
   /**
    * @param {string} name
    * @param {ArrayBuffer} ab
+   * @return {Promise<Book>}
    */
   loadSingleBookFromArrayBuffer(name, ab) {
-    Book.fromArrayBuffer(name, ab).then(book => {
+    return Book.fromArrayBuffer(name, ab).then(book => {
       this.readingStack_.show(true);
       this.readingStack_.addBook(book);
     });
