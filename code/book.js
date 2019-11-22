@@ -54,8 +54,9 @@ export class UnarchiveCompleteEvent extends BookEvent {
 export class Book {
   /**
    * @param {string} name
+   * @param {string} uri
    */
-  constructor(name) {
+  constructor(name, uri = undefined) {
     /**
      * The name of the book (shown in the Reading Stack).
      * @type {String}
@@ -63,10 +64,10 @@ export class Book {
     this.name_ = name;
 
     /**
-     * The optional URL of the book (not set for a File).
+     * The optional URI of the book (not set for a File).
      * @type {String}
      */
-    this.url_;
+    this.uri_ = uri;
 
     this.loadState_ = LoadState.NOT_LOADED;
     this.unarchiveState_ = UnarchiveState.NOT_UNARCHIVED;
@@ -110,22 +111,23 @@ export class Book {
 
   /**
    * Starts an XHR and progressively loads in the book.
-   * @param {string} url The URL to fetch.
    * @param {Number} expectedSize If -1, the total field from the XHR Progress event is used.
    * @param {Object<string, string>} headerMap A map of request header keys and values.
    * @return {Promise<Book>} A Promise that returns this book when done.
    */
-  loadFromXhr(url, expectedSize, headerMap) {
+  loadFromXhr(expectedSize = -1, headerMap = {}) {
     if (this.loadState_ !== LoadState.NOT_LOADED) {
       throw 'Cannot try to load via XHR when the Book is already loading or loaded';
     }
+    if (!this.uri_) {
+      throw 'URI for book was not set from loadFromXhr()';
+    }
 
     return new Promise((resolve, reject) => {
-      this.url_ = url;
       this.expectedSizeInBytes_ = expectedSize;
 
       const xhr = new XMLHttpRequest();
-      xhr.open('GET', url, true);
+      xhr.open('GET', this.uri_, true);
       for (const headerKey in headerMap) {
         xhr.setRequestHeader(headerKey, headerMap[headerKey]);
       }
@@ -155,19 +157,20 @@ export class Book {
 
   /**
    * Starts a fetch and progressively loads in the book.
-   * @param {string} url The URL to fetch.
    * @param {Number} expectedSize If -1, the total field from the XHR Progress event is used.
    * @param {Object<string, string>} headerMap A map of request header keys and values.
    * @return {Promise<Book>} A Promise that returns this book when done.
    */
-  loadFromFetch(url, init, expectedSize) {
+  loadFromFetch(init, expectedSize) {
     if (this.loadState_ !== LoadState.NOT_LOADED) {
       throw 'Cannot try to load via XHR when the Book is already loading or loaded';
     }
+    if (!this.uri_) {
+      throw 'URI for book was not set in loadFromFetch()';
+    }
 
-    this.url_ = url;
-
-    return fetch(url, init).then(response => {
+    // TODO: Does this actually return the right value?  Where does it return 'this'?
+    return fetch(this.uri_, init).then(response => {
       const reader = response.body.getReader();
       let bytesRead = 0;
       const readAndProcessNextChunk = () => {
@@ -194,6 +197,35 @@ export class Book {
         });
       };
       readAndProcessNextChunk();
+    });
+  }
+
+  /**
+   * @param {File} file
+   * @return {Promise<Book>} A Promise that returns this book when done.
+   */
+  loadFromFile(file) {
+    if (this.loadState_ !== LoadState.NOT_LOADED) {
+      throw 'Cannot try to load via File when the Book is already loading or loaded';
+    }
+    if (this.uri_) {
+      throw 'URI for book was set in loadFromFile()';
+    }
+
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => {
+        const ab = fr.result;
+        try {
+          this.setArrayBuffer(ab, 1.0, ab.byteLength);
+        } catch (err) {
+          const errMessage = err + ': ' + file.name;
+          console.error(errMessage);
+          reject(errMessage);
+        }
+        resolve(this);
+      };
+      fr.readAsArrayBuffer(file);
     });
   }
 
@@ -337,47 +369,32 @@ export class Book {
  * @return {Promise<Book|String>} Returns a Promise of the book, or an error.
  */
 Book.fromFile = function(file) {
-  return new Promise((resolve, reject) => {
-    const book = new Book(file.name);
-
-    const fr = new FileReader();
-    fr.onload = () => {
-      const ab = fr.result;
-      try {
-        book.setArrayBuffer(ab, 1.0, ab.byteLength);
-      } catch (err) {
-        const errMessage = err + ': ' + file.name;
-        console.error(errMessage);
-        reject(errMessage);
-      }
-      resolve(book);
-    };
-    fr.readAsArrayBuffer(file);
-  });
+  const book = new Book(file.name);
+  return book.loadFromFile(file);
 };
 
 /**
  * @param {string} name The book name.
- * @param {string} url The URL to fetch.
+ * @param {string} uri The URI to fetch.
  * @param {number} expectedSize Unarchived size in bytes.
  * @param {Object<string, string>} headerMap A map of request header keys and values.
  * @return {Promise<Book>}
  */
-Book.fromXhr = function(name, url, expectedSize, headerMap) {
-  const book = new Book(name);
-  return book.loadFromXhr(url, expectedSize, headerMap);
+Book.fromXhr = function(name, uri, expectedSize = -1, headerMap = {}) {
+  const book = new Book(name, uri);
+  return book.loadFromXhr(expectedSize, headerMap);
 };
 
 /**
  * @param {string} name The book name.
- * @param {string} url The resource to fetch.
+ * @param {string} uri The resource to fetch.
  * @param {Object} init An object to initialize the Fetch API.
  * @param {number} expectedSize Unarchived size in bytes.
  * @return {Promise<Book>}
  */
-Book.fromFetch = function(name, url, init, expectedSize) {
-  const book = new Book(name);
-  return book.loadFromFetch(url, init, expectedSize);
+Book.fromFetch = function(name, uri, init, expectedSize = -1) {
+  const book = new Book(name, uri);
+  return book.loadFromFetch(init, expectedSize);
 };
 
 /**

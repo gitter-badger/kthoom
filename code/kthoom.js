@@ -232,19 +232,9 @@ class KthoomApp {
     const readingListUri = Params['readingListUri'];
     if (readingListUri) {
       try {
-        const readingList = await this.tryLoadingReadingListFromUrl_(readingListUri);
-        if (readingList && readingList.length > 0) {
-          // Load the first book first - we do this so that the browser is not waiting
-          // for many pending XHRs before it can download the scripts it needs to start
-          // unarchiving the first book to show it.
-          const firstBook = readingList.shift();
-          await this.loadSingleBookFromXHR(this.getNameForBook_(firstBook), firstBook.uri, -1);
-
-          this.loadBooksFromPromises_(readingList.map(item => {
-            return Book.fromXhr(this.getNameForBook_(item), item.uri, -1);
-          }));
-          return;
-        }
+        const readingList = await this.tryLoadAndParseReadingListFromUrl_(readingListUri);
+        this.loadBooksFromReadingList_(readingList);
+        return;
       } catch (err) {
         console.error(err);
       }
@@ -461,13 +451,13 @@ class KthoomApp {
    * @returns {Promise<Array<Object>} A Promise that returns with the list of books or rejects
    *     with an error string.
    */
-  tryLoadingReadingListFromUrl_(url) {
+  tryLoadAndParseReadingListFromUrl_(url) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', url, true);
       xhr.responseType = 'blob';
       xhr.onload = (evt) => {
-        resolve(this.loadReadingList_(evt.target.response));
+        resolve(this.loadAndParseReadingList_(evt.target.response));
       };
       xhr.onerror = (err) => {
         console.error(err);
@@ -543,9 +533,6 @@ class KthoomApp {
       }
     }
 
-    if (books.length > 0) {
-      this.readingStack_.addBooks(books, false /* switchToFirst */);
-    }
     if (foundError) {
       alert('Could not open all books. See the console for more info.');
     }
@@ -562,28 +549,21 @@ class KthoomApp {
     }
 
     for (let fileNum = 0; fileNum < filelist.length; ++fileNum) {
+      const theFile = filelist[fileNum];
       // First, try to load the file as a JSON Reading List.
-      if (filelist[fileNum].name.toLowerCase().endsWith('.jrl')) {
+      if (theFile.name.toLowerCase().endsWith('.jrl')) {
         try {
-          const readingList = await this.loadReadingList_(filelist[fileNum]);
-          if (readingList && readingList.length > 0) {
-            // Load the first book first - we do this so that the browser is not waiting
-            // for many pending XHRs before it can download the scripts it needs to start
-            // unarchiving the first book to show it.
-            const firstBook = readingList.shift();
-            await this.loadSingleBookFromXHR(this.getNameForBook_(firstBook), firstBook.uri, -1);
-
-            // Now load in the rest of the books.
-            this.loadBooksFromPromises_(readingList.map(item => {
-              return Book.fromXhr(this.getNameForBook_(item), item.uri, -1);
-            }));
-            continue;
-          }
+          const readingList = await this.loadAndParseReadingList_(theFile);
+          this.loadBooksFromReadingList_(readingList);
+          continue;
         } catch {}
       }
 
       // Else, assume the file is a single book and try to load it.
-      this.loadBooksFromPromises_([Book.fromFile(filelist[fileNum])]);
+      const singleBook = new Book(theFile.name)
+      this.loadBooksFromPromises_([singleBook.loadFromFile(theFile)]);
+      this.readingStack_.show(true);
+      this.readingStack_.addBook(singleBook);
     }
   }
 
@@ -595,20 +575,9 @@ class KthoomApp {
     if (bookUrl) {
       if (bookUrl.toLowerCase().endsWith('.jrl')) {
         try {
-          const readingList = await this.tryLoadingReadingListFromUrl_(bookUrl);
-          if (readingList && readingList.length > 0) {
-            // Load the first book first - we do this so that the browser is not waiting
-            // for many pending XHRs before it can download the scripts it needs to start
-            // unarchiving the first book to show it.
-            const firstBook = readingList.shift();
-            await this.loadSingleBookFromXHR(this.getNameForBook_(firstBook), firstBook.uri, -1);
-
-            // Load in rest of books.
-            this.loadBooksFromPromises_(readingList.map(item => {
-              return Book.fromXhr(this.getNameForBook_(item), item.uri, -1);
-            }));
-            return;
-          }
+          const readingList = await this.tryLoadAndParseReadingListFromUrl_(bookUrl);
+          this.loadBooksFromReadingList_(readingList);
+          return;
         } catch (err) {
           console.error(err);
         }
@@ -654,20 +623,20 @@ class KthoomApp {
 
   /**
    * @param {string} name The book name.
-   * @param {string} url The resource to fetch.
+   * @param {string} uri The resource to fetch.
    * @param {Object} init An object to initialize the Fetch API.
    * @param {number} expectedSize Unarchived size in bytes.
    * @return {Promise<Book>}
    */
-  loadSingleBookFromFetch(name, url, init, expectedSize) {
+  loadSingleBookFromFetch(name, uri, init, expectedSize) {
     if (!window['fetch'] || !window['Response'] || !window['ReadableStream']) {
       throw 'No browser support for fetch/ReadableStream';
     }
 
-    return Book.fromFetch(name, url, init, expectedSize).then(book => {
-      this.readingStack_.show(true);
-      this.readingStack_.addBook(book);
-    });
+    const book = new Book(name, uri);
+    this.readingStack_.show(true);
+    this.readingStack_.addBook(book);
+    return book.loadFromFetch(init, expectedSize);
   }
 
   /**
@@ -693,12 +662,12 @@ class KthoomApp {
    * }
    * Each item may also contain an optional name field.  See jrl-schema.json for the full schema.
    * TODO: Move this to a separate module for processing JSON Reading Lists?
-   * @param {Blob} jsonBlob The JSON blob.
+   * @param {Blob|File} jsonBlob The JSON blob/file.
    * @return {Promise<Array<Object>>} Returns a Promise that will resolve with an array of item
    *     objects (see format above), or rejects with an error string.
    * @private
    */
-  loadReadingList_(jsonBlob) {
+  loadAndParseReadingList_(jsonBlob) {
     return new Promise((resolve, reject) => {
       const fr = new FileReader();
       fr.onload = () => {
@@ -727,6 +696,29 @@ class KthoomApp {
       fr.onerror = () => reject(null);
       fr.readAsText(jsonBlob);
     });
+  }
+
+  /**
+   * Adds all books in reading list to the stack and loads in each book in serial.
+   * @param {Array<Object>} readingList An array of reading list items.
+   * @private
+   */
+  async loadBooksFromReadingList_(readingList) {
+    if (readingList && readingList.length > 0) {
+      const books = readingList.map(item => new Book(this.getNameForBook_(item), item.uri));
+      // Add all books to the stack immediately.
+      this.readingStack_.show(true);
+      this.readingStack_.addBooks(books, true /* switchToFirst */);
+
+      // Load the first book first - we do this so that the browser is not waiting
+      // for many pending XHRs before it can download the scripts it needs to start
+      // unarchiving the first book to show it.
+      const firstBook = books.shift();
+      await firstBook.loadFromXhr();
+
+      // Now finish loading in all other books via XHR.
+      this.loadBooksFromPromises_(books.map(book => book.loadFromXhr()));
+    }
   }
 
   /**
