@@ -734,6 +734,7 @@ class KthoomApp {
 
       this.currentBook_ = book;
       this.bookViewer_.setCurrentBook(book);
+      document.title = book.getName(); 
     }
     // Show the Close All menu item.
     getElem('menu-close-all').parentElement.setAttribute('style', '');
