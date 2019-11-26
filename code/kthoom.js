@@ -426,7 +426,7 @@ class KthoomApp {
 
   /** @private {Number} delta Can be negative (up) or positive (down) */
   selectMenuItem(delta = 1) {
-    const items = getElem('menuItems').querySelectorAll('.menuItem');
+    const items = getElem('menuItems').querySelectorAll('.menuItem:not([style="display:none"])');
     items.item(this.currentlySelectedMenuItemNum_).classList.remove('current');
 
     this.currentlySelectedMenuItemNum_ += delta;
