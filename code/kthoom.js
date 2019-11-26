@@ -474,7 +474,8 @@ class KthoomApp {
 
   /** @private */
   toggleMenuOpen_() {
-    getElem('menu').classList.toggle('opened');
+    const expanded = getElem('menu').classList.toggle('opened');
+    getElem('menu-open').setAttribute('aria-expanded', expanded ? 'true' : 'false');
   }
 
   /** @private */

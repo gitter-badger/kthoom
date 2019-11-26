@@ -38,13 +38,13 @@
     </div>
     <div class="foreground">
       <div id="header">
-        <a id="menu-open" class="menuButton" href="#">
+        <div id="menu-open" class="menuButton" aria-haspopup="true" aria-expanded="false">
           <svg viewBox="0 0 100 100">
             <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="30" y2="30"></line>
             <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="50" y2="50"></line>
             <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="70" y2="70"></line>
           </svg>
-        </a>
+        </div>
         <div id="progress" class="hide">
           <svg id="svgprogress" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
             <defs>
@@ -94,37 +94,37 @@
     </div>
     <div id="menu">
       <div id="menuOverlay"></div>
-      <ul id ="menuItems" class="menuItems">
-        <li class="menuItem current">
-          <a id="menu-open-local-files" href="#">
+      <ul id ="menuItems" class="menuItems" role="menu" aria-label="Main Menu">
+        <li class="menuItem current" role="none">
+          <div id="menu-open-local-files" role="menuitem" tabindex="-1">
             <input id="menu-open-local-files-input" type="file" multiple>
-            Open from Your Computer
-          </a>
+            <span class="menu-label">Open from Your Computer</span>
+          </div>
         </li>
-        <li class="menuItem">
-          <a id="menu-open-url" href="#">
+        <li class="menuItem" role="none">
+          <div id="menu-open-url" role="menuitem" tabindex="-1">
             Open from URL
-          </a>
+          </div>
         </li>
-        <li class="menuItem">
-          <a id="menu-open-google-drive" href="#">
+        <li class="menuItem" role="none">
+          <div id="menu-open-google-drive" role="menuitem" tabindex="-1">
             Open from Google Drive
-          </a>
+          </div>
         </li>
-        <li class="menuItem">
-          <a id="menu-open-ipfs-hash" href="#">
+        <li class="menuItem" role="none">
+          <div id="menu-open-ipfs-hash" role="menuitem" tabindex="-1">
             Open from IPFS
-          </a>
+          </div>
         </li>
-        <li class="menuItem" style="display:none">
-          <a id="menu-close-all" href="#">
+        <li class="menuItem" style="display:none" role="none">
+          <div id="menu-close-all" role="menuitem" tabindex="-1">
             Close All
-          </a>
+          </div>
         </li>
-        <li class="menuItem">
-          <a id="menu-help" href="#">
+        <li class="menuItem" role="none">
+          <div id="menu-help" role="menuitem" tabindex="-1">
             Help (Keyboard Shortcuts)
-          </a>
+          /div>
         </li>
       </ul>
     </div>

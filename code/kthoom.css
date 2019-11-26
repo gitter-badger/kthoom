@@ -138,6 +138,7 @@ dl.helplist dd {
   border: solid 1px yellow;
   border-radius: 5px;
   color: yellow;
+  cursor: pointer;
   display: inline-block;
   text-decoration: none;
   width: 30px;
@@ -180,8 +181,17 @@ ul.menuItems {
 }
 
 .menuItem {
+  cursor: pointer;
   margin: 2px 0 0 -40px;
   padding: 2px 5px;
+}
+
+#menu-open-local-files-input {
+  width: 100%;
+}
+
+.menu-label {
+  cursor: pointer;
 }
 
 .menuItem:hover {
