@@ -30,12 +30,6 @@ class KthoomApp {
 
     this.currentBook_ = null;
 
-    /**
-     * The currently selected menu item.
-     * @private {!Number}
-     */
-    this.currentlySelectedMenuItemNum_ = 0;
-
     // This Promise resolves when kthoom is ready.
     this.initializedPromise_ = new Promise((resolve, reject) => {
       // This Promise resolves when the DOM is ready.
@@ -64,19 +58,23 @@ class KthoomApp {
     this.loadSettings_();
     this.parseParams_();
 
+    getElem('menu-open').focus();
+
     console.log('kthoom initialized');
   }
 
   /** @private */
   initMenu_() {
-    getElem('menuOverlay').addEventListener('click', (e) => this.toggleMenuOpen_());
-    getElem('menu-open').addEventListener('click', (e) => this.toggleMenuOpen_());
-    getElem('menu-open-local-files').addEventListener('change', (e) => this.loadLocalFiles_(e), false);
+    const fileInput = getElem('menu-open-local-files-input');
+    getElem('menuOverlay').addEventListener('click', (e) => this.toggleMenuOpen_(), false);
+    getElem('menu-open').addEventListener('click', (e) => this.toggleMenuOpen_(), false);
+    getElem('menu-open-local-files').addEventListener('click', (e) => fileInput.click(), false);
     getElem('menu-open-url').addEventListener('click', (e) => this.loadFileViaUrl_(), false);
     getElem('menu-open-google-drive').addEventListener('click', kthoom.google.doDrive, false);
     getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow, false);
     getElem('menu-close-all').addEventListener('click', (e) => this.closeAll_());
     getElem('menu-help').addEventListener('click', (e) => this.toggleHelpOpen_(), false);
+    fileInput.addEventListener('change', (e) => this.loadLocalFiles_(e), false);
   }
 
   /** @private */
@@ -321,19 +319,6 @@ class KthoomApp {
           return;
         }
         break;
-      case Key.ENTER:
-        if (isMenuOpen) {
-          const items = getElem('menuItems').querySelectorAll('.menuItem');
-          const menuItemTarget = items.item(this.currentlySelectedMenuItemNum_).firstElementChild;
-          if (menuItemTarget.id === 'menu-open-local-files') {
-            getElem('menu-open-local-files-input').click();
-          } else {
-            menuItemTarget.click();
-          }
-          this.toggleMenuOpen_();
-          return;
-        }
-        break;
     }
 
     if (getComputedStyle(getElem('progress')).display == 'none') return;
@@ -424,20 +409,36 @@ class KthoomApp {
     });
   }
 
-  /** @private {Number} delta Can be negative (up) or positive (down) */
+  /**
+   * Assumes the menu is open.
+   * @private {Number} delta Can be negative (up) or positive (down)
+   */
   selectMenuItem(delta = 1) {
-    const items = getElem('menuItems').querySelectorAll('.menuItem:not([style="display:none"])');
-    items.item(this.currentlySelectedMenuItemNum_).classList.remove('current');
-
-    this.currentlySelectedMenuItemNum_ += delta;
-    while (this.currentlySelectedMenuItemNum_ >= items.length) {
-      this.currentlySelectedMenuItemNum_ -= items.length;
+    const menuItems = getElem('menuItems').querySelectorAll('.menuItem:not([style="display:none"])');
+    const numMenuItems = menuItems.length;
+    const currentlyFocusedMenuItem = document.activeElement;
+    let i = 0;
+    for ( ; i < numMenuItems; ++i) {
+      const menuItem = menuItems.item(i);
+      if (menuItem === currentlyFocusedMenuItem) {
+        break;
+      }
     }
-    while (this.currentlySelectedMenuItemNum_ < 0){
-      this.currentlySelectedMenuItemNum_ += items.length;
+    // If somehow the currently focused item is not in the menu, then start at the top of the menu.
+    if (i === menuItems.length) {
+      i = 0;
     }
 
-    items.item(this.currentlySelectedMenuItemNum_).classList.add('current');
+    i += delta;
+    while (i >= numMenuItems) {
+      i -= numMenuItems;
+    }
+    while (i < 0) {
+      i += numMenuItems;
+    }
+
+    const newlySelectedMenuItem = menuItems.item(i);
+    newlySelectedMenuItem.focus();
   }
 
   setProgressMeter({loadPct = 0, unzipPct = 0, label = ''} = {}) {
@@ -476,6 +477,9 @@ class KthoomApp {
   toggleMenuOpen_() {
     const expanded = getElem('menu').classList.toggle('opened');
     getElem('menu-open').setAttribute('aria-expanded', expanded ? 'true' : 'false');
+
+    const firstMenuElem = getElem('menuItems').querySelector('.menuItem:not([style="display:none"])');
+    firstMenuElem.focus();
   }
 
   /** @private */
@@ -547,6 +551,9 @@ class KthoomApp {
     const filelist = evt.target.files;
     if (filelist.length <= 0) {
       return;
+    }
+    if (this.isMenuOpened_()) {
+      this.toggleMenuOpen_();
     }
 
     for (let fileNum = 0; fileNum < filelist.length; ++fileNum) {
