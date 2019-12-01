@@ -94,7 +94,7 @@ bitjs.io.ByteStream = class {
 
   /**
    * Peeks at the next n bytes as an unsigned number but does not advance the
-   * pointer.
+   * pointer.  Throws an error if attempting to peek beyond the buffer.
    * @param {number} n The number of bytes to peek at.  Must be a positive integer.
    * @return {number} The n bytes interpreted as an unsigned number.
    */

@@ -235,6 +235,7 @@ class RarVolumeHeader {
 
         break;
       case ENDARC_HEAD:
+        debugger;
         break;
       default:
         if (logToConsole) {
