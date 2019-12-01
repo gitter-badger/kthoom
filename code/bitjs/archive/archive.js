@@ -273,7 +273,7 @@ bitjs.archive.Unarchiver = class {
       const ab = this.ab;
       this.worker_.postMessage({
         file: ab,
-        logToConsole: true,
+        logToConsole: false,
       });
       this.ab = null;
     }
