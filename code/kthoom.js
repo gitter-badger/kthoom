@@ -319,6 +319,14 @@ class KthoomApp {
           return;
         }
         break;
+      case Key.TAB:
+        // If the menu is open, close it and focus thee menu button so that the tab brings us to the
+        // next tab stop.
+        if (isMenuOpen) {
+          this.toggleMenuOpen_();
+          getElem('menu-open').focus();
+        }
+        break;
     }
 
     if (getComputedStyle(getElem('progress')).display == 'none') return;
