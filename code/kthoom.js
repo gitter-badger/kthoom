@@ -328,16 +328,28 @@ class KthoomApp {
                      ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
     let canKeyPrev = !isMenuOpen && !isReadingStackOpen && (window.scrollX <= 0);
 
-    if (evt.ctrlKey || evt.shiftKey || evt.metaKey) return;
+    if (evt.ctrlKey || evt.metaKey) return;
     switch (code) {
       case Key.X:
         this.toggleUI_();
         break;
       case Key.LEFT:
-        if (canKeyPrev) this.showPrevPage();
+        if (canKeyPrev) {
+          if (evt.shiftKey) {
+            this.bookViewer_.showPage(0);
+          } else {
+            this.showPrevPage();
+          }
+        }
         break;
       case Key.RIGHT:
-        if (canKeyNext) this.showNextPage();
+        if (canKeyNext) {
+          if (evt.shiftKey) {
+            this.bookViewer_.showPage(this.currentBook_.getNumberOfPages() - 1);
+          } else {
+            this.showNextPage();
+          }
+        }
         break;
       case Key.UP:
         evt.preventDefault();

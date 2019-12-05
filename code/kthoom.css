@@ -69,7 +69,7 @@ dl.helplist {
 
 dl.helplist dt {
   color: orange;
-  flex: 0 0 30%;
+  flex: 0 0 33%;
   font-weight: bold;
   padding-bottom: 5px;
   text-align: center;
@@ -83,7 +83,7 @@ dl.helplist dt span.separator {
 }
 
 dl.helplist dd {
-  flex: 0 0 70%;
+  flex: 0 0 67%;
   margin-left: auto;
   padding-bottom: 5px;
   text-align: left;
