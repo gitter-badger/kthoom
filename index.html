@@ -2,13 +2,19 @@
 <html lang="en">
   <head>
     <title>kthoom Comic Reader</title>
-    <link rel="stylesheet" href="code/kthoom.css" type="text/css">
-    <link rel="icon" type="image/png" href="images/logo.png" sizes="300x300">
-    <link rel="apple-touch-icon" href="images/logo.png">
-    <link rel="manifest" href="kthoom.webmanifest">
+    <link rel="stylesheet" href="code/kthoom.css" type="text/css"/>
+    <link rel="icon" type="image/png" href="images/logo.png" sizes="300x300"/>
+    <link rel="apple-touch-icon" href="images/logo.png"/>
+    <link rel="manifest" href="kthoom.webmanifest"/>
+    <link rel="preload" href="code/book.js" crossorigin="use-credentials" as="script"/>
+    <link rel="preload" href="code/book-viewer.js" crossorigin="use-credentials" as="script"/>
+    <link rel="preload" href="code/helpers.js" crossorigin="use-credentials" as="script"/>
+    <link rel="preload" href="code/page.js" crossorigin="use-credentials" as="script"/>
+    <link rel="preload" href="code/reading-stack.js" crossorigin="use-credentials" as="script"/>
 
-    <meta name="Description" content="Open source comic book reader built using web technologies.">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="Description" content="Open source comic book reader built using web technologies."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="#ffff00"/>
 
     <!-- Needed for Traceur, the nomodule attribute is needed so that Traceur is only used by browsers
          that don't support ES6 modules natively.  We can completely remove these two scripts once
@@ -196,7 +202,7 @@
     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
 
     ga('create', 'UA-8244614-4', 'auto');
     ga('send', 'pageview');
