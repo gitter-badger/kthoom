@@ -1,9 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <title>kthoom Comic Reader</title>
-    <link rel="stylesheet" href="code/kthoom.css" type="text/css"/>
-    <link rel="icon" type="image/png" href="images/logo.png"/>
+    <link rel="stylesheet" href="code/kthoom.css" type="text/css">
+    <link rel="icon" type="image/png" href="images/logo.png" sizes="300x300">
+    <link rel="apple-touch-icon" href="images/logo.png">
+    <link rel="manifest" href="kthoom.webmanifest">
+
+    <meta name="Description" content="Open source comic book reader built using web technologies.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Needed for Traceur, the nomodule attribute is needed so that Traceur is only used by browsers
          that don't support ES6 modules natively.  We can completely remove these two scripts once
@@ -34,11 +39,12 @@
   </head>
   <body>
     <div class="background">
-      <img id="logo" src="images/logo.svg" width="100%" />
+      <img id="logo" src="images/logo.svg" width="100%" alt="Logo for the kthoom app."/>
     </div>
     <div class="foreground">
       <div id="header">
-        <button id="menu-open" class="menuButton" aria-haspopup="true" aria-expanded="false" tabindex="0">
+        <button id="menu-open" class="menuButton" tabindex="0"
+            aria-haspopup="true" aria-expanded="false" aria-label="Menu button">
           <svg viewBox="0 0 100 100">
             <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="30" y2="30"></line>
             <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="50" y2="50"></line>
