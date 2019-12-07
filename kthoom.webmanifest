@@ -27,5 +27,5 @@
   "display": "standalone",
   "background_color": "#444",
   "theme_color": "#ffff00",
-  "start_url": "/index.html"
+  "start_url": "/kthoom/index.html"
 }
