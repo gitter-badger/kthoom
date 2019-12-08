@@ -24,7 +24,6 @@ export const FitMode = {
 
 const px = v => v + 'px';
 
-// TODO: Sometimes the first page is not rendered properly.
 /**
  * The BookViewer is responsible for letting the user view the current book, navigate its pages,
  * update the orientation, page-mode and fit-mode of the viewer.
@@ -413,11 +412,10 @@ export class BookViewer {
 
     this.lastCompletion_ = 0;
 
-    getElem('nav').classList.add('hide');
-    getElem('progress').classList.add('hide');
     getElem('loadmeter').setAttribute('width', '0%');
     getElem('zipmeter').setAttribute('width', '0%');
     getElem('pagemeter').setAttribute('width', '0%');
+    getElem('page').innerHTML = '0/0';
 
     this.setProgressMeter();
     this.updateLayout();
@@ -497,11 +495,6 @@ export class BookViewer {
       labelText = label + ' ' + labelText;
     }
     title.appendChild(document.createTextNode(labelText));
-
-    if (loadingPct > 0 || unzippingPct > 0) {
-      getElem('nav').classList.remove('hide');
-      getElem('progress').classList.remove('hide');
-    }
   }
 
   /**

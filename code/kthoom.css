@@ -92,9 +92,9 @@ dl.helplist dd {
 }
 
 #nav {
-	display: inline;
-	position: absolute;
-	right: 0;
+  position: absolute;
+  right: 0;
+  top: 1px;
 }
 
 #nav button {
@@ -114,21 +114,16 @@ dl.helplist dd {
 }
 
 #progress {
-	position: absolute;
-	display: inline;
-	left: 90px;
-	right: 160px;
-	height: 20px;
-	margin-top: 1px;
-	text-align: right;
+  position: absolute;
+  left: 90px;
+  right: 130px;
+  height: 20px;
+  top: 1px;
+  text-align: right;
 }
 
 #logo {
   margin-top: 20px;
-}
-
-.hide {
-	display: none !important;
 }
 
 /* Menu styling */
@@ -255,6 +250,10 @@ ul.menuItems li {
 #header.fullscreen.animating,
 #header.fullscreen:hover {
   opacity: 1;
+}
+
+button:focus {
+  outline: 3px solid yellow;
 }
 
 #header.preview {

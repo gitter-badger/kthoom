@@ -138,7 +138,6 @@ class KthoomApp {
     // Toolbar
     getElem('prevBook').addEventListener('click', () => this.readingStack_.changeToPrevBook(), false);
     getElem('prev').addEventListener('click', () => this.showPrevPage(), false);
-    getElem('toolbarbutton').addEventListener('click', () => this.toggleUI_(), false);
     getElem('next').addEventListener('click', () => this.showNextPage(), false);
     getElem('nextBook').addEventListener('click', () => this.readingStack_.changeToNextBook(), false);
   }
@@ -169,7 +168,7 @@ class KthoomApp {
   initWheelScroll_() {
     window.addEventListener('wheel', (evt) => {
       let target = evt.target;
-      while (target != window) {
+      while (target && target != window) {
         if (target.id === BOOK_VIEWER_ELEM_ID) {
           // Deliver the wheel event to the Book Viewer to deal with swipes.
           this.bookViewer_.handleSwipeEvent(evt);
@@ -630,7 +629,10 @@ class KthoomApp {
       this.bookViewer_.closeBook();
       this.currentBook_ = null;
       getElem('logo').setAttribute('style', '');
-      getElem('menu-close-all').parentElement.setAttribute('style', 'display:none');
+      getElem('menu-close-all').setAttribute('style', 'display:none');
+      for (const button of ['prevBook', 'prev', 'next', 'nextBook'].map(getElem)) {
+        button.setAttribute('disabled');
+      }
     }
   }
 
@@ -762,10 +764,13 @@ class KthoomApp {
 
       this.currentBook_ = book;
       this.bookViewer_.setCurrentBook(book);
-      document.title = book.getName(); 
+      document.title = book.getName();
+      for (const button of ['prevBook', 'prev', 'next', 'nextBook'].map(getElem)) {
+        button.removeAttribute('disabled');
+      }
     }
     // Show the Close All menu item.
-    getElem('menu-close-all').parentElement.setAttribute('style', '');
+    getElem('menu-close-all').removeAttribute('style');
   }
 }
 
