@@ -97,8 +97,11 @@ dl.helplist dd {
   top: 1px;
 }
 
-#nav button {
-  margin: 0;
+.navbutton {
+  height: 3em;
+  padding: 0;
+  user-select: none;
+  width: 3em;
 }
 
 #close {
@@ -115,10 +118,9 @@ dl.helplist dd {
 
 #progress {
   position: absolute;
-  left: 90px;
-  right: 130px;
-  height: 20px;
-  top: 1px;
+  left: 3em;
+  right: 10em;
+  top: 0.5em;
   text-align: right;
 }
 
@@ -142,8 +144,8 @@ dl.helplist dd {
   display: inline-block;
   padding: 0;
   text-decoration: none;
-  width: 30px;
-  height: 30px;
+  width: 3em;
+  height: 3em;
 }
 
 .menuButton:hover {
