@@ -628,7 +628,7 @@ class KthoomApp {
 
       this.bookViewer_.closeBook();
       this.currentBook_ = null;
-      getElem('logo').setAttribute('style', '');
+      getElem('background').setAttribute('style', 'background-image: url("images/logo.svg")');
       getElem('menu-close-all').setAttribute('style', 'display:none');
       for (const button of ['prevBook', 'prev', 'next', 'nextBook'].map(getElem)) {
         button.setAttribute('disabled');
@@ -760,7 +760,7 @@ class KthoomApp {
       this.bookViewer_.closeBook();
 
       // hide logo
-      getElem('logo').setAttribute('style', 'display:none');
+      getElem('background').setAttribute('style', 'display:none');
 
       this.currentBook_ = book;
       this.bookViewer_.setCurrentBook(book);

@@ -122,8 +122,13 @@ dl.helplist dd {
   text-align: right;
 }
 
-#logo {
-  margin-top: 20px;
+#background {
+  background-size: 100% 100%;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 20px;
 }
 
 /* Menu styling */
