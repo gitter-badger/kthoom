@@ -133,6 +133,7 @@ export class BookViewer {
       }
     } else if (evt instanceof UnarchiveCompleteEvent) {
       getElem('header').classList.remove('animating');
+      this.setProgressMeter(1, 1);
     }
   }
 
@@ -471,10 +472,14 @@ export class BookViewer {
     });
   }
 
-  // The loadPct, unzipPct fields of the input params are not currently
-  // used (the values from the current book are used instead).
+  /**
+   * The loadPct, unzipPct fields of the input params are not currently
+   * used (the values from the current book are used instead).
+   * @param {number} loadPct The current percentage loaded, a number from 0 to 1.
+   * @param {number} unzipPct The current percentage unzipped, a number from 0 to 1.
+   * @param {string} label A label to prepend to the progress title text.
+   */
   setProgressMeter({loadPct = 0, unzipPct = 0, label = ''} = {}) {
-    const previousUnzippingPct = this.lastCompletion_;
     let loadingPct = loadPct;
     let unzippingPct = unzipPct;
     if (this.currentBook_) {
@@ -495,6 +500,28 @@ export class BookViewer {
       labelText = label + ' ' + labelText;
     }
     title.appendChild(document.createTextNode(labelText));
+
+    // Update some a11y attributes of the progress meter.
+    if (this.currentBook_) {
+      const totalPct = (loadingPct + unzippingPct) / 2;
+      const totalPctStr = totalPct.toFixed(2) + '%';
+      const bvElem = getElem(BOOK_VIEWER_ELEM_ID);
+      const progressElem = getElem('progress');
+      progressElem.setAttribute('aria-label', totalPctStr);
+      if (totalPctStr !== '100.00%') {
+        bvElem.setAttribute('aria-busy', 'true');
+        bvElem.setAttribute('aria-describedby', 'progress');
+        progressElem.setAttribute('aria-valuenow', totalPct);
+        progressElem.setAttribute('aria-valuemin', '0');
+        progressElem.setAttribute('aria-valuemax', '100');
+      } else {
+        bvElem.setAttribute('aria-busy', 'false');
+        bvElem.removeAttribute('aria-describedBy');
+        progressElem.removeAttribute('aria-valuenow');
+        progressElem.removeAttribute('aria-valuemin');
+        progressElem.removeAttribute('aria-valuemax');
+      }
+    }
   }
 
   /**
