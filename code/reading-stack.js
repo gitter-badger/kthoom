@@ -23,8 +23,7 @@ export class ReadingStack {
     this.currentBookNum_ = -1;
     this.currentBookChangedCallbacks_ = [];
 
-    getElem('readingStackTab')
-        .addEventListener('click', () => this.toggleReadingStackOpen(), false);
+    getElem('readingStackButton').addEventListener('click', () => this.toggleReadingStackOpen());
   }
 
   getNumberOfBooks() { return this.books_.length; }
@@ -109,19 +108,6 @@ export class ReadingStack {
   /** @return {boolean} */
   isOpen() {
     return getElem('readingStack').classList.contains('opened');
-  }
-
-  /**
-   * Whether the reading stack is shown (if any books are loaded).
-   * @return {boolean}
-   */
-  isShown() {
-    return getElem('readingStack').style.visibility === 'visible';
-  }
-
-  /** @param {boolean} show */
-  show(show) {
-    getElem('readingStack').style.visibility = (show ? 'visible' : 'hidden');
   }
 
   changeToPrevBook() {
@@ -229,6 +215,9 @@ export class ReadingStack {
         });
         libDiv.appendChild(bookDiv);
       }
+    } else {
+      libDiv.innerHTML = 'No books loaded';
+      // TODO: Display a label indicating no books loaded again.
     }
   }
 }

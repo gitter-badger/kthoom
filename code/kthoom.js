@@ -272,7 +272,8 @@ class KthoomApp {
       return;
     }
 
-    const isMenuOpen = this.isMenuOpened_();
+    let isMenuOpen = this.isMenuOpened_();
+    let isReadingStackOpen = this.readingStack_.isOpen();
 
     // Handle keystrokes that do not depend on whether a book is loaded.
     switch (code) {
@@ -280,6 +281,7 @@ class KthoomApp {
         getElem('menu-open-local-files-input').click();
         if (isMenuOpen) {
           this.toggleMenuOpen_();
+          isMenuOpen = false;
         }
         break;
       case Key.U:
@@ -300,6 +302,11 @@ class KthoomApp {
       case Key.ESCAPE:
         if (isMenuOpen) {
           this.toggleMenuOpen_();
+          isMenuOpen = false;
+        }
+        if (isReadingStackOpen) {
+          this.readingStack_.toggleReadingStackOpen();
+          isReadingStackOpen = false;
         }
         break;
       case Key.UP:
@@ -330,7 +337,6 @@ class KthoomApp {
 
     if (getComputedStyle(getElem('progress')).display == 'none') return;
 
-    const isReadingStackOpen = this.readingStack_.isShown() && this.readingStack_.isOpen();
     let canKeyNext = !isMenuOpen && !isReadingStackOpen &&
                      ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
     let canKeyPrev = !isMenuOpen && !isReadingStackOpen && (window.scrollX <= 0);
@@ -406,11 +412,6 @@ class KthoomApp {
         break;
       case Key.S:
         if (!isMenuOpen) {
-          this.readingStack_.toggleReadingStackOpen();
-        }
-        break;
-      case Key.ESCAPE:
-        if (isReadingStackOpen) {
           this.readingStack_.toggleReadingStackOpen();
         }
         break;
@@ -504,7 +505,6 @@ class KthoomApp {
   /** @private */
   toggleUI_() {
     getElem('header').classList.toggle('fullscreen');
-    this.readingStack_.show(!this.readingStack_.isShown());
     this.bookViewer_.updateLayout();
   }
 
@@ -589,7 +589,6 @@ class KthoomApp {
       // Else, assume the file is a single book and try to load it.
       const singleBook = new Book(theFile.name)
       this.loadBooksFromPromises_([singleBook.loadFromFile(theFile)]);
-      this.readingStack_.show(true);
       this.readingStack_.addBook(singleBook);
     }
   }
@@ -624,7 +623,6 @@ class KthoomApp {
 
     if (this.readingStack_.getNumberOfBooks() > 0) {
       this.readingStack_.removeAll();
-      this.readingStack_.show(false);
 
       this.bookViewer_.closeBook();
       this.currentBook_ = null;
@@ -646,7 +644,6 @@ class KthoomApp {
    */
   loadSingleBookFromXHR(name, url, expectedSize, headerMap = {}) {
     return Book.fromXhr(name, url, expectedSize, headerMap).then(book => {
-      this.readingStack_.show(true);
       this.readingStack_.addBook(book);
     });
   }
@@ -664,7 +661,6 @@ class KthoomApp {
     }
 
     const book = new Book(name, uri);
-    this.readingStack_.show(true);
     this.readingStack_.addBook(book);
     return book.loadFromFetch(init, expectedSize);
   }
@@ -676,7 +672,6 @@ class KthoomApp {
    */
   loadSingleBookFromArrayBuffer(name, ab) {
     return Book.fromArrayBuffer(name, ab).then(book => {
-      this.readingStack_.show(true);
       this.readingStack_.addBook(book);
     });
   }
@@ -737,7 +732,6 @@ class KthoomApp {
     if (readingList && readingList.length > 0) {
       const books = readingList.map(item => new Book(this.getNameForBook_(item), item.uri));
       // Add all books to the stack immediately.
-      this.readingStack_.show(true);
       this.readingStack_.addBooks(books, true /* switchToFirst */);
 
       // Load the first book first - we do this so that the browser is not waiting

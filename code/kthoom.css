@@ -98,10 +98,26 @@ dl.helplist dd {
 }
 
 .navbutton {
-  height: 3em;
+  background-color: black;
+  border-color: grey;
+  border-radius: 5px;
+  color: grey;
+  cursor: pointer;
+  font-weight: bold;
+  height: 2.5em;
   padding: 0;
   user-select: none;
-  width: 3em;
+  width: 2.5em;
+}
+
+.navbutton:disabled {
+  color: #444;
+}
+
+.navbutton:hover:not([disabled]), .navbutton:focus {
+  background-color: #444;
+  border-color: yellow;
+  color: yellow;
 }
 
 #close {
@@ -118,9 +134,9 @@ dl.helplist dd {
 
 #progress {
   position: absolute;
-  left: 3em;
-  right: 10em;
-  top: 0.5em;
+  left: 2.5em;
+  right: 8.5em;
+  top: 0.33em;
   text-align: right;
 }
 
@@ -137,19 +153,20 @@ dl.helplist dd {
 
 .menuButton {
   background-color: black;
-  border: solid 1px yellow;
+  border: solid 1px grey;
   border-radius: 5px;
-  color: yellow;
+  color: grey;
   cursor: pointer;
   display: inline-block;
   padding: 0;
   text-decoration: none;
-  width: 3em;
-  height: 3em;
+  width: 2.5em;
+  height: 2.5em;
 }
 
-.menuButton:hover {
-  background-color: #444;
+.menuButton:hover, .menuButton:focus {
+  border: solid 1px yellow;
+  color: yellow;
 }
 
 #menu {
@@ -178,7 +195,7 @@ ul.menuItems {
   list-style: none;
   margin-top: 2px;
   position: absolute;
-  top: 40px;
+  top: 2em;
   width: 15em;
 }
 
@@ -260,7 +277,7 @@ ul.menuItems li {
 }
 
 button:focus {
-  outline: 3px solid yellow;
+  outline: solid 2px yellow;
 }
 
 #header.preview {
@@ -274,23 +291,22 @@ button:focus {
 
 #readingStack {
   border-color: grey;
-  bottom: 30px;
+  bottom: 1.5em;
   color: grey;
   cursor: pointer;
   display: -ms-flex;
   display: -webkit-flex;
   display: flex;
-  margin-left: -316px;
+  margin-left: -21em;
   opacity: 0.875;
   position: fixed;
   left: 0px;
-  top: 39px;
+  top: 2.5em;
   user-select: none;
   transition: margin-left .2s;
-  visibility: hidden;
 }
 
-#readingStackTab {
+#readingStackButton {
   -ms-align-self: center;
   -webkit-align-self: center;
   align-self: center;
@@ -303,10 +319,22 @@ button:focus {
   color: inherit;
   font-family: Cambria;
   font-size: 40px;
-  height: 50px;
+  height: 1.25em;
   margin-left: -1px;
-  width: 30px;
+  padding: 0;
+  user-select: none;
+  width: 0.75em;
   z-index: 100;
+}
+
+#readingStackButton:disabled {
+  color: #444;
+}
+
+#readingStackButton:hover:not([disabled]), #readingStackButton:focus {
+  background-color: #444;
+  color: yellow;
+  border-color: yellow;
 }
 
 #readingStackContents {
@@ -321,11 +349,11 @@ button:focus {
   padding: 10px;
   text-align: left;
   white-space: nowrap;
-  width: 300px;
+  width: 20em;
   z-index: 1;
 }
 
-#readingStack:hover, #readingStack.opened {
+#readingStack.opened {
   border-color: yellow;
   color: yellow;
   margin-left: 0;
@@ -356,7 +384,7 @@ button:focus {
 .menuItem:focus,
 .readingStackBook.current {
   background-color: #cc2929;
-  outline: solid 1px yellow;
+  outline: solid 2px yellow;
 }
 
 .readingStackBookCloseButton {

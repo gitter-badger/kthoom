@@ -49,10 +49,10 @@
       <div id="header">
         <button id="menu-open" class="menuButton" tabindex="0"
             aria-haspopup="true" aria-expanded="false" aria-label="Menu button">
-          <svg viewBox="0 0 100 100">
-            <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="30" y2="30"></line>
-            <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="50" y2="50"></line>
-            <line stroke-width="10" stroke="yellow" x1="20" x2="80" y1="70" y2="70"></line>
+          <svg viewBox="0 0 100 100" stroke="currentColor">
+            <line stroke-width="10" x1="20" x2="80" y1="30" y2="30"></line>
+            <line stroke-width="10" x1="20" x2="80" y1="50" y2="50"></line>
+            <line stroke-width="10" x1="20" x2="80" y1="70" y2="70"></line>
           </svg>
         </button>
         <div id="progress" role="progressbar" aria-label="Progress bar">
@@ -103,14 +103,24 @@
         </div>
       </div> <!-- bookViewer -->
       <div id="readingStack">
-        <div id="readingStackContents"></div>
-        <div id="readingStackTab" title="Reading Stack">
-          <svg stroke="currentColor" stroke-width="2" width="30" height="50">
-            <line x1="11" y1="14" x2="11" y2="36" />
-            <line x1="15" y1="14" x2="15" y2="36" />
-            <line x1="19" y1="14" x2="19" y2="36" />
-          </svg>
+        <div id="readingStackContents">
+          No books loaded
         </div>
+        <button id="readingStackButton" title="Reading Stack"
+            aria-label="Reading Stack button">
+          <svg stroke="currentColor" stroke-width="2" width="30" height="50">
+            <defs>
+              <g id="singleRow" stroke="currentColor">
+                <path d="M2,0 l2,3 l5,-7" />
+                <line x1="11" y1="0" x2="24" y2="0" />
+              </g>
+            </defs>
+            <use y="9" href="#singleRow" />
+            <use y="19" href="#singleRow" />
+            <use y="29" href="#singleRow" />
+            <use y="39" href="#singleRow" />
+          </svg>
+        </button>
       </div> <!-- readingStack -->
     </div>
     <div id="menu">
