@@ -95,6 +95,11 @@ class KthoomApp {
     const bookViewerElem = getElem(BOOK_VIEWER_ELEM_ID);
     const firstPageElem = getElem('page1');
     bookViewerElem.addEventListener('click', (evt) => {
+      if (this.readingStack_.isOpen()) {
+        this.readingStack_.toggleReadingStackOpen();
+        return;
+      }
+
       // Two-page viewer mode is simpler to figure out what the click means.
       if (this.bookViewer_.getNumPagesInViewer() === 2) {
         const inverted = (this.bookViewer_.getRotateTimes() >= 2);

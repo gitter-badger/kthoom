@@ -141,8 +141,12 @@ export class ReadingStack {
   toggleReadingStackOpen() {
     getElem('readingStack').classList.toggle('opened');
 
-    const firstBookElem = getElem('readingStack').querySelectorAll('.readingStackBook');
-    firstBookElem.focus();
+    if (this.isOpen()) {
+      const bookElems = getElem('readingStack').querySelectorAll('.readingStackBook');
+      if (bookElems.length > 0) {
+        bookElems.item(0).focus();
+      }
+    }
   }
 
   // TODO: Do this better so that each change of state doesn't require a complete re-render?
