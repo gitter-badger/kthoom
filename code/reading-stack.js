@@ -22,8 +22,6 @@ export class ReadingStack {
     this.books_ = [];
     this.currentBookNum_ = -1;
     this.currentBookChangedCallbacks_ = [];
-
-    getElem('readingStackButton').addEventListener('click', () => this.toggleReadingStackOpen());
   }
 
   getNumberOfBooks() { return this.books_.length; }

@@ -179,7 +179,7 @@ dl.helplist dd {
   display: block;
 }
 
-#menuOverlay {
+.fullScreenOverlay {
   position: absolute;
   bottom: 0;
   left: 0;

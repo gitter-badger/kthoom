@@ -66,27 +66,31 @@ class KthoomApp {
   /** @private */
   initMenu_() {
     const fileInput = getElem('menu-open-local-files-input');
-    getElem('menuOverlay').addEventListener('click', (e) => this.toggleMenuOpen_(), false);
-    getElem('menu-open').addEventListener('click', (e) => this.toggleMenuOpen_(), false);
-    getElem('menu-open-local-files').addEventListener('click', (e) => fileInput.click(), false);
-    getElem('menu-open-url').addEventListener('click', (e) => this.loadFileViaUrl_(), false);
-    getElem('menu-open-google-drive').addEventListener('click', kthoom.google.doDrive, false);
-    getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow, false);
+    getElem('menuOverlay').addEventListener('click', (e) => this.toggleMenuOpen_());
+    getElem('readingStackButton').addEventListener('click', () => this.toggleReadingStackOpen_());
+    getElem('readingStackOverlay').addEventListener('click', (e) => {
+      this.toggleReadingStackOpen_();
+    });
+    getElem('menu-open').addEventListener('click', (e) => this.toggleMenuOpen_());
+    getElem('menu-open-local-files').addEventListener('click', (e) => fileInput.click());
+    getElem('menu-open-url').addEventListener('click', (e) => this.loadFileViaUrl_());
+    getElem('menu-open-google-drive').addEventListener('click', kthoom.google.doDrive);
+    getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow);
     getElem('menu-close-all').addEventListener('click', (e) => this.closeAll_());
-    getElem('menu-help').addEventListener('click', (e) => this.toggleHelpOpen_(), false);
-    fileInput.addEventListener('change', (e) => this.loadLocalFiles_(e), false);
+    getElem('menu-help').addEventListener('click', (e) => this.toggleHelpOpen_());
+    fileInput.addEventListener('change', (e) => this.loadLocalFiles_(e));
   }
 
   /** @private */
   initDragDrop_() {
     const swallowEvent = (e) => { e.preventDefault(); e.stopPropagation(); };
-    document.addEventListener('dragenter', swallowEvent, false);
-    document.addEventListener('dragexit', swallowEvent, false);
-    document.addEventListener('dragover', swallowEvent, false);
+    document.addEventListener('dragenter', swallowEvent);
+    document.addEventListener('dragexit', swallowEvent);
+    document.addEventListener('dragover', swallowEvent);
     document.addEventListener('drop', (e) => {
       swallowEvent(e);
       this.loadLocalFiles_({target: e.dataTransfer});
-    }, false);
+    });
   }
 
   /** @private */
@@ -96,7 +100,7 @@ class KthoomApp {
     const firstPageElem = getElem('page1');
     bookViewerElem.addEventListener('click', (evt) => {
       if (this.readingStack_.isOpen()) {
-        this.readingStack_.toggleReadingStackOpen();
+        this.toggleReadingStackOpen_();
         return;
       }
 
@@ -138,13 +142,13 @@ class KthoomApp {
       } else {
         this.showNextPage();
       }
-    }, false);
+    });
 
     // Toolbar
-    getElem('prevBook').addEventListener('click', () => this.readingStack_.changeToPrevBook(), false);
-    getElem('prev').addEventListener('click', () => this.showPrevPage(), false);
-    getElem('next').addEventListener('click', () => this.showNextPage(), false);
-    getElem('nextBook').addEventListener('click', () => this.readingStack_.changeToNextBook(), false);
+    getElem('prevBook').addEventListener('click', () => this.readingStack_.changeToPrevBook());
+    getElem('prev').addEventListener('click', () => this.showPrevPage());
+    getElem('next').addEventListener('click', () => this.showNextPage());
+    getElem('nextBook').addEventListener('click', () => this.readingStack_.changeToNextBook());
   }
 
   /** @private */
@@ -154,7 +158,7 @@ class KthoomApp {
                  window.screen.height - window.innerHeight < 4);
       getElem('header').className = f ? 'fullscreen' : '';
       this.bookViewer_.updateLayout();
-    }, false);
+    });
   }
 
   /** @private */
@@ -310,7 +314,7 @@ class KthoomApp {
           isMenuOpen = false;
         }
         if (isReadingStackOpen) {
-          this.readingStack_.toggleReadingStackOpen();
+          this.toggleReadingStackOpen_();
           isReadingStackOpen = false;
         }
         break;
@@ -417,7 +421,7 @@ class KthoomApp {
         break;
       case Key.S:
         if (!isMenuOpen) {
-          this.readingStack_.toggleReadingStackOpen();
+          this.toggleReadingStackOpen_();
         }
         break;
       default:
@@ -505,6 +509,16 @@ class KthoomApp {
 
     const firstMenuElem = getElem('menuItems').querySelector('.menuItem:not([style="display:none"])');
     firstMenuElem.focus();
+  }
+
+  /** @private */
+  toggleReadingStackOpen_() {
+    this.readingStack_.toggleReadingStackOpen();
+    if (this.readingStack_.isOpen()) {
+      getElem('readingStackOverlay').removeAttribute('style');
+    } else {
+      getElem('readingStackOverlay').setAttribute('style', 'display:none');
+    }
   }
 
   /** @private */

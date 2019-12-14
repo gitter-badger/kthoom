@@ -102,6 +102,7 @@
           <canvas id="secondImage"></canvas>
         </div>
       </div> <!-- bookViewer -->
+      <div id="readingStackOverlay" class="fullScreenOverlay" style="display:none"></div>
       <div id="readingStack">
         <div id="readingStackContents">
           No books loaded
@@ -124,7 +125,7 @@
       </div> <!-- readingStack -->
     </div>
     <div id="menu">
-      <div id="menuOverlay"></div>
+      <div id="menuOverlay" class="fullScreenOverlay"></div>
       <ul id ="menuItems" class="menuItems" role="menu" aria-label="Main Menu">
         <li role="none">
           <button id="menu-open-local-files" class="menuItem" role="menuitem" tabindex="-1">
