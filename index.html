@@ -90,6 +90,11 @@
               aria-label="Next Book button">
             &gt;&gt;
           </button>
+          <!-- TODO: Make an SVG for this? -->
+          <button id="fullScreen" class="navbutton" title="Full Screen (F)"
+              aria-label="Full Screen button" style="display:none">
+            &#x26f6;
+          </button>
         </div>
       </div> <!-- header -->
       <div id="bookViewer">
@@ -181,9 +186,6 @@
 
           <dt>S</dt>
           <dd>Open/close the Reading stack</dd>
-
-          <dt>X</dt>
-          <dd>Show/hide the UI (toolbars)</dd>
         </dl>
       </section>
       <section class="helpSection">
@@ -200,6 +202,9 @@
 
           <dt>1 <span class="separator">/</span> 2</dt>
           <dd>1-page view / 2-page view</dd>
+
+          <dt>F</dt>
+          <dd>Toggle Fullscreen Mode (if available)</dd>
         </dl>
       </section>
 
@@ -210,10 +215,10 @@
           <dd>Open local books (use Shift to open multiple)</dd>
 
           <dt>U</dt>
-          <dd>Open a book from a URL</dd>
+          <dd>Open a book / reading list from a URL</dd>
 
           <dt>G</dt>
-          <dd>Open a book from Google Drive</dd>
+          <dd>Open a book / reading list from Google Drive</dd>
         </dl>
       </section>
     </div>

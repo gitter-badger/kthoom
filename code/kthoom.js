@@ -47,6 +47,7 @@ class KthoomApp {
   init_() {
     this.readingStack_.whenCurrentBookChanged(book => this.handleCurrentBookChanged_(book));
     this.initMenu_();
+    this.initNav_();
     this.initDragDrop_();
     this.initClickHandlers_();
     this.initResizeHandler_();
@@ -143,22 +144,26 @@ class KthoomApp {
         this.showNextPage();
       }
     });
+  }
 
-    // Toolbar
+  /** @private */
+  initNav_() {
     getElem('prevBook').addEventListener('click', () => this.readingStack_.changeToPrevBook());
     getElem('prev').addEventListener('click', () => this.showPrevPage());
     getElem('next').addEventListener('click', () => this.showNextPage());
     getElem('nextBook').addEventListener('click', () => this.readingStack_.changeToNextBook());
+
+    if (document.fullscreenEnabled) {
+      const fsButton = getElem('fullScreen');
+      fsButton.style.display = '';
+      fsButton.addEventListener('click', () => this.toggleFullscreen_());
+      document.addEventListener('fullscreenchange', () => this.bookViewer_.updateLayout());
+    }
   }
 
   /** @private */
   initResizeHandler_() {
-    window.addEventListener('resize', () => {
-      const f = (window.screen.width - window.innerWidth < 4 &&
-                 window.screen.height - window.innerHeight < 4);
-      getElem('header').className = f ? 'fullscreen' : '';
-      this.bookViewer_.updateLayout();
-    });
+    window.addEventListener('resize', () => this.bookViewer_.updateLayout());
   }
 
   /** @private */
@@ -296,6 +301,9 @@ class KthoomApp {
       case Key.U:
         this.loadFileViaUrl_();
         break;
+      case Key.F:
+        this.toggleFullscreen_();
+        break;
       case Key.G:
         kthoom.google.doDrive();
         break;
@@ -375,9 +383,6 @@ class KthoomApp {
     let canKeyPrev = (window.scrollX <= 0);
 
     switch (code) {
-      case Key.X:
-        this.toggleUI_();
-        break;
       case Key.LEFT:
         if (canKeyPrev) {
           if (evt.shiftKey) {
@@ -506,6 +511,16 @@ class KthoomApp {
   }
 
   /** @private */
+  toggleFullscreen_() {
+    if (document.fullscreenEnabled) {
+      const fsPromise = document.fullscreenElement ?
+          document.exitFullscreen() :
+          document.documentElement.requestFullscreen();
+      fsPromise.then(() => this.bookViewer_.updateLayout());
+    }
+  }
+
+  /** @private */
   toggleHelpOpen_() {
     getElem('helpOverlay').classList.toggle('opened');
   }
@@ -527,12 +542,6 @@ class KthoomApp {
     } else {
       getElem('readingStackOverlay').setAttribute('style', 'display:none');
     }
-  }
-
-  /** @private */
-  toggleUI_() {
-    getElem('header').classList.toggle('fullscreen');
-    this.bookViewer_.updateLayout();
   }
 
   showPrevPage() {
