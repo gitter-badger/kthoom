@@ -324,6 +324,9 @@ class KthoomApp {
           evt.stopPropagation();
           this.selectMenuItem(-1);
           return;
+        } else if (isReadingStackOpen) {
+          this.readingStack_.changeToPrevBook();
+          return;
         }
         break;
       case Key.DOWN:
@@ -331,6 +334,9 @@ class KthoomApp {
           evt.preventDefault();
           evt.stopPropagation();
           this.selectMenuItem(1);
+          return;
+        } else if (isReadingStackOpen) {
+          this.readingStack_.changeToNextBook();
           return;
         }
         break;
@@ -342,15 +348,32 @@ class KthoomApp {
           getElem('menu-open').focus();
         }
         break;
+      case Key.S:
+        if (!isMenuOpen) {
+          this.toggleReadingStackOpen_();
+          return;
+        }
+        break;
     }
+
+    // All other key strokes below this are only valid if the menu and reading stack are closed.
+    if (isMenuOpen || isReadingStackOpen) {
+      if (isMenuOpen)  {
+        this.toggleMenuOpen_();
+      }
+      if (isReadingStackOpen) {
+        this.toggleReadingStackOpen_();
+      }
+      return;
+    }
+
+    if (evt.ctrlKey || evt.metaKey) return;
 
     if (getComputedStyle(getElem('progress')).display == 'none') return;
 
-    let canKeyNext = !isMenuOpen && !isReadingStackOpen &&
-                     ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
-    let canKeyPrev = !isMenuOpen && !isReadingStackOpen && (window.scrollX <= 0);
+    let canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
+    let canKeyPrev = (window.scrollX <= 0);
 
-    if (evt.ctrlKey || evt.metaKey) return;
     switch (code) {
       case Key.X:
         this.toggleUI_();
@@ -376,22 +399,12 @@ class KthoomApp {
       case Key.UP:
         evt.preventDefault();
         evt.stopPropagation();
-
-        if (isReadingStackOpen) {
-          this.readingStack_.changeToPrevBook();
-        } else {
-          window.scrollBy(0, -5);
-        }
+        window.scrollBy(0, -5);
         break;
       case Key.DOWN:
         evt.preventDefault();
         evt.stopPropagation();
-
-        if (isReadingStackOpen) {
-          this.readingStack_.changeToNextBook();
-        } else {
-          window.scrollBy(0, 5);
-        }
+        window.scrollBy(0, 5);
         break;
       case Key.LEFT_SQUARE_BRACKET:
         this.readingStack_.changeToPrevBook();
@@ -418,11 +431,6 @@ class KthoomApp {
       case Key.NUM_1: case Key.NUM_2:
         this.bookViewer_.setNumPagesInViewer(code - Key.NUM_1 + 1);
         this.saveSettings_();
-        break;
-      case Key.S:
-        if (!isMenuOpen) {
-          this.toggleReadingStackOpen_();
-        }
         break;
       default:
         break;
