@@ -381,41 +381,8 @@ export class Book {
   }
 }
 
-// Factory methods.
-
-/**
- * @param {File} file
- * @return {Promise<Book|String>} Returns a Promise of the book, or an error.
- */
-Book.fromFile = function(file) {
-  const book = new Book(file.name);
-  return book.loadFromFile(file);
-};
-
-/**
- * @param {string} name The book name.
- * @param {string} uri The URI to fetch.
- * @param {number} expectedSize Unarchived size in bytes.
- * @param {Object<string, string>} headerMap A map of request header keys and values.
- * @return {Promise<Book>}
- */
-Book.fromXhr = function(name, uri, expectedSize = -1, headerMap = {}) {
-  const book = new Book(name, uri);
-  return book.loadFromXhr(expectedSize, headerMap);
-};
-
-/**
- * @param {string} name The book name.
- * @param {string} uri The resource to fetch.
- * @param {Object} init An object to initialize the Fetch API.
- * @param {number} expectedSize Unarchived size in bytes.
- * @return {Promise<Book>}
- */
-Book.fromFetch = function(name, uri, init, expectedSize = -1) {
-  const book = new Book(name, uri);
-  return book.loadFromFetch(init, expectedSize);
-};
-
+// Obsolete factory methods.
+// TODO: Remove the last usage of this (kthoom.js).
 /**
  * @param {string} name The book name.
  * @param {ArrayBuffer} ab The ArrayBuffer filled with the unarchived bytes.

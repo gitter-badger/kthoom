@@ -679,7 +679,8 @@ class KthoomApp {
    * @return {Promise<Book>}
    */
   loadSingleBookFromXHR(name, url, expectedSize, headerMap = {}) {
-    return Book.fromXhr(name, url, expectedSize, headerMap).then(book => {
+    const book = new Book(name, uri);
+    return book.loadFromXhr(expectedSize, headerMap).then(book => {
       this.readingStack_.addBook(book);
     });
   }
@@ -707,6 +708,7 @@ class KthoomApp {
    * @return {Promise<Book>}
    */
   loadSingleBookFromArrayBuffer(name, ab) {
+    // TODO: Use the constructor and load method instead of this factory method.
     return Book.fromArrayBuffer(name, ab).then(book => {
       this.readingStack_.addBook(book);
     });
