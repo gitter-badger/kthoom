@@ -6,6 +6,10 @@
  * Copyright(c) 2018 Google Inc.
  */
 
+ /**
+  * Base class for Pages.  Eveery Page has an aspect ratio method.
+  * TODO(epub): Page should have a render() method that takes in a Canvas element.
+  */
 export class Page {
   constructor(file) {
     /** @type {string} */
@@ -40,6 +44,7 @@ export class TextPage extends Page {
   }
 }
 
+// TODO(epub): Do not just escape the raw HTML, that would be bad.
 export class HtmlPage extends TextPage {
   /**
    * @param {File} file

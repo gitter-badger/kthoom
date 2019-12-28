@@ -555,6 +555,9 @@ export class BookViewer {
     assert(canvasEl, 'Canvas not found in pageEl in setPageContents_()');
     const ctx = canvasEl.getContext('2d');
 
+    // TODO(epub): Put all page contents into the canvas so that they can be rotated properly and
+    //     so we don't have this giant if-else construct.  Page can have a method that takes a
+    //     Canvas element and each Page type can do what it needs to do.
     if (page instanceof ImagePage) {
       canvasEl.style.display = '';
       textDiv.style.display = 'none';

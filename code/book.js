@@ -7,6 +7,9 @@
  */
 import { Page, createPageFromFile } from './page.js';
 
+// TODO(epub): Create a BookBinder class that is responsible for the unarchiver, listens to its
+//     events, and emits its own types of events when pages are added.
+
 const LoadState = {
   NOT_LOADED: 0,
   LOADING: 1,
@@ -14,6 +17,8 @@ const LoadState = {
   LOADING_ERROR: 3,
 };
 
+// TODO(epub): This state is only used locally in the context of unarchiving the file.
+//     Move this into the BookOpener module.
 const UnarchiveState = {
   NOT_UNARCHIVED: 0,
   READY_FOR_UNARCHIVING: 1,
@@ -31,10 +36,12 @@ export class BookProgressEvent extends BookEvent {
   constructor(book) { super(book); }
 }
 
+// TODO(epub): Do not export this.  Move it into the BookOpener for internal use.
 export class ReadyToUnarchiveEvent extends BookEvent {
   constructor(book) { super(book); }
 }
 
+// TODO(epub): This should be renamed to PageAddedEvent.
 export class UnarchivePageExtractedEvent extends BookEvent {
   constructor(book, page, pageNum) {
     super(book);
@@ -97,6 +104,11 @@ export class Book {
   getUnarchivingPercentage() { return this.unarchivingPercentage_; }
   getNumberOfPages() { return this.totalPages_; }
   getNumberOfPagesReady() { return this.pages_.length; }
+
+  /**
+   * @param {number} i A number from 0 to (num_pages - 1).
+   * @return {Page}
+   */
   getPage(i) {
     // TODO: This is a bug in the unarchivers.  The only time totalPages_ is set is
     // upon getting a UnarchiveEvent.Type.PROGRESS which has the total number of files.
@@ -107,6 +119,8 @@ export class Book {
     }
     return this.pages_[i];
   }
+
+  /** @return {boolean} */
   isReadyToUnarchive() { return this.unarchiveState_ === UnarchiveState.READY_FOR_UNARCHIVING; }
 
   /**
@@ -265,9 +279,12 @@ export class Book {
     this.notify_(new ReadyToUnarchiveEvent(this));
   }
 
+  // TODO(epub): Rename this to create() or something.  Unarchiving is handled by the BookBinder.
   unarchive() {
     const start = (new Date).getTime();
 
+    // TODO(epub):  This is the process of binding for comic book files, each extracted file
+    //     is a page.  Move this into code into a ComicBookBinder class.
     if (this.unarchiver_) {
       this.unarchiveState_ = UnarchiveState.UNARCHIVING;
 
@@ -318,6 +335,8 @@ export class Book {
           }
 
           // Sort the book's pages based on filename.
+          // TODO(epub): This will not work with epub files, since pages are not associated with
+          //     files.
           this.pages_ = pages.slice(0).sort((a,b) => {
             return a.filename.toLowerCase() > b.filename.toLowerCase() ? 1 : -1;
           });
