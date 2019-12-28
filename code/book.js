@@ -96,6 +96,11 @@ export class Book {
     /** @private {Promise<Page>} */
     this.pagePromises_ = [];
 
+    /**
+     * A map of objects that are listening to events from this Book.  The key is the object instance
+     * and the value is the bound callback function.
+     * @private {Object<Object, Function>}
+     */
     this.subscribers_ = {};
   }
 
@@ -159,7 +164,7 @@ export class Book {
       }
       xhr.onload = (evt) => {
         const arrayBuffer = evt.target.response;
-        this.setArrayBuffer(arrayBuffer, 1.0, expectedSize);
+        this.setArrayBuffer_(arrayBuffer, 1.0, expectedSize);
         resolve(this);
       };
       xhr.onerror = (err) => {
@@ -197,7 +202,7 @@ export class Book {
             if (!this.unarchiver_) {
               // At this point, the Unarchiver should be created and we should have
               // enough to get started on the unarchiving process.
-              this.setArrayBuffer(value.buffer, pct, expectedSize);
+              this.setArrayBuffer_(value.buffer, pct, expectedSize);
             } else {
               // Update the unarchiver with more bytes.
               this.loadingPercentage_ = pct;
@@ -231,7 +236,7 @@ export class Book {
       fr.onload = () => {
         const ab = fr.result;
         try {
-          this.setArrayBuffer(ab, 1.0, ab.byteLength);
+          this.setArrayBuffer_(ab, 1.0, ab.byteLength);
         } catch (err) {
           const errMessage = err + ': ' + file.name;
           console.error(errMessage);
@@ -244,12 +249,13 @@ export class Book {
   }
 
   /**
+   * TODO: Mark this method as private once the static method below is removed.
    * Resets the book and creates the Unarchiver.
    * @param {ArrayBuffer} ab
    * @param {number} pctLoaded
    * @param {number} expectedSizeInBytes
    */
-  setArrayBuffer(ab, pctLoaded, expectedSizeInBytes) {
+  setArrayBuffer_(ab, pctLoaded, expectedSizeInBytes) {
     // Reset the book completely.
     this.unarchiver_ = null;
     this.expectedSizeInBytes_ = expectedSizeInBytes;
@@ -261,15 +267,6 @@ export class Book {
     this.unarchiveState_ = UnarchiveState.READY_FOR_UNARCHIVING;
     this.unarchivingPercentage_ = 0.0;
 
-    // TODO: Figure out if we want to keep single JPEG file handling.
-    /*
-    const h = new Uint8Array(ab, 0, 10);
-    if (h[0] == 255 && h[1] == 216) { // JPEG
-      this.totalPages_ = 1;
-      const dataURI = createURLFromArray(new Uint8Array(ab), 'image/jpeg');
-      this.setImage(dataURI);
-    }
-    */
     this.unarchiver_ = bitjs.archive.GetUnarchiver(ab, 'code/bitjs/');
 
     if (!this.unarchiver_) {
@@ -362,10 +359,20 @@ export class Book {
     }
   }
 
+  /**
+   * Subscribes the object to listen to events from this Book.
+   * @param {Object} source
+   * @param {Function} The function that should be called with the event from this Book.  At call
+   *     time, the function is bound to the source.
+   */
   subscribe(source, callback) {
     this.subscribers_[source] = callback;
   }
 
+  /**
+   * Unsubscribes the object from listening to events from this Book.
+   * @param {Object} source
+   */
   unsubscribe(source) {
     if (this.subscribers_[source]) {
       delete this.subscribers_[source];
@@ -375,8 +382,8 @@ export class Book {
   /** @private */
   notify_(evt) {
     for (let source in this.subscribers_) {
-      const callbackFn = this.subscribers_[source].bind(source);
-      callbackFn(evt, this);
+      const boundCallbackFn = this.subscribers_[source].bind(source);
+      boundCallbackFn(evt, this);
     }
   }
 }
@@ -391,7 +398,7 @@ export class Book {
 Book.fromArrayBuffer = function(name, ab) {
   return new Promise((resolve, reject) => {
     const book = new Book(name);
-    book.setArrayBuffer(ab, 1.0, ab.byteLength);
+    book.setArrayBuffer_(ab, 1.0, ab.byteLength);
     resolve(book);
   });
 };

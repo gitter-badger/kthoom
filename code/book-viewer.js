@@ -389,7 +389,7 @@ export class BookViewer {
       this.closeBook();
 
       this.currentBook_ = book;
-      book.subscribe(this, (evt) => this.handleBookEvent_(evt));
+      book.subscribe(this, evt => this.handleBookEvent_(evt));
       this.currentPageNum_ = 0;
       this.setProgressMeter({label: 'Opening'});
       this.updateLayout();
