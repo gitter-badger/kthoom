@@ -18,7 +18,7 @@ const LoadState = {
 };
 
 // TODO(epub): This state is only used locally in the context of unarchiving the file.
-//     Move this into the BookOpener module.
+//     Move this into the BookBinder module.
 const UnarchiveState = {
   NOT_UNARCHIVED: 0,
   READY_FOR_UNARCHIVING: 1,
@@ -36,7 +36,7 @@ export class BookProgressEvent extends BookEvent {
   constructor(book) { super(book); }
 }
 
-// TODO(epub): Do not export this.  Move it into the BookOpener for internal use.
+// TODO(epub): Do not export this.  Move it into the BookBinder for internal use or remove.
 export class ReadyToUnarchiveEvent extends BookEvent {
   constructor(book) { super(book); }
 }
@@ -80,12 +80,26 @@ export class Book {
     this.unarchiveState_ = UnarchiveState.NOT_UNARCHIVED;
 
     this.expectedSizeInBytes_ = 0;
+
+    /**
+     * How much of the book has been loaded.  A number between 0 and 1.0.
+     * @private {number}
+     */
     this.loadingPercentage_ = 0.0;
+
+    /**
+     * How much of the book has been unarchived.  A number between 0 and 1.0.
+     * @private {number}
+     */
     this.unarchivingPercentage_ = 0.0;
 
-    this.unarchiver_ = null;
-
+    /**
+     * The total known number of pages.
+     * @private {number}
+     */
     this.totalPages_ = 0;
+
+    this.unarchiver_ = null;
 
     /** @private {Array<Page>} */
     this.pages_ = [];
@@ -164,7 +178,7 @@ export class Book {
       }
       xhr.onload = (evt) => {
         const arrayBuffer = evt.target.response;
-        this.setArrayBuffer_(arrayBuffer, 1.0, expectedSize);
+        this.setArrayBuffer_(arrayBuffer, 0, expectedSize);
         resolve(this);
       };
       xhr.onerror = (err) => {
@@ -188,7 +202,6 @@ export class Book {
       throw 'URI for book was not set in loadFromFetch()';
     }
 
-    // TODO: Does this actually return the right value?  Where does it return 'this'?
     return fetch(this.uri_, init).then(response => {
       const reader = response.body.getReader();
       let bytesRead = 0;
@@ -216,6 +229,7 @@ export class Book {
         });
       };
       readAndProcessNextChunk();
+      return this;
     });
   }
 
@@ -249,11 +263,26 @@ export class Book {
   }
 
   /**
-   * TODO: Mark this method as private once the static method below is removed.
+   * @param {ArrayBuffer} ab
+   * @return {Promise<Book>} A Promise that returns this book when done.
+   */
+  loadFromArrayBuffer(ab) {
+    if (this.loadState_ !== LoadState.NOT_LOADED) {
+      throw 'Cannot try to load via File when the Book is already loading or loaded';
+    }
+    if (this.uri_) {
+      throw 'URI for book was set in loadFromArrayBuffer()';
+    }
+
+    this.setArrayBuffer_(ab, 1.0, ab.byteLength);
+  }
+
+  /**
    * Resets the book and creates the Unarchiver.
    * @param {ArrayBuffer} ab
    * @param {number} pctLoaded
    * @param {number} expectedSizeInBytes
+   * @private
    */
   setArrayBuffer_(ab, pctLoaded, expectedSizeInBytes) {
     // Reset the book completely.
@@ -387,18 +416,3 @@ export class Book {
     }
   }
 }
-
-// Obsolete factory methods.
-// TODO: Remove the last usage of this (kthoom.js).
-/**
- * @param {string} name The book name.
- * @param {ArrayBuffer} ab The ArrayBuffer filled with the unarchived bytes.
- * @return {Promise<Book>}
- */
-Book.fromArrayBuffer = function(name, ab) {
-  return new Promise((resolve, reject) => {
-    const book = new Book(name);
-    book.setArrayBuffer_(ab, 1.0, ab.byteLength);
-    resolve(book);
-  });
-};
