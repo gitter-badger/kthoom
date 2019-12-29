@@ -117,12 +117,6 @@ export class BookViewer {
    * @private
    */
   handleBookEvent_(evt) {
-    // If any event comes in and we are suddenly ready to unarchive,
-    // then kick that off.
-    if (this.currentBook_.isReadyToUnarchive()) {
-      this.currentBook_.unarchive();
-    }
-
     if (evt instanceof BookProgressEvent) {
       getElem('header').classList.add('animating');
       this.setProgressMeter({label: 'Opening'});
@@ -393,11 +387,6 @@ export class BookViewer {
       this.currentPageNum_ = 0;
       this.setProgressMeter({label: 'Opening'});
       this.updateLayout();
-
-      // If the book is immediately ready to unarchive, kick that off.
-      if (this.currentBook_.isReadyToUnarchive()) {
-        this.currentBook_.unarchive();
-      }
     }
   }
 

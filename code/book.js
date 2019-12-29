@@ -21,7 +21,6 @@ const LoadState = {
 //     Move this into the BookBinder module.
 const UnarchiveState = {
   NOT_UNARCHIVED: 0,
-  READY_FOR_UNARCHIVING: 1,
   UNARCHIVING: 2,
   UNARCHIVED: 3,
   UNARCHIVING_ERROR: 4,
@@ -33,11 +32,6 @@ export class BookEvent {
 
 // The book knows its load / unarchive percentages.
 export class BookProgressEvent extends BookEvent {
-  constructor(book) { super(book); }
-}
-
-// TODO(epub): Do not export this.  Move it into the BookBinder for internal use or remove.
-export class ReadyToUnarchiveEvent extends BookEvent {
   constructor(book) { super(book); }
 }
 
@@ -99,6 +93,7 @@ export class Book {
      */
     this.totalPages_ = 0;
 
+    // TODO(epub): Move this and its creation into the BookBinder.
     this.unarchiver_ = null;
 
     /** @private {Array<Page>} */
@@ -138,9 +133,6 @@ export class Book {
     }
     return this.pages_[i];
   }
-
-  /** @return {boolean} */
-  isReadyToUnarchive() { return this.unarchiveState_ === UnarchiveState.READY_FOR_UNARCHIVING; }
 
   /**
    * Starts an XHR and progressively loads in the book.
@@ -275,6 +267,7 @@ export class Book {
     }
 
     this.setArrayBuffer_(ab, 1.0, ab.byteLength);
+    return Promise.resolve(this);
   }
 
   /**
@@ -293,7 +286,6 @@ export class Book {
     this.pagePromises_ = [];
     this.loadState_ = pctLoaded < 1.0 ? LoadState.LOADING : LoadState.LOADED;
     this.loadingPercentage_ = pctLoaded;
-    this.unarchiveState_ = UnarchiveState.READY_FOR_UNARCHIVING;
     this.unarchivingPercentage_ = 0.0;
 
     this.unarchiver_ = bitjs.archive.GetUnarchiver(ab, 'code/bitjs/');
@@ -302,11 +294,14 @@ export class Book {
       throw 'Could not determine the unarchiver to use for the file'
     }
 
-    this.notify_(new ReadyToUnarchiveEvent(this));
+    this.unarchive_();
   }
 
-  // TODO(epub): Rename this to create() or something.  Unarchiving is handled by the BookBinder.
-  unarchive() {
+  /**
+   * TODO(epub): Rename this to create() or something.  Unarchiving is handled by the BookBinder.
+   * @private
+   */
+  unarchive_() {
     const start = (new Date).getTime();
 
     // TODO(epub):  This is the process of binding for comic book files, each extracted file
