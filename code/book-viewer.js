@@ -6,8 +6,8 @@
  * Copyright(c) 2018 Google Inc.
  */
 
-import { Book, BookEvent, BookProgressEvent, UnarchivePageExtractedEvent,
-         UnarchiveCompleteEvent } from './book.js';
+import { Book } from './book.js';
+import { BookPageExtractedEvent, BookProgressEvent, BookBindingCompleteEvent } from './book-events.js';
 import { assert, getElem } from './helpers.js';
 import { ImagePage, HtmlPage, TextPage } from './page.js';
 
@@ -120,12 +120,12 @@ export class BookViewer {
     if (evt instanceof BookProgressEvent) {
       getElem('header').classList.add('animating');
       this.setProgressMeter({label: 'Opening'});
-    } else if (evt instanceof UnarchivePageExtractedEvent) {
+    } else if (evt instanceof BookPageExtractedEvent) {
       // Display first page if we haven't yet.
       if (evt.pageNum == 1) {
         this.updateLayout();
       }
-    } else if (evt instanceof UnarchiveCompleteEvent) {
+    } else if (evt instanceof BookBindingCompleteEvent) {
       getElem('header').classList.remove('animating');
       this.setProgressMeter(1, 1);
     }
@@ -383,7 +383,7 @@ export class BookViewer {
       this.closeBook();
 
       this.currentBook_ = book;
-      book.subscribe(this, evt => this.handleBookEvent_(evt));
+      book.subscribeToAllEvents(this, evt => this.handleBookEvent_(evt));
       this.currentPageNum_ = 0;
       this.setProgressMeter({label: 'Opening'});
       this.updateLayout();

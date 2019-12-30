@@ -672,13 +672,13 @@ class KthoomApp {
 
   /**
    * @param {string} name The book name.
-   * @param {string} url The URL to fetch.
+   * @param {string} uri The URI to fetch.
    * @param {number} expectedSize Unarchived size in bytes.  If -1, then the
    *     data from the XHR progress events is used.
    * @param {Object<string, string>} headerMap A map of request header keys and values.
    * @return {Promise<Book>}
    */
-  loadSingleBookFromXHR(name, url, expectedSize, headerMap = {}) {
+  loadSingleBookFromXHR(name, uri, expectedSize, headerMap = {}) {
     const book = new Book(name, uri);
     this.readingStack_.addBook(book);
     return book.loadFromXhr(expectedSize, headerMap);
@@ -703,13 +703,14 @@ class KthoomApp {
 
   /**
    * @param {string} name
+   * @param {string} bookUri
    * @param {ArrayBuffer} ab
    * @return {Promise<Book>}
    */
-  loadSingleBookFromArrayBuffer(name, ab) {
+  loadSingleBookFromArrayBuffer(name, bookUri, ab) {
     const book = new Book(name);
     this.readingStack_.addBook(book);
-    return book.loadFromArrayBuffer(ab);
+    return book.loadFromArrayBuffer(bookUri, ab);
   }
 
   /**

@@ -5,59 +5,22 @@
  *
  * Copyright(c) 2018 Google Inc.
  */
-import { Page, createPageFromFile } from './page.js';
-
-// TODO(epub): Create a BookBinder class that is responsible for the unarchiver, listens to its
-//     events, and emits its own types of events when pages are added.
-
-const LoadState = {
-  NOT_LOADED: 0,
-  LOADING: 1,
-  LOADED: 2,
-  LOADING_ERROR: 3,
-};
-
-// TODO(epub): This state is only used locally in the context of unarchiving the file.
-//     Move this into the BookBinder module.
-const UnarchiveState = {
-  NOT_UNARCHIVED: 0,
-  UNARCHIVING: 2,
-  UNARCHIVED: 3,
-  UNARCHIVING_ERROR: 4,
-};
-
-export class BookEvent {
-  constructor(book) { this.book = book; }
-}
-
-// The book knows its load / unarchive percentages.
-export class BookProgressEvent extends BookEvent {
-  constructor(book) { super(book); }
-}
-
-// TODO(epub): This should be renamed to PageAddedEvent.
-export class UnarchivePageExtractedEvent extends BookEvent {
-  constructor(book, page, pageNum) {
-    super(book);
-    this.page = page;
-    this.pageNum = pageNum;
-  }
-}
-
-export class UnarchiveCompleteEvent extends BookEvent {
-  constructor(book) { super(book); }
-}
+import { createBookBinder } from './book-binder.js';
+import { BookEventType, BookProgressEvent } from './book-events.js';
+import { EventEmitter } from './event-emitter.js';
 
 /**
- * A Book has a name, a set of pages, and a loading and unarchiving state.  It is responsible for
- * unarchiving itself and emitting events to any subscribers as interesting things happen to it.
+ * A Book has a name, a set of pages, and a BookBinder which handles the process of loading,
+ * unarchiving, and page setting.
  */
-export class Book {
+export class Book extends EventEmitter {
   /**
    * @param {string} name
    * @param {string} uri
    */
   constructor(name, uri = undefined) {
+    super();
+
     /**
      * The name of the book (shown in the Reading Stack).
      * @type {String}
@@ -70,22 +33,7 @@ export class Book {
      */
     this.uri_ = uri;
 
-    this.loadState_ = LoadState.NOT_LOADED;
-    this.unarchiveState_ = UnarchiveState.NOT_UNARCHIVED;
-
     this.expectedSizeInBytes_ = 0;
-
-    /**
-     * How much of the book has been loaded.  A number between 0 and 1.0.
-     * @private {number}
-     */
-    this.loadingPercentage_ = 0.0;
-
-    /**
-     * How much of the book has been unarchived.  A number between 0 and 1.0.
-     * @private {number}
-     */
-    this.unarchivingPercentage_ = 0.0;
 
     /**
      * The total known number of pages.
@@ -93,29 +41,22 @@ export class Book {
      */
     this.totalPages_ = 0;
 
-    // TODO(epub): Move this and its creation into the BookBinder.
-    this.unarchiver_ = null;
+    /** @private {BookBinder} */
+    this.bookBinder_ = null;
 
     /** @private {Array<Page>} */
     this.pages_ = [];
-
-    // As each file becomes available from the Unarchiver, we kick off an async operation
-    // to construct a Page object.  After all pages are retrieved, we sort and then add
-    // to the pages_ array.
-    /** @private {Promise<Page>} */
-    this.pagePromises_ = [];
-
-    /**
-     * A map of objects that are listening to events from this Book.  The key is the object instance
-     * and the value is the bound callback function.
-     * @private {Object<Object, Function>}
-     */
-    this.subscribers_ = {};
   }
 
   getName() { return this.name_; }
-  getLoadingPercentage() { return this.loadingPercentage_; }
-  getUnarchivingPercentage() { return this.unarchivingPercentage_; }
+  getLoadingPercentage() {
+    if (!this.bookBinder_) return 0;
+    return this.bookBinder_.getLoadingPercentage();
+  }
+  getUnarchivingPercentage() {
+    if (!this.bookBinder_) return 0;
+    return this.bookBinder_.getUnarchivingPercentage();
+  }
   getNumberOfPages() { return this.totalPages_; }
   getNumberOfPagesReady() { return this.pages_.length; }
 
@@ -138,10 +79,10 @@ export class Book {
    * Starts an XHR and progressively loads in the book.
    * @param {Number} expectedSize If -1, the total field from the XHR Progress event is used.
    * @param {Object<string, string>} headerMap A map of request header keys and values.
-   * @return {Promise<Book>} A Promise that returns this book when done.
+   * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
   loadFromXhr(expectedSize = -1, headerMap = {}) {
-    if (this.loadState_ !== LoadState.NOT_LOADED) {
+    if (this.bookBinder_) {
       throw 'Cannot try to load via XHR when the Book is already loading or loaded';
     }
     if (!this.uri_) {
@@ -149,8 +90,6 @@ export class Book {
     }
 
     return new Promise((resolve, reject) => {
-      this.expectedSizeInBytes_ = expectedSize;
-
       const xhr = new XMLHttpRequest();
       xhr.open('GET', this.uri_, true);
       for (const headerKey in headerMap) {
@@ -159,18 +98,21 @@ export class Book {
 
       xhr.responseType = 'arraybuffer';
       xhr.onprogress = (evt) => {
-        if (expectedSize == -1 && evt.total) {
-          this.expectedSizeInBytes_ = expectedSize = evt.total;
-        }
-        let pct = evt.loaded / expectedSize;
-        if (pct) {
-          this.loadingPercentage_ = pct;
-          this.notify_(new BookProgressEvent(this));
+        if (this.bookBinder_) {
+          if (expectedSize == -1 && evt.total) {
+            expectedSize = evt.total;
+            this.bookBinder_.setNewExpectedSize(evt.loaded, evt.total);
+          }
+          this.notify(new BookProgressEvent(
+              this,
+              this.bookBinder_.getLoadingPercentage(),
+              this.bookBinder_.getUnarchivingPercentage(),
+              this.pages_.length));
         }
       }
       xhr.onload = (evt) => {
-        const arrayBuffer = evt.target.response;
-        this.setArrayBuffer_(arrayBuffer, 0, expectedSize);
+        const ab = evt.target.response;
+        this.startBookBinding_(this.uri_, ab, expectedSize);
         resolve(this);
       };
       xhr.onerror = (err) => {
@@ -182,12 +124,12 @@ export class Book {
 
   /**
    * Starts a fetch and progressively loads in the book.
-   * @param {Number} expectedSize If -1, the total field from the XHR Progress event is used.
-   * @param {Object<string, string>} headerMap A map of request header keys and values.
-   * @return {Promise<Book>} A Promise that returns this book when done.
+   * @param {Object<string, string>} init A map of request header keys and values.
+   * @param {Number} expectedSize The total number of bytes expected.
+   * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
   loadFromFetch(init, expectedSize) {
-    if (this.loadState_ !== LoadState.NOT_LOADED) {
+    if (this.bookBinder_) {
       throw 'Cannot try to load via XHR when the Book is already loading or loaded';
     }
     if (!this.uri_) {
@@ -196,41 +138,31 @@ export class Book {
 
     return fetch(this.uri_, init).then(response => {
       const reader = response.body.getReader();
-      let bytesRead = 0;
       const readAndProcessNextChunk = () => {
         reader.read().then(({done, value}) => {
           if (!done) {
             // value is a chunk of the file as a Uint8Array.
-            bytesRead += value.length;
-            let pct = bytesRead / expectedSize;
-
-            if (!this.unarchiver_) {
-              // At this point, the Unarchiver should be created and we should have
-              // enough to get started on the unarchiving process.
-              this.setArrayBuffer_(value.buffer, pct, expectedSize);
+            if (!this.bookBinder_) {
+              this.startBookBinding_(this.name_, value.buffer, expectedSize);
             } else {
-              // Update the unarchiver with more bytes.
-              this.loadingPercentage_ = pct;
-              this.unarchiver_.update(value.buffer);
+              this.bookBinder_.appendBytes(value.buffer);
             }
-
-            this.notify_(new BookProgressEvent(this));
-
-            readAndProcessNextChunk();
+            return readAndProcessNextChunk();
+          } else {
+            return this;
           }
         });
       };
-      readAndProcessNextChunk();
-      return this;
+      return readAndProcessNextChunk();
     });
   }
 
   /**
    * @param {File} file
-   * @return {Promise<Book>} A Promise that returns this book when done.
+   * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
   loadFromFile(file) {
-    if (this.loadState_ !== LoadState.NOT_LOADED) {
+    if (this.bookBinder_) {
       throw 'Cannot try to load via File when the Book is already loading or loaded';
     }
     if (this.uri_) {
@@ -242,7 +174,7 @@ export class Book {
       fr.onload = () => {
         const ab = fr.result;
         try {
-          this.setArrayBuffer_(ab, 1.0, ab.byteLength);
+          this.startBookBinding_(file.name, ab, ab.byteLength);
         } catch (err) {
           const errMessage = err + ': ' + file.name;
           console.error(errMessage);
@@ -255,159 +187,45 @@ export class Book {
   }
 
   /**
+   * @param {string} fileName
    * @param {ArrayBuffer} ab
-   * @return {Promise<Book>} A Promise that returns this book when done.
+   * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
-  loadFromArrayBuffer(ab) {
-    if (this.loadState_ !== LoadState.NOT_LOADED) {
+  loadFromArrayBuffer(fileName, ab) {
+    if (this.bookBinder_) {
       throw 'Cannot try to load via File when the Book is already loading or loaded';
     }
     if (this.uri_) {
       throw 'URI for book was set in loadFromArrayBuffer()';
     }
 
-    this.setArrayBuffer_(ab, 1.0, ab.byteLength);
+    this.startBookBinding_(fileName, ab, ab.byteLength);
     return Promise.resolve(this);
   }
 
   /**
-   * Resets the book and creates the Unarchiver.
-   * @param {ArrayBuffer} ab
-   * @param {number} pctLoaded
-   * @param {number} expectedSizeInBytes
+   * Creates and sets the BookBinder, subscribes to its events, and starts the book binding process.
+   * @param {string} fileNameOrUri 
+   * @param {ArrayBuffer} ab 
+   * @param {number} totalExpectedSize 
    * @private
    */
-  setArrayBuffer_(ab, pctLoaded, expectedSizeInBytes) {
-    // Reset the book completely.
-    this.unarchiver_ = null;
-    this.expectedSizeInBytes_ = expectedSizeInBytes;
-    this.totalPages_ = 0;
-    this.pages_ = [];
-    this.pagePromises_ = [];
-    this.loadState_ = pctLoaded < 1.0 ? LoadState.LOADING : LoadState.LOADED;
-    this.loadingPercentage_ = pctLoaded;
-    this.unarchivingPercentage_ = 0.0;
+  startBookBinding_(fileNameOrUri, ab, totalExpectedSize) {
+    this.bookBinder_ = createBookBinder(fileNameOrUri, ab, totalExpectedSize);
+    // Extracts some state from the BookBinder events and re-sources the events.
+    this.bookBinder_.subscribeToAllEvents(this, evt => {
+      switch (evt.type) {
+        case BookEventType.PAGE_EXTRACTED:
+          this.pages_.push(evt.page);
+          break;
+        case BookEventType.PROGRESS:
+          this.totalPages_ = evt.totalPages;
+          break;
+      }
 
-    this.unarchiver_ = bitjs.archive.GetUnarchiver(ab, 'code/bitjs/');
-
-    if (!this.unarchiver_) {
-      throw 'Could not determine the unarchiver to use for the file'
-    }
-
-    this.unarchive_();
-  }
-
-  /**
-   * TODO(epub): Rename this to create() or something.  Unarchiving is handled by the BookBinder.
-   * @private
-   */
-  unarchive_() {
-    const start = (new Date).getTime();
-
-    // TODO(epub):  This is the process of binding for comic book files, each extracted file
-    //     is a page.  Move this into code into a ComicBookBinder class.
-    if (this.unarchiver_) {
-      this.unarchiveState_ = UnarchiveState.UNARCHIVING;
-
-      this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS, (e) => {
-          this.totalPages_ = e.totalFilesInArchive;
-          this.unarchivingPercentage_ = e.totalCompressedBytesRead / this.expectedSizeInBytes_;
-          this.notify_(new BookProgressEvent(this));
-      });
-      this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO, (e) => console.log(e.msg));
-      this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT, (e) => {
-          // Convert each unarchived file into a Page.
-          // TODO: Error if not present?
-          if (e.unarchivedFile) {
-            // TODO: Error if we have more pages than totalPages_.
-            this.pagePromises_.push(createPageFromFile(e.unarchivedFile));
-
-            // Do not send extracted events yet, because the pages may not be in the correct order.
-            //this.notify_(new UnarchivePageExtractedEvent(this, newPage, this.pages_.length));
-          }
-      });
-      this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, (e) => {
-        this.unarchiveState_ = UnarchiveState.UNARCHIVED;
-        this.unarchivingPercentage_ = 1.0;
-        const diff = ((new Date).getTime() - start)/1000;
-        console.log(`Book = '${this.name_}'`);
-        console.log(`  number of pages = ${this.getNumberOfPages()}`);
-        console.log(`  using ${this.unarchiver_.getScriptFileName()}`);
-        console.log(`  unarchiving done in ${diff}s`);
-
-        const pages = [];
-        let foundError = false;
-        let pagePromiseChain = Promise.resolve(true);
-        for (let pageNum = 0; pageNum < this.pagePromises_.length; ++pageNum) {
-          pagePromiseChain = pagePromiseChain.then(() => {
-            return this.pagePromises_[pageNum]
-                .then(page => pages.push(page))
-                .catch(e => foundError = true)
-                .finally(() => true);
-          });
-        }
-
-        pagePromiseChain.then(() => {
-          // Update the total pages for only those pages that were valid.
-          this.totalPages_ = pages.length;
-
-          if (foundError) {
-            alert('Some pages had errors. See the console for more info.')
-          }
-
-          // Sort the book's pages based on filename.
-          // TODO(epub): This will not work with epub files, since pages are not associated with
-          //     files.
-          this.pages_ = pages.slice(0).sort((a,b) => {
-            return a.filename.toLowerCase() > b.filename.toLowerCase() ? 1 : -1;
-          });
-
-          // Issuing an extract event for each page in its proper order.
-          for (let i = 0; i < this.pages_.length; ++i) {
-            this.notify_(new UnarchivePageExtractedEvent(this, this.pages_[i], i + 1));
-          }
-
-          // Emit a complete event.
-          this.notify_(new UnarchiveCompleteEvent(this));
-
-          // Stop the Unarchiver (which will kill the worker) and then delete the unarchiver
-          // which should free up some memory, including the unarchived array buffer.
-          this.unarchiver_.stop();
-          this.unarchiver_ = null;
-        });
-      });
-      this.unarchiver_.start();
-    } else {
-      alert('Error:  Could not determine the type of comic book archive file.  ' +
-        'kthoom only supports cbz, cbr and cbt files.');
-    }
-  }
-
-  /**
-   * Subscribes the object to listen to events from this Book.
-   * @param {Object} source
-   * @param {Function} The function that should be called with the event from this Book.  At call
-   *     time, the function is bound to the source.
-   */
-  subscribe(source, callback) {
-    this.subscribers_[source] = callback;
-  }
-
-  /**
-   * Unsubscribes the object from listening to events from this Book.
-   * @param {Object} source
-   */
-  unsubscribe(source) {
-    if (this.subscribers_[source]) {
-      delete this.subscribers_[source];
-    }
-  }
-
-  /** @private */
-  notify_(evt) {
-    for (let source in this.subscribers_) {
-      const boundCallbackFn = this.subscribers_[source].bind(source);
-      boundCallbackFn(evt, this);
-    }
+      evt.source = this;
+      this.notify(evt);
+    });
+    this.bookBinder_.start();
   }
 }
