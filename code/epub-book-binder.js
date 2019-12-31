@@ -95,9 +95,7 @@ export class EPUBBookBinder extends BookBinder {
       }
     }
 
-    // TODO(epub): Get rid of the need to send a fake file to create a page.
-    const fakeFile = {filename: 'dummy-file'};
-    const onePager = new TextPage(fakeFile, monsterText);
+    const onePager = new TextPage('page-1', monsterText);
     this.notify(new BookProgressEvent(
       this,
       undefined /* loadingPct */,
@@ -206,6 +204,7 @@ function assert(cond, err, optContextObj = undefined) {
     }
   }
 }
+
 function toText(bytes) {
   const num = bytes.byteLength;
   let result = new Array(num);

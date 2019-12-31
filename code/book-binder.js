@@ -4,9 +4,8 @@
  * Copyright(c) 2019 Google Inc.
  */
 
-import {BookPageExtractedEvent, BookProgressEvent, BookBindingCompleteEvent} from './book-events.js';
+import {BookProgressEvent} from './book-events.js';
 import {EventEmitter} from './event-emitter.js';
-import {createPageFromFile} from './page.js';
 
 export const UnarchiveState = {
   UNARCHIVING_NOT_YET_STARTED: 0,
@@ -153,81 +152,6 @@ export class BookBinder extends EventEmitter {
 }
 
 /**
- * The default BookBinder used in kthoom.  It takes each extracted file from the Unarchiver and
- * turns that directly into a Page for the comic book.
- */
-class ComicBookBinder extends BookBinder {
-  constructor(filenameOrUri, ab, totalExpectedSize) {
-    super(filenameOrUri, ab, totalExpectedSize);
-
-    // As each file becomes available from the Unarchiver, we kick off an async operation
-    // to construct a Page object.  After all pages are retrieved, we sort them.
-    /** @private {Promise<Page>} */
-    this.pagePromises_ = [];
-  }
-
-  /** @override */
-  beforeStart_() {
-    this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT, evt => {
-      // Convert each unarchived file into a Page.
-      // TODO: Error if not present?
-      if (evt.unarchivedFile) {
-        // TODO: Error if we have more pages than totalPages_.
-        this.pagePromises_.push(createPageFromFile(evt.unarchivedFile));
-
-        this.notify(new BookProgressEvent(
-          this,
-          undefined /* loadingPct */,
-          undefined /* unarchivingPct */,
-          this.pagePromises_.length));
-
-        // Do not send extracted events yet, because the pages may not be in the correct order.
-        //this.notify_(new UnarchivePageExtractedEvent(this, newPage, this.pages_.length));
-      }
-    });
-    this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, evt => {
-      this.setUnarchiveComplete();
-
-      let pages = [];
-      let foundError = false;
-      let pagePromiseChain = Promise.resolve(true);
-      for (let pageNum = 0; pageNum < this.pagePromises_.length; ++pageNum) {
-        pagePromiseChain = pagePromiseChain.then(() => {
-          return this.pagePromises_[pageNum]
-              .then(page => pages.push(page))
-              .catch(e => foundError = true)
-              .finally(() => true);
-        });
-      }
-
-      pagePromiseChain.then(() => {
-        console.log(`  number of pages = ${pages.length}`);
-
-        if (foundError) {
-          // TODO: Better error handling.
-          alert('Some pages had errors. See the console for more info.')
-        }
-
-        // Sort the book's pages based on filename.
-        pages = pages.slice(0).sort((a,b) => {
-          return a.filename.toLowerCase() > b.filename.toLowerCase() ? 1 : -1;
-        });
-
-        // Issuing an extract event for each page in its proper order.
-        for (let i = 0; i < pages.length; ++i) {
-          this.notify(new BookPageExtractedEvent(this, pages[i], i + 1));
-        }
-
-        // Emit a complete event.
-        this.notify(new BookBindingCompleteEvent(this, pages));
-      });
-
-      this.stop();
-    });
-  }
-}
-
-/**
  * Creates a book binder based on the type of book.  Determines the type of unarchiver to use by
  * looking at the first bytes.  Guesses the type of book by looking at the file/uri name.
  * @param {string} fileNameOrUri The filename or URI.  Must end in a file extension that can be
@@ -242,5 +166,7 @@ export function createBookBinderAsync(fileNameOrUri, ab, totalExpectedSize) {
       return new module.EPUBBookBinder(fileNameOrUri, ab, totalExpectedSize);
     });
   }
-  return Promise.resolve(new ComicBookBinder(fileNameOrUri, ab, totalExpectedSize));
+  return import('./comic-book-binder.js').then(module => {
+    return new module.ComicBookBinder(fileNameOrUri, ab, totalExpectedSize);
+  });
 }

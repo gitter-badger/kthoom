@@ -11,10 +11,9 @@
   * TODO(epub): Page should have a render() method that takes in a Canvas element.
   */
 export class Page {
-  constructor(file) {
-    // TODO(epub): Pages should not need a file / filename.
+  constructor(pageName) {
     /** @type {string} */
-    this.filename = file.filename;
+    this.pageName = pageName;
   }
 
   /** @return {Number} The width-height aspect ratio. */
@@ -23,11 +22,11 @@ export class Page {
 
 export class ImagePage extends Page {
   /**
-   * @param {File} file 
+   * @param {string} name
    * @param {Image} img The Image object created.
    */
-  constructor(file, img) {
-    super(file);
+  constructor(name, img) {
+    super(name);
     this.img = img;
   }
 
@@ -36,11 +35,11 @@ export class ImagePage extends Page {
 
 export class TextPage extends Page {
   /**
-   * @param {File} file
+   * @param {string} name
    * @param {string} text The raw text in the page.
    */
-  constructor(file, text) {
-    super(file);
+  constructor(name, text) {
+    super(name);
     this.rawText = text;
   }
 }
@@ -48,11 +47,11 @@ export class TextPage extends Page {
 // TODO(epub): Do not just escape the raw HTML, that would be bad.
 export class HtmlPage extends TextPage {
   /**
-   * @param {File} file
+   * @param {string} name
    * @param {string} rawHtml The raw html in the page.
    */
-  constructor(file, rawHtml) {
-    super(file, rawHtml);
+  constructor(name, rawHtml) {
+    super(name, rawHtml);
     this.escapedHtml = escape(rawHtml);
   }
 }
@@ -100,11 +99,12 @@ function guessMimeType(filename) {
  * @param {File} file
  * @return {Promise<Page>} A Promise that gets a Page (like an ImagePage).
  */
-export const createPageFromFile = function(file) {
+export const createPageFromFileAsync = function(file) {
   return new Promise((resolve, reject) => {
-    const mimeType = guessMimeType(file.filename);
+    const filename = file.filename;
+    const mimeType = guessMimeType(filename);
     if (!mimeType) {
-      resolve(new TextPage(file, 'Could not determine type of file "' + file.filename + '"'));
+      resolve(new TextPage(file, `Could not determine type of file "${filename}"`));
       return;
     }
 
@@ -112,13 +112,13 @@ export const createPageFromFile = function(file) {
 
     if (mimeType.indexOf('image/') === 0) {
       const img = new Image();
-      img.onload = () => { resolve(new ImagePage(file, img)); };
-      img.onerror = (e) => { resolve(new TextPage(file, `Could not open file ${file.filename}`)); };
+      img.onload = () => { resolve(new ImagePage(filename, img)); };
+      img.onerror = (e) => { resolve(new TextPage(filename, `Could not open file ${filename}`)); };
       img.src = dataURI;
     } else if (mimeType === 'text/html') {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', dataURI, true);
-      xhr.onload = () => { resolve(new HtmlPage(file, xhr.responseText)); };
+      xhr.onload = () => { resolve(new HtmlPage(filename, xhr.responseText)); };
       xhr.onerror = (e) => { reject(e); };
       xhr.send(null);
     } else if (mimeType.startsWith('text/')) {
@@ -127,15 +127,15 @@ export const createPageFromFile = function(file) {
       xhr.open('GET', dataURI, true);
       xhr.onload = () => {
         if (xhr.responseText.length < 1000 * 1024) {
-          resolve(new TextPage(file, xhr.responseText));
+          resolve(new TextPage(filename, xhr.responseText));
         } else {
-          reject('Could not create a new page from file ' + file.filename);
+          reject('Could not create a new page from file ' + filename);
         }
       };
       xhr.onerror = (e) => { reject(e); };
       xhr.send(null);
     } else if (mimeType === 'application/octet-stream') {
-      resolve(new TextPage(file, 'Could not display binary file "' + file.filename + '"'));
+      resolve(new TextPage(filename, 'Could not display binary file "' + filename + '"'));
     }
   });
 };
