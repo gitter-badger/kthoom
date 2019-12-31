@@ -8,7 +8,7 @@ import {BookPageExtractedEvent, BookProgressEvent, BookBindingCompleteEvent} fro
 import {EventEmitter} from './event-emitter.js';
 import {createPageFromFile} from './page.js';
 
-const UnarchiveState = {
+export const UnarchiveState = {
   UNARCHIVING_NOT_YET_STARTED: 0,
   UNARCHIVING: 1,
   UNARCHIVED: 2,
@@ -17,14 +17,15 @@ const UnarchiveState = {
 
 /**
  * The abstract class for a BookBinder.  Never instantiate one of these yourself.
- * Use createBookBinder() to create an instance of an implementing subclass.
+ * Use createBookBinderAsync() to create an instance of an implementing subclass.
  */
 export class BookBinder extends EventEmitter {
   /**
+   * @param {string} fileNameOrUri
    * @param {ArrayBuffer} ab The ArrayBuffer to initialize the BookBinder.
    * @param {numbeer} totalExpectedSize The total number of bytes expected.
    */
-  constructor(ab, totalExpectedSize) {
+  constructor(fileNameOrUri, ab, totalExpectedSize) {
     super();
 
     // totalExpectedSize can be -1 in the case of an XHR where we do not know the size yet.
@@ -37,6 +38,9 @@ export class BookBinder extends EventEmitter {
     if (totalExpectedSize > 0 && ab.byteLength > totalExpectedSize) {
       throw 'Must initialize a BookBinder with a ab.byteLength <= totalExpectedSize';
     }
+
+    /** @protected {string} */
+    this.name_ = fileNameOrUri;
 
     /** @protected {number} */
     this.startTime_ = undefined;
@@ -99,6 +103,16 @@ export class BookBinder extends EventEmitter {
     this.totalExpectedSize_ = newExpectedSize;
   }
 
+  /** @protected */
+  setUnarchiveComplete() {
+    this.unarchiveState_ = UnarchiveState.UNARCHIVED;
+    this.unarchivingPercentage_ = 1.0;
+    const diff = ((new Date).getTime() - this.startTime_)/1000;
+    console.log(`Book = '${this.name_}'`);
+    console.log(`  using ${this.unarchiver_.getScriptFileName()}`);
+    console.log(`  unarchiving done in ${diff}s`);
+  }
+
   /**
    * Starts the binding process.
    */
@@ -112,11 +126,12 @@ export class BookBinder extends EventEmitter {
     this.unarchiveState_ = UnarchiveState.UNARCHIVING;
     this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS, evt => {
       this.unarchivingPercentage_ = evt.totalCompressedBytesRead / this.totalExpectedSize_;
+      // Total # pages is not always equal to the total # of files, so we do not report that here.
       this.notify(new BookProgressEvent(
           this,
           this.bytesLoaded_ / this.totalExpectedSize_,
           this.unarchivingPercentage_,
-          this.totalPages = evt.totalFilesInArchive));
+          undefined /* totalPages */));
     });
 
     this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO,
@@ -142,8 +157,8 @@ export class BookBinder extends EventEmitter {
  * turns that directly into a Page for the comic book.
  */
 class ComicBookBinder extends BookBinder {
-  constructor(ab, totalExpectedSize) {
-    super(ab, totalExpectedSize);
+  constructor(filenameOrUri, ab, totalExpectedSize) {
+    super(filenameOrUri, ab, totalExpectedSize);
 
     // As each file becomes available from the Unarchiver, we kick off an async operation
     // to construct a Page object.  After all pages are retrieved, we sort them.
@@ -160,17 +175,18 @@ class ComicBookBinder extends BookBinder {
         // TODO: Error if we have more pages than totalPages_.
         this.pagePromises_.push(createPageFromFile(evt.unarchivedFile));
 
+        this.notify(new BookProgressEvent(
+          this,
+          undefined /* loadingPct */,
+          undefined /* unarchivingPct */,
+          this.pagePromises_.length));
+
         // Do not send extracted events yet, because the pages may not be in the correct order.
         //this.notify_(new UnarchivePageExtractedEvent(this, newPage, this.pages_.length));
       }
     });
     this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, evt => {
-      this.unarchiveState_ = UnarchiveState.UNARCHIVED;
-      this.unarchivingPercentage_ = 1.0;
-      const diff = ((new Date).getTime() - this.startTime_)/1000;
-      console.log(`Book = '${this.name_}'`);
-      console.log(`  using ${this.unarchiver_.getScriptFileName()}`);
-      console.log(`  unarchiving done in ${diff}s`);
+      this.setUnarchiveComplete();
 
       let pages = [];
       let foundError = false;
@@ -212,14 +228,19 @@ class ComicBookBinder extends BookBinder {
 }
 
 /**
- * Creates a book binder based on the type of book.  Determiens the type of unarchiver to use by
+ * Creates a book binder based on the type of book.  Determines the type of unarchiver to use by
  * looking at the first bytes.  Guesses the type of book by looking at the file/uri name.
  * @param {string} fileNameOrUri The filename or URI.  Must end in a file extension that can be
  *     used to guess what type of book this is.
  * @param {ArrayBuffer} ab The initial ArrayBuffer to start the unarchiving process.
  * @param {number} totalExpectedSize Thee total expected size of the archived book in bytes.
+ * @returns {Promise<BookBinder>} A Promise that will resolve with a BookBinder.
  */
-export function createBookBinder(fileNameOrUri, ab, totalExpectedSize) {
-  // TODO: Do book type checking here.
-  return new ComicBookBinder(ab, totalExpectedSize);
+export function createBookBinderAsync(fileNameOrUri, ab, totalExpectedSize) {
+  if (fileNameOrUri.toLowerCase().endsWith('.epub')) {
+    return import('./epub-book-binder.js').then(module => {
+      return new module.EPUBBookBinder(fileNameOrUri, ab, totalExpectedSize);
+    });
+  }
+  return Promise.resolve(new ComicBookBinder(fileNameOrUri, ab, totalExpectedSize));
 }

@@ -9,9 +9,7 @@ import { getElem } from './helpers.js';
 import { Book } from './book.js';
 import { BookEventType } from './book-events.js';
 
-// TODO: Have the ReadingStack subscribe to all of its book events.
-// TODO: Have the ReadingStack display progress bars in the pane as books load
-//       and unarchive.
+// TODO: Have the ReadingStack display progress bars in the pane as books load and unarchive.
 
 /**
  * The ReadingStack is responsible for displaying information about the current

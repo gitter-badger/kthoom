@@ -7,11 +7,12 @@
  */
 
  /**
-  * Base class for Pages.  Eveery Page has an aspect ratio method.
+  * Base class for Pages.  Every Page has an aspect ratio method.
   * TODO(epub): Page should have a render() method that takes in a Canvas element.
   */
 export class Page {
   constructor(file) {
+    // TODO(epub): Pages should not need a file / filename.
     /** @type {string} */
     this.filename = file.filename;
   }
@@ -79,6 +80,8 @@ function guessMimeType(filename) {
     case 'gif': return 'image/gif';
     case 'svg': return 'image/xml+svg';
     case 'jpg': case 'jpeg': return 'image/jpeg';
+    case 'webp': return 'image/webp';
+    case 'bmp': return 'image/bmp';
     case 'htm': case 'html': return 'text/html';
     case 'sfv': return 'text/x-sfv';
     case 'txt': return 'text/plain';

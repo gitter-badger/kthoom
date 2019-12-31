@@ -5,7 +5,7 @@
  *
  * Copyright(c) 2018 Google Inc.
  */
-import { createBookBinder } from './book-binder.js';
+import { createBookBinderAsync } from './book-binder.js';
 import { BookEventType, BookLoadingStartedEvent, BookProgressEvent } from './book-events.js';
 import { EventEmitter } from './event-emitter.js';
 
@@ -232,23 +232,27 @@ export class Book extends EventEmitter {
    * @private
    */
   startBookBinding_(fileNameOrUri, ab, totalExpectedSize) {
-    this.bookBinder_ = createBookBinder(fileNameOrUri, ab, totalExpectedSize);
-    // Extracts some state from the BookBinder events, re-sources the events, and sends them out to
-    // the subscribers to this Book.
-    this.bookBinder_.subscribeToAllEvents(this, evt => {
-      switch (evt.type) {
-        case BookEventType.PAGE_EXTRACTED:
-          this.pages_.push(evt.page);
-          break;
-        case BookEventType.PROGRESS:
-          this.totalPages_ = evt.totalPages;
-          break;
-      }
+    createBookBinderAsync(fileNameOrUri, ab, totalExpectedSize).then(bookBinder => {
+      this.bookBinder_ = bookBinder;
+      // Extracts some state from the BookBinder events, re-sources the events, and sends them out to
+      // the subscribers to this Book.
+      this.bookBinder_.subscribeToAllEvents(this, evt => {
+        switch (evt.type) {
+          case BookEventType.PAGE_EXTRACTED:
+            this.pages_.push(evt.page);
+            break;
+          case BookEventType.PROGRESS:
+            if (evt.totalPages) {
+              this.totalPages_ = evt.totalPages;
+            }
+            break;
+        }
 
-      evt.source = this;
-      this.notify(evt);
+        evt.source = this;
+        this.notify(evt);
+      });
+
+      this.bookBinder_.start();
     });
-
-    this.bookBinder_.start();
   }
 }
