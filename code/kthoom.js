@@ -778,6 +778,9 @@ class KthoomApp {
       await firstBook.loadFromXhr();
 
       // Now finish loading in all other books via XHR.
+      // TODO: With the recent BookBinder refactor, calling loadFromXhr() does the loading AND
+      //     the unarchiving, they are not separable processes.  Consider not doing this for all
+      //     books in the reading list (saves on network bandwith too!).
       this.loadBooksFromPromises_(books.map(book => book.loadFromXhr()));
     }
   }
