@@ -371,6 +371,10 @@ button:focus {
   outline: solid 2px yellow;
 }
 
+.readingStackBook.loaded {
+  font-weight: bold;
+}
+
 .readingStackBookCloseButton {
   color: black;
   float: right;

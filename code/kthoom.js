@@ -680,8 +680,9 @@ class KthoomApp {
    */
   loadSingleBookFromXHR(name, uri, expectedSize, headerMap = {}) {
     const book = new Book(name, uri);
+    const bookPromise = book.loadFromXhr(expectedSize, headerMap);
     this.readingStack_.addBook(book);
-    return book.loadFromXhr(expectedSize, headerMap);
+    return bookPromise;
   }
 
   /**
@@ -697,8 +698,9 @@ class KthoomApp {
     }
 
     const book = new Book(name, uri);
+    const bookPromise = book.loadFromFetch(init, expectedSize);
     this.readingStack_.addBook(book);
-    return book.loadFromFetch(init, expectedSize);
+    return bookPromise;
   }
 
   /**
@@ -709,8 +711,9 @@ class KthoomApp {
    */
   loadSingleBookFromArrayBuffer(name, bookUri, ab) {
     const book = new Book(name);
+    const bookPromise = book.loadFromArrayBuffer(bookUri, ab)
     this.readingStack_.addBook(book);
-    return book.loadFromArrayBuffer(bookUri, ab);
+    return bookPromise;
   }
 
   /**
@@ -771,17 +774,10 @@ class KthoomApp {
       // Add all books to the stack immediately.
       this.readingStack_.addBooks(books, true /* switchToFirst */);
 
-      // Load the first book first - we do this so that the browser is not waiting
-      // for many pending XHRs before it can download the scripts it needs to start
-      // unarchiving the first book to show it.
+      // Load the first book.  The remaining books will be loaded from the ReadingStack when the
+      // user chooses a different book.
       const firstBook = books.shift();
       await firstBook.loadFromXhr();
-
-      // Now finish loading in all other books via XHR.
-      // TODO: With the recent BookBinder refactor, calling loadFromXhr() does the loading AND
-      //     the unarchiving, they are not separable processes.  Consider not doing this for all
-      //     books in the reading list (saves on network bandwith too!).
-      this.loadBooksFromPromises_(books.map(book => book.loadFromXhr()));
     }
   }
 

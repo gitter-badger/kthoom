@@ -6,7 +6,7 @@
  * Copyright(c) 2018 Google Inc.
  */
 import { createBookBinder } from './book-binder.js';
-import { BookEventType, BookProgressEvent } from './book-events.js';
+import { BookEventType, BookLoadingStartedEvent, BookProgressEvent } from './book-events.js';
 import { EventEmitter } from './event-emitter.js';
 
 /**
@@ -33,8 +33,6 @@ export class Book extends EventEmitter {
      */
     this.uri_ = uri;
 
-    this.expectedSizeInBytes_ = 0;
-
     /**
      * The total known number of pages.
      * @private {number}
@@ -46,6 +44,9 @@ export class Book extends EventEmitter {
 
     /** @private {Array<Page>} */
     this.pages_ = [];
+
+    /** @private {boolean} */
+    this.needsLoading_ = true;
   }
 
   getName() { return this.name_; }
@@ -77,17 +78,21 @@ export class Book extends EventEmitter {
 
   /**
    * Starts an XHR and progressively loads in the book.
+   * TODO: Get rid of this and just use loadFromFetch() everywhere.
    * @param {Number} expectedSize If -1, the total field from the XHR Progress event is used.
    * @param {Object<string, string>} headerMap A map of request header keys and values.
    * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
   loadFromXhr(expectedSize = -1, headerMap = {}) {
-    if (this.bookBinder_) {
+    if (!this.needsLoading_) {
       throw 'Cannot try to load via XHR when the Book is already loading or loaded';
     }
     if (!this.uri_) {
       throw 'URI for book was not set from loadFromXhr()';
     }
+
+    this.needsLoading_ = false;
+    this.notify(new BookLoadingStartedEvent(this));
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -129,12 +134,15 @@ export class Book extends EventEmitter {
    * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
   loadFromFetch(init, expectedSize) {
-    if (this.bookBinder_) {
+    if (!this.needsLoading_) {
       throw 'Cannot try to load via XHR when the Book is already loading or loaded';
     }
     if (!this.uri_) {
       throw 'URI for book was not set in loadFromFetch()';
     }
+
+    this.needsLoading_ = false;
+    this.notify(new BookLoadingStartedEvent(this));
 
     return fetch(this.uri_, init).then(response => {
       const reader = response.body.getReader();
@@ -162,12 +170,15 @@ export class Book extends EventEmitter {
    * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
   loadFromFile(file) {
-    if (this.bookBinder_) {
+    if (!this.needsLoading_) {
       throw 'Cannot try to load via File when the Book is already loading or loaded';
     }
     if (this.uri_) {
       throw 'URI for book was set in loadFromFile()';
     }
+
+    this.needsLoading_ = false;
+    this.notify(new BookLoadingStartedEvent(this));
 
     return new Promise((resolve, reject) => {
       const fr = new FileReader();
@@ -192,15 +203,25 @@ export class Book extends EventEmitter {
    * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
   loadFromArrayBuffer(fileName, ab) {
-    if (this.bookBinder_) {
+    if (!this.needsLoading_) {
       throw 'Cannot try to load via File when the Book is already loading or loaded';
     }
     if (this.uri_) {
       throw 'URI for book was set in loadFromArrayBuffer()';
     }
 
+    this.needsLoading_ = false;
+    this.notify(new BookLoadingStartedEvent(this));
+
     this.startBookBinding_(fileName, ab, ab.byteLength);
     return Promise.resolve(this);
+  }
+
+  /**
+   * @returns {boolean} True if this book has not started loading, false otherwise.
+   */
+  needsLoading() {
+    return this.needsLoading_;
   }
 
   /**
@@ -212,7 +233,8 @@ export class Book extends EventEmitter {
    */
   startBookBinding_(fileNameOrUri, ab, totalExpectedSize) {
     this.bookBinder_ = createBookBinder(fileNameOrUri, ab, totalExpectedSize);
-    // Extracts some state from the BookBinder events and re-sources the events.
+    // Extracts some state from the BookBinder events, re-sources the events, and sends them out to
+    // the subscribers to this Book.
     this.bookBinder_.subscribeToAllEvents(this, evt => {
       switch (evt.type) {
         case BookEventType.PAGE_EXTRACTED:
@@ -226,6 +248,7 @@ export class Book extends EventEmitter {
       evt.source = this;
       this.notify(evt);
     });
+
     this.bookBinder_.start();
   }
 }

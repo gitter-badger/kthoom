@@ -6,6 +6,8 @@
  * Copyright(c) 2018 Google Inc.
  */
 import { getElem } from './helpers.js';
+import { Book } from './book.js';
+import { BookEventType } from './book-events.js';
 
 // TODO: Have the ReadingStack subscribe to all of its book events.
 // TODO: Have the ReadingStack display progress bars in the pane as books load
@@ -42,6 +44,7 @@ export class ReadingStack {
    */
   addBook(book) {
     this.books_.push(book);
+    book.subscribe(this, () => this.renderStack_(), BookEventType.LOADING_STARTED);
     this.changeToBook_(this.books_.length - 1);
     this.renderStack_();
   }
@@ -55,6 +58,7 @@ export class ReadingStack {
       const newCurrentBook = this.books_.length;
       for (const book of books) {
         this.books_.push(book);
+        book.subscribe(this, () => this.renderStack_(), BookEventType.LOADING_STARTED);
       }
       if (switchToFirst) {
         this.changeToBook_(newCurrentBook);
@@ -68,6 +72,9 @@ export class ReadingStack {
    * Does not remove the current book change callback.
    */
   removeAll() {
+    for (const book of this.books_) {
+      book.unsubscribe(this, BookEventType.LOADING_STARTED);
+    }
     this.books_ = [];
     this.currentBookNum_ = -1;
     this.renderStack_();
@@ -77,6 +84,7 @@ export class ReadingStack {
   removeBook(i) {
     // Cannot remove the very last book.
     if (this.books_.length > 1 && i < this.books_.length) {
+      this.books_[i].unsubscribe(this, BookEventType.LOADING_STARTED);
       this.books_.splice(i, 1);
 
       // If we are removing the book we are on, pick a new current book.
@@ -128,6 +136,11 @@ export class ReadingStack {
     if (i >= 0 && i < this.books_.length) {
       this.currentBookNum_ = i;
       const book = this.books_[i];
+      // The only case where the user chooses a book that has not been loaded yet is from a
+      // reading list, which means we can load it via XHR.
+      if (book.needsLoading()) {
+        book.loadFromXhr();
+      }
       for (const callback of this.currentBookChangedCallbacks_) {
         callback(book);
       }
@@ -158,6 +171,9 @@ export class ReadingStack {
         const book = this.books_[i];
         const bookDiv = document.createElement('div');
         bookDiv.classList.add('readingStackBook');
+        if (!book.needsLoading()) {
+          bookDiv.classList.add('loaded');
+        }
         if (this.currentBookNum_ == i) {
           bookDiv.classList.add('current');
         }
