@@ -58,6 +58,10 @@ export class Book extends EventEmitter {
     if (!this.bookBinder_) return 0;
     return this.bookBinder_.getUnarchivingPercentage();
   }
+  getLayoutPercentage() {
+    if (!this.bookBinder_) return 0;
+    return this.bookBinder_.getLayoutPercentage();
+  }
   getNumberOfPages() { return this.totalPages_; }
   getNumberOfPagesReady() { return this.pages_.length; }
 
@@ -151,10 +155,11 @@ export class Book extends EventEmitter {
           if (!done) {
             // value is a chunk of the file as a Uint8Array.
             if (!this.bookBinder_) {
-              this.startBookBinding_(this.name_, value.buffer, expectedSize);
-            } else {
-              this.bookBinder_.appendBytes(value.buffer);
+              return this.startBookBinding_(this.name_, value.buffer, expectedSize).then(() => {
+                return readAndProcessNextChunk();
+              })
             }
+            this.bookBinder_.appendBytes(value.buffer);
             return readAndProcessNextChunk();
           } else {
             return this;
@@ -226,13 +231,14 @@ export class Book extends EventEmitter {
 
   /**
    * Creates and sets the BookBinder, subscribes to its events, and starts the book binding process.
-   * @param {string} fileNameOrUri 
-   * @param {ArrayBuffer} ab 
-   * @param {number} totalExpectedSize 
+   * @param {string} fileNameOrUri
+   * @param {ArrayBuffer} ab
+   * @param {number} totalExpectedSize
+   * @return {Promise<BookBinder>}
    * @private
    */
   startBookBinding_(fileNameOrUri, ab, totalExpectedSize) {
-    createBookBinderAsync(fileNameOrUri, ab, totalExpectedSize).then(bookBinder => {
+    return createBookBinderAsync(fileNameOrUri, ab, totalExpectedSize).then(bookBinder => {
       this.bookBinder_ = bookBinder;
       // Extracts some state from the BookBinder events, re-sources the events, and sends them out to
       // the subscribers to this Book.

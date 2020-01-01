@@ -31,10 +31,12 @@ export class ComicBookBinder extends BookBinder {
         // TODO: Error if we have more pages than totalPages_.
         this.pagePromises_.push(createPageFromFileAsync(evt.unarchivedFile));
 
+        // Emit a Progress event for each unarchived file.
         this.notify(new BookProgressEvent(
           this,
           undefined /* loadingPct */,
           undefined /* unarchivingPct */,
+          undefined /* layoutPct */,
           this.pagePromises_.length));
 
         // Do not send extracted events yet, because the pages may not be in the correct order.
@@ -69,7 +71,7 @@ export class ComicBookBinder extends BookBinder {
           return a.pageName.toLowerCase() > b.pageName.toLowerCase() ? 1 : -1;
         });
 
-        // Issuing an extract event for each page in its proper order.
+        // Emit an extract event for each page in its proper order.
         for (let i = 0; i < pages.length; ++i) {
           this.notify(new BookPageExtractedEvent(this, pages[i], i + 1));
         }
@@ -81,4 +83,7 @@ export class ComicBookBinder extends BookBinder {
       this.stop();
     });
   }
+
+  /** @override */
+  getLayoutPercentage() { return this.getUnarchivingPercentage() * this.getUnarchivingPercentage(); }
 }

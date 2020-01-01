@@ -64,6 +64,12 @@ export class BookBinder extends EventEmitter {
     if (!this.unarchiver_) {
       throw 'Could not determine the unarchiver to use';
     }
+
+    /**
+     * A number between 0 and 1 indicating the progress of the page layout process.
+     * @protected {number}
+     */
+    this.layoutPercentage_ = 0;
   }
 
   /**
@@ -96,6 +102,7 @@ export class BookBinder extends EventEmitter {
 
   getLoadingPercentage() { return this.bytesLoaded_ / this.totalExpectedSize_; }
   getUnarchivingPercentage() { return this.unarchivingPercentage_; }
+  getLayoutPercentage() { return this.layoutPercentage_; }
 
   setNewExpectedSize(bytesDownloaded, newExpectedSize) {
     this.bytesLoaded_ = bytesDownloaded;
@@ -130,6 +137,7 @@ export class BookBinder extends EventEmitter {
           this,
           this.bytesLoaded_ / this.totalExpectedSize_,
           this.unarchivingPercentage_,
+          0, // layoutPct
           undefined /* totalPages */));
     });
 

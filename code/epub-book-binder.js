@@ -4,6 +4,22 @@
  * Copyright(c) 2019 Google Inc.
  */
 
+ /**
+  * Notes:
+  *
+  * - add a new layoutmeter element to index.html and corresponding property in the Progress events.
+  * - understand how the seam between spine itemrefs is handled in ebook readers.
+  * - put all XHTML body contents into a div element, where div has a class, then parse the CSS and
+  *   re-emit CSS with the class names?
+  * - if all style classes are applied to top-level divs, then remove unnecessary nested divs.
+  * - have a whitelist of elements and attributes that are allowed to make their way into the page.
+  * - go through DFT of entire tree and start adding elements to the HtmlPage.  If the page is too long
+  *   remove the last element and keep track of where we are (a cursor).
+  *
+  * - use flex-direction=row and treat each column as a "page" in kthoom.  Fixed height and flows
+  *   between columns naturally.
+  */
+
 import { BookBinder } from './book-binder.js';
 import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
 import { TextPage } from './page.js';
@@ -12,21 +28,50 @@ const CONTAINER_FILE = 'META-INF/container.xml';
 const CONTAINER_NAMESPACE = 'urn:oasis:names:tc:opendocument:xmlns:container';
 const EPUB_MIMETYPE = 'application/epub+zip';
 const OPF_NAMESPACE = 'http://www.idpf.org/2007/opf';
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 const XHTML_MIMETYPE = 'application/xhtml+xml';
 
 class FileRef {
   /**
-   * @param {string} href 
-   * @param {string} mediaType 
-   * @param {Uint8Array} data 
+   * @param {string} id
+   * @param {string} href
+   * @param {string} mediaType
+   * @param {Uint8Array} data
    */
-  constructor(href, mediaType, data) {
+  constructor(id, href, mediaType, data) {
+    /** @type {string} */
+    this.id = id;
+
     /** @type {string} */
     this.href = href;
+
     /** @type {string} */
     this.mediaType = mediaType;
+
     /** @type {Uint8Array} */
     this.data = data;
+
+    /** @private {Blob} */
+    this.blob_ = undefined;
+
+    /** @private {string} */
+    this.blobURL_ = undefined;
+  }
+
+  getBlob() {
+    if (!this.blob) this.initializeBlob_();
+    return this.blob;
+  }
+
+  getBlobURL() {
+    if (!this.blobURL) this.initializeBlob_();
+    return this.blobURL;
+  }
+
+  /** @private */
+  initializeBlob_() {
+    this.blob = new Blob(data, {type: mediaType});
+    this.blobURL = URL.createObjectURL(this.blob);
   }
 }
 
@@ -38,7 +83,8 @@ export class EPUBBookBinder extends BookBinder {
     super(filenameOrUri, ab, totalExpectedSize);
 
     /**
-     * A map of all files in the archive, keyed by its full path in the archive.
+     * A map of all files in the archive, keyed by its full path in the archive with the value
+     * being the raw ArrayBuffer.
      * @private {Map<string, Uint8Array>}
      */
     this.fileMap_ = new Map();
@@ -87,15 +133,68 @@ export class EPUBBookBinder extends BookBinder {
 
   inflateSpine_() {
     let monsterText = '';
-    for (const spref of this.spineRefs_) {
+    let xhtmlChunks = [];
+    const numSpineRefs = this.spineRefs_.length;
+    for (let i = 0; i < numSpineRefs; ++i) { //const spref of this.spineRefs_) {
+      const spref = this.spineRefs_[i];
       const {mediaType, data} = spref;
       if (mediaType === XHTML_MIMETYPE) {
         const htmlDoc = new DOMParser().parseFromString(toText(data), XHTML_MIMETYPE);
+        xhtmlChunks.push(htmlDoc);
         monsterText += htmlDoc.documentElement.textContent;
       }
+      this.notify(new BookProgressEvent(
+        this,
+        undefined, // loadingPct
+        undefined, // unarchivingPct
+        (i+1) / numSpineRefs, // layoutPct
+        1));
     }
 
+    /*
+    new Promise((resolve, reject) => {
+      // TODO: Styling for overflow, color.
+      const svgDoc = document.implementation.createDocument(SVG_NAMESPACE, 'svg');
+      svgDoc.documentElement.setAttributeNS(null, 'viewBox', '0 0 100 100');
+      const styleElem = svgDoc.createElementNS(SVG_NAMESPACE, 'style');
+//      styleElem 
+      const foreignObject = svgDoc.createElementNS(null, 'foreignObject');
+      foreignObject.setAttributeNS(null, 'x', '0');
+      foreignObject.setAttributeNS(null, 'y', '0');
+      foreignObject.setAttributeNS(null, 'width', '100');
+      foreignObject.setAttributeNS(null, 'height', '100');
+      svgDoc.documentElement.appendChild(foreignObject);
+
+      debugger;
+      // For each HTML chunk, create a foreignObject element.
+      for (const xhtmlChunk of xhtmlChunks) {
+        const htmlElem = xhtmlChunk.documentElement;
+        foreignObject.appendChild(htmlElem);
+        svgDoc.documentElement.appendChild(foreignObject);
+      }
+      const dataURI = 'data:image/svg+xml;utf8,' + new XMLSerializer().serializeToString(svgDoc);
+      const img = new Image();
+      img.onload = () => { resolve(new ImagePage('page-1', img)); };
+      img.onerror = (e) => {
+        debugger;
+        resolve(new TextPage('bad-page', `Could not open SVG image`));
+      };
+      img.src = dataURI;
+      debugger;
+    }).then(page => {
+      // Emit all events in the expected order for our single page.
+      this.notify(new BookProgressEvent(
+        this,
+        undefined, // loadingPct
+        undefined, // unarchivingPct
+        1));
+      this.notify(new BookPageExtractedEvent(this, page, 1));
+      this.notify(new BookBindingCompleteEvent(this, [page]));
+    });
+    */
+
     const onePager = new TextPage('page-1', monsterText);
+    // Emit all events in the expected order for our single page.
     this.notify(new BookProgressEvent(
       this,
       undefined /* loadingPct */,
@@ -168,7 +267,9 @@ export class EPUBBookBinder extends BookBinder {
 
       const filename = (rootDir + href);
       assert(this.fileMap_.has(filename), `EPUB archive was missing file: ${filename}`);
-      this.manifestFileMap_.set(id, new FileRef(filename, mediaType, this.fileMap_.get(filename)));
+
+      const fileRef = new FileRef(id, filename, mediaType, this.fileMap_.get(filename));
+      this.manifestFileMap_.set(id, fileRef);
     }
 
     const spineItemRefs = doc.querySelectorAll('package > spine > itemref');
@@ -205,6 +306,7 @@ function assert(cond, err, optContextObj = undefined) {
   }
 }
 
+// TODO: Use TextDecoder?
 function toText(bytes) {
   const num = bytes.byteLength;
   let result = new Array(num);

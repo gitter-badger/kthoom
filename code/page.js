@@ -56,17 +56,20 @@ export class HtmlPage extends TextPage {
   }
 }
 
-const createURLFromArray = function(array, mimeType) {
+/**
+ * @param {ArrayBuffer} ab
+ * @param {string} mimeType
+ */
+function createURLFromArray(ab, mimeType) {
   if (mimeType === 'image/xml+svg') {
-    const xmlStr = new TextDecoder('utf-8').decode(array);
+    const xmlStr = new TextDecoder('utf-8').decode(ab);
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(xmlStr);
   }
-  const offset = array.byteOffset;
-  const len = array.byteLength;
-  let blob = new Blob([array], {type: mimeType}).slice(offset, offset + len, mimeType);
+  const offset = ab.byteOffset;
+  const len = ab.byteLength;
+  let blob = new Blob([ab], {type: mimeType}).slice(offset, offset + len, mimeType);
   return URL.createObjectURL(blob);
 };
-
 
 /**
  * @param {string} filename
@@ -96,7 +99,7 @@ function guessMimeType(filename) {
 
 /**
  * Factory method that creates a Page from a File.
- * @param {File} file
+ * @param {UnarchivedFile} file
  * @return {Promise<Page>} A Promise that gets a Page (like an ImagePage).
  */
 export const createPageFromFileAsync = function(file) {

@@ -45,11 +45,12 @@ export class BookPageExtractedEvent extends BookEvent {
 }
 
 export class BookProgressEvent extends BookEvent {
-  constructor(source, loadingPct, unarchivingPct, totalPages) {
+  constructor(source, loadingPct, unarchivingPct, layoutPct, totalPages) {
     super(source);
     this.type = BookEventType.PROGRESS;
     this.loadingPct = loadingPct;
     this.unarchivingPct = unarchivingPct;
+    this.layoutPct = layoutPct;
     this.totalPages = totalPages;
   }
 }

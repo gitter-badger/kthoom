@@ -127,7 +127,7 @@ export class BookViewer {
       }
     } else if (evt instanceof BookBindingCompleteEvent) {
       getElem('header').classList.remove('animating');
-      this.setProgressMeter(1, 1);
+      this.setProgressMeter(1, 1, 1);
     }
   }
 
@@ -404,6 +404,7 @@ export class BookViewer {
 
     getElem('loadmeter').setAttribute('width', '0%');
     getElem('zipmeter').setAttribute('width', '0%');
+    getElem('layoutmeter').setAttribute('width', '0%');
     getElem('pagemeter').setAttribute('width', '0%');
     getElem('page').innerHTML = '0/0';
 
@@ -443,7 +444,11 @@ export class BookViewer {
     this.updateLayout();
   }
 
-  animateUnzipMeterTo_(pct) {
+  /**
+   * @param {number} pct
+   * @param {string} meterId
+   */
+  animateMeterTo_(pct, meterId) {
     if (this.lastCompletion_ >= pct) return;
 
     this.progressBarAnimationPromise_ = this.progressBarAnimationPromise_.then(() => {
@@ -453,10 +458,10 @@ export class BookViewer {
       }
       this.lastCompletion_ = Math.min(this.lastCompletion_ + partway, pct);
 
-      getElem('zipmeter').setAttribute('width', this.lastCompletion_ + '%');
+      getElem(meterId).setAttribute('width', this.lastCompletion_ + '%');
 
       if (this.lastCompletion_ < pct) {
-        setTimeout(() => this.animateUnzipMeterTo_(pct), 50);
+        setTimeout(() => this.animateMeterTo_(pct, meterId), 50);
       }
     });
   }
@@ -466,20 +471,25 @@ export class BookViewer {
    * used (the values from the current book are used instead).
    * @param {number} loadPct The current percentage loaded, a number from 0 to 1.
    * @param {number} unzipPct The current percentage unzipped, a number from 0 to 1.
+   * @param {number} layoutPct The current percentage layed out, a number from 0 to 1.
    * @param {string} label A label to prepend to the progress title text.
    */
-  setProgressMeter({loadPct = 0, unzipPct = 0, label = ''} = {}) {
+  setProgressMeter({loadPct = 0, unzipPct = 0, layoutPct = 0, label = ''} = {}) {
     let loadingPct = loadPct;
     let unzippingPct = unzipPct;
+    let layingOutPct = layoutPct;
     if (this.currentBook_) {
       loadingPct = this.currentBook_.getLoadingPercentage();
       unzippingPct = this.currentBook_.getUnarchivingPercentage();
+      layingOutPct = this.currentBook_.getLayoutPercentage();
     }
     loadingPct = Math.max(0, Math.min(100 * loadingPct, 100));
     unzippingPct = Math.max(0, Math.min(100 * unzippingPct, 100));
+    layingOutPct = Math.max(0, Math.min(100 * layingOutPct, 100));
 
     getElem('loadmeter').setAttribute('width', loadingPct + '%');
-    this.animateUnzipMeterTo_(unzippingPct);
+    this.animateMeterTo_(unzippingPct, 'zipmeter');
+    this.animateMeterTo_(layingOutPct, 'layoutmeter');
 
     let title = getElem('progress_title');
     while (title.firstChild) title.removeChild(title.firstChild);
