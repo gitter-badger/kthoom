@@ -1,6 +1,8 @@
 /**
  * book-binder.js
+ *
  * Licensed under the MIT License
+ *
  * Copyright(c) 2019 Google Inc.
  */
 
@@ -133,12 +135,7 @@ export class BookBinder extends EventEmitter {
     this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS, evt => {
       this.unarchivingPercentage_ = evt.totalCompressedBytesRead / this.totalExpectedSize_;
       // Total # pages is not always equal to the total # of files, so we do not report that here.
-      this.notify(new BookProgressEvent(
-          this,
-          this.bytesLoaded_ / this.totalExpectedSize_,
-          this.unarchivingPercentage_,
-          0, // layoutPct
-          undefined /* totalPages */));
+      this.notify(new BookProgressEvent(this));
     });
 
     this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO,

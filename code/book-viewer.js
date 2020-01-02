@@ -7,7 +7,7 @@
  */
 
 import { Book } from './book.js';
-import { BookPageExtractedEvent, BookProgressEvent, BookBindingCompleteEvent } from './book-events.js';
+import { BookEventType } from './book-events.js';
 import { assert, getElem } from './helpers.js';
 import { ImagePage, HtmlPage, TextPage } from './page.js';
 
@@ -38,7 +38,6 @@ export class BookViewer {
     this.wheelTimer_ = null;
     this.wheelTurnedPageAt_ = 0;
 
-    this.lastCompletion_ = 0;
     this.progressBarAnimationPromise_ = Promise.resolve(true);
 
     this.numPagesInViewer_ = 1;
@@ -117,17 +116,23 @@ export class BookViewer {
    * @private
    */
   handleBookEvent_(evt) {
-    if (evt instanceof BookProgressEvent) {
-      getElem('header').classList.add('animating');
-      this.setProgressMeter({label: 'Opening'});
-    } else if (evt instanceof BookPageExtractedEvent) {
-      // Display first page if we haven't yet.
-      if (evt.pageNum == 1) {
-        this.updateLayout();
+    if (evt.source === this.currentBook_) {
+      switch (evt.type) {
+        case BookEventType.PROGRESS:
+          getElem('header').classList.add('animating');
+          this.updateProgressMeter();
+          break;
+        case BookEventType.PAGE_EXTRACTED:
+          // Display first page if we haven't yet.
+          if (evt.pageNum == 1) {
+            this.updateLayout();
+          }
+          break;
+        case BookEventType.BINDING_COMPLETE:
+          getElem('header').classList.remove('animating');
+          this.updateProgressMeter();
+          break;
       }
-    } else if (evt instanceof BookBindingCompleteEvent) {
-      getElem('header').classList.remove('animating');
-      this.setProgressMeter(1, 1, 1);
     }
   }
 
@@ -385,7 +390,7 @@ export class BookViewer {
       this.currentBook_ = book;
       book.subscribeToAllEvents(this, evt => this.handleBookEvent_(evt));
       this.currentPageNum_ = 0;
-      this.setProgressMeter({label: 'Opening'});
+      this.updateProgressMeter();
       this.updateLayout();
     }
   }
@@ -400,15 +405,13 @@ export class BookViewer {
       this.currentPageNum_ = -1;
     }
 
-    this.lastCompletion_ = 0;
-
     getElem('loadmeter').setAttribute('width', '0%');
     getElem('zipmeter').setAttribute('width', '0%');
     getElem('layoutmeter').setAttribute('width', '0%');
     getElem('pagemeter').setAttribute('width', '0%');
     getElem('page').innerHTML = '0/0';
 
-    this.setProgressMeter();
+    this.updateProgressMeter();
     this.updateLayout();
   }
 
@@ -449,60 +452,76 @@ export class BookViewer {
    * @param {string} meterId
    */
   animateMeterTo_(pct, meterId) {
-    if (this.lastCompletion_ >= pct) return;
+    const meterElem = getElem(meterId);
+    let currentMeterPct = parseFloat(meterElem.getAttribute('width'), 10);
+    if (currentMeterPct >= pct) return;
 
     this.progressBarAnimationPromise_ = this.progressBarAnimationPromise_.then(() => {
-      let partway = (pct - this.lastCompletion_) / 2;
+      let partway = (pct - currentMeterPct) / 2;
       if (partway < 0.001) {
-        partway = pct - this.lastCompletion_;
+        partway = pct - currentMeterPct;
       }
-      this.lastCompletion_ = Math.min(this.lastCompletion_ + partway, pct);
+      currentMeterPct = Math.min(currentMeterPct + partway, pct);
 
-      getElem(meterId).setAttribute('width', this.lastCompletion_ + '%');
+      meterElem.setAttribute('width', currentMeterPct + '%');
 
-      if (this.lastCompletion_ < pct) {
+      if (currentMeterPct < pct) {
         setTimeout(() => this.animateMeterTo_(pct, meterId), 50);
       }
     });
   }
 
   /**
-   * The loadPct, unzipPct fields of the input params are not currently
-   * used (the values from the current book are used instead).
-   * @param {number} loadPct The current percentage loaded, a number from 0 to 1.
-   * @param {number} unzipPct The current percentage unzipped, a number from 0 to 1.
-   * @param {number} layoutPct The current percentage layed out, a number from 0 to 1.
-   * @param {string} label A label to prepend to the progress title text.
+   * Updates the book viewer meters based on the current book's progress.
+   * @param {string} label
    */
-  setProgressMeter({loadPct = 0, unzipPct = 0, layoutPct = 0, label = ''} = {}) {
-    let loadingPct = loadPct;
-    let unzippingPct = unzipPct;
-    let layingOutPct = layoutPct;
-    if (this.currentBook_) {
-      loadingPct = this.currentBook_.getLoadingPercentage();
-      unzippingPct = this.currentBook_.getUnarchivingPercentage();
-      layingOutPct = this.currentBook_.getLayoutPercentage();
+  updateProgressMeter(label = undefined) {
+    if (!this.currentBook_) {
+      return;
     }
+
+    let loadingPct = this.currentBook_.getLoadingPercentage();
+    let unzippingPct = this.currentBook_.getUnarchivingPercentage();
+    let layingOutPct = this.currentBook_.getLayoutPercentage();
+    let totalPages = this.currentBook_.getNumberOfPages();
     loadingPct = Math.max(0, Math.min(100 * loadingPct, 100));
     unzippingPct = Math.max(0, Math.min(100 * unzippingPct, 100));
     layingOutPct = Math.max(0, Math.min(100 * layingOutPct, 100));
 
-    getElem('loadmeter').setAttribute('width', loadingPct + '%');
+    this.animateMeterTo_(loadingPct, 'loadmeter');
     this.animateMeterTo_(unzippingPct, 'zipmeter');
     this.animateMeterTo_(layingOutPct, 'layoutmeter');
+
+    let bkgndWidth = Math.ceil(Math.log10(totalPages + 1)) * 2 + 1;
+    getElem('page_bkgnd').setAttribute('width', `${bkgndWidth * 10}`);
+    getElem('page').innerHTML = (this.currentPageNum_ + 1) + '/' + totalPages;
 
     let title = getElem('progress_title');
     while (title.firstChild) title.removeChild(title.firstChild);
 
-    let labelText = unzippingPct.toFixed(2) + '% ';
-    if (label.length > 0) {
-      labelText = label + ' ' + labelText;
+    let labelPct;
+    let labelText;
+    if (loadingPct < 100) {
+      labelText = 'Loading';
+      labelPct = loadingPct;
+    } else if (unzippingPct < 100) {
+      labelText = 'Unzipping';
+      labelPct = unzippingPct;
+    } else if (layingOutPct < 100) {
+      labelText = 'Layout';
+      labelPct = layingOutPct;
+    } else {
+      labelText = 'Complete'
+      labelPct = 100;
     }
-    title.appendChild(document.createTextNode(labelText));
+    if (label) {
+      labelText = label
+    }
+    title.appendChild(document.createTextNode(`${labelText} ${labelPct.toFixed(2)}% `));
 
     // Update some a11y attributes of the progress meter.
     if (this.currentBook_) {
-      const totalPct = (loadingPct + unzippingPct) / 2;
+      const totalPct = (loadingPct + unzippingPct + layingOutPct) / 3;
       const totalPctStr = totalPct.toFixed(2) + '%';
       const bvElem = getElem(BOOK_VIEWER_ELEM_ID);
       const progressElem = getElem('progress');

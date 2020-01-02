@@ -1,23 +1,29 @@
 /**
  * epub-book-binder.js
+ *
  * Licensed under the MIT License
+ *
  * Copyright(c) 2019 Google Inc.
  */
 
  /**
   * Notes:
   *
-  * - add a new layoutmeter element to index.html and corresponding property in the Progress events.
-  * - understand how the seam between spine itemrefs is handled in ebook readers.
-  * - put all XHTML body contents into a div element, where div has a class, then parse the CSS and
-  *   re-emit CSS with the class names?
-  * - if all style classes are applied to top-level divs, then remove unnecessary nested divs.
-  * - have a whitelist of elements and attributes that are allowed to make their way into the page.
-  * - go through DFT of entire tree and start adding elements to the HtmlPage.  If the page is too long
-  *   remove the last element and keep track of where we are (a cursor).
+  * - create an HTML target doc
+  * - have a "cursor" that remembers where we are in parsing the spine (which itemref, which element)
+  * - for each XHTML spine itemref:
+  *   - create a unique id
+  *   - create a top-level div element in HTML target doc
+  *   - do node DFT, if each element type matches whitelist, create one in target doc
+  *     - (if not, then use div?)
+  *   - for each attribute in the whitelist, create one in target doc
+  *   - some elements (img) might have src/href, if so, then create a Blob URL for that reference and
+  *     update the attribute to be the blob URL
+  * - Add elements until the page is too long... remove the last node.
+  * - put the target doc into a HtmlPage and emit a PageExtracted event
   *
   * - use flex-direction=row and treat each column as a "page" in kthoom.  Fixed height and flows
-  *   between columns naturally.
+  *   between columns naturally?
   */
 
 import { BookBinder } from './book-binder.js';
@@ -135,7 +141,7 @@ export class EPUBBookBinder extends BookBinder {
     let monsterText = '';
     let xhtmlChunks = [];
     const numSpineRefs = this.spineRefs_.length;
-    for (let i = 0; i < numSpineRefs; ++i) { //const spref of this.spineRefs_) {
+    for (let i = 0; i < numSpineRefs; ++i) {
       const spref = this.spineRefs_[i];
       const {mediaType, data} = spref;
       if (mediaType === XHTML_MIMETYPE) {
@@ -143,12 +149,8 @@ export class EPUBBookBinder extends BookBinder {
         xhtmlChunks.push(htmlDoc);
         monsterText += htmlDoc.documentElement.textContent;
       }
-      this.notify(new BookProgressEvent(
-        this,
-        undefined, // loadingPct
-        undefined, // unarchivingPct
-        (i+1) / numSpineRefs, // layoutPct
-        1));
+      this.layoutPercentage_ = (i+1) / numSpineRefs;
+      this.notify(new BookProgressEvent(this, 1));
     }
 
     /*
@@ -183,11 +185,7 @@ export class EPUBBookBinder extends BookBinder {
       debugger;
     }).then(page => {
       // Emit all events in the expected order for our single page.
-      this.notify(new BookProgressEvent(
-        this,
-        undefined, // loadingPct
-        undefined, // unarchivingPct
-        1));
+      this.notify(new BookProgressEvent(this, 1));
       this.notify(new BookPageExtractedEvent(this, page, 1));
       this.notify(new BookBindingCompleteEvent(this, [page]));
     });
@@ -195,11 +193,7 @@ export class EPUBBookBinder extends BookBinder {
 
     const onePager = new TextPage('page-1', monsterText);
     // Emit all events in the expected order for our single page.
-    this.notify(new BookProgressEvent(
-      this,
-      undefined /* loadingPct */,
-      undefined /* unarchivingPct */,
-      1));
+    this.notify(new BookProgressEvent(this, 1));
     this.notify(new BookPageExtractedEvent(this, onePager, 1));
     this.notify(new BookBindingCompleteEvent(this, [onePager]));
   }

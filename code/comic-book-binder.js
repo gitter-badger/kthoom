@@ -1,6 +1,8 @@
 /**
  * comic-book-binder.js
+ *
  * Licensed under the MIT License
+ *
  * Copyright(c) 2019 Google Inc.
  */
 
@@ -32,12 +34,7 @@ export class ComicBookBinder extends BookBinder {
         this.pagePromises_.push(createPageFromFileAsync(evt.unarchivedFile));
 
         // Emit a Progress event for each unarchived file.
-        this.notify(new BookProgressEvent(
-          this,
-          undefined /* loadingPct */,
-          undefined /* unarchivingPct */,
-          undefined /* layoutPct */,
-          this.pagePromises_.length));
+        this.notify(new BookProgressEvent(this, this.pagePromises_.length));
 
         // Do not send extracted events yet, because the pages may not be in the correct order.
         //this.notify_(new UnarchivePageExtractedEvent(this, newPage, this.pages_.length));

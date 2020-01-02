@@ -483,8 +483,8 @@ class KthoomApp {
     newlySelectedMenuItem.focus();
   }
 
-  setProgressMeter({loadPct = 0, unzipPct = 0, layoutPct = 0, label = ''} = {}) {
-    this.bookViewer_.setProgressMeter({loadPct, unzipPct, layoutPct, label});
+  updateProgressMeter(label) {
+    this.bookViewer_.updateProgressMeter(label);
   }
 
   /**

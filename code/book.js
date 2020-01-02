@@ -112,11 +112,7 @@ export class Book extends EventEmitter {
             expectedSize = evt.total;
             this.bookBinder_.setNewExpectedSize(evt.loaded, evt.total);
           }
-          this.notify(new BookProgressEvent(
-              this,
-              this.bookBinder_.getLoadingPercentage(),
-              this.bookBinder_.getUnarchivingPercentage(),
-              this.pages_.length));
+          this.notify(new BookProgressEvent(this, this.pages_.length));
         }
       }
       xhr.onload = (evt) => {

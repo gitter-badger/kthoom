@@ -19,7 +19,7 @@ kthoom.ipfs = {
   node_: undefined,
   getNode: function() {
     if (!kthoom.ipfs.nodePromise_) {
-      kthoom.getApp().setProgressMeter({loadPct: 0.1, label: 'Loading code for IPFS...'});
+      kthoom.getApp().updateProgressMeter('Loading code for IPFS...');
       kthoom.ipfs.nodePromise_ = new Promise((resolve, reject) => {
         // Load in the IPFS script API.
         const ipfsScriptEl = document.createElement('script');
@@ -28,7 +28,7 @@ kthoom.ipfs = {
             kthoom.ipfs.node_ = window.ipfs;
             resolve(window.ipfs);
           } else {
-            kthoom.getApp().setProgressMeter({loadPct: 0.2, label: 'Creating IPFS node...'});
+            kthoom.getApp().updateProgressMeter('Creating IPFS node...');
             const node = window.Ipfs.createNode();
             node.on('start', () => {
               kthoom.ipfs.node_ = node;
@@ -44,7 +44,7 @@ kthoom.ipfs = {
   },
   loadHash: function(ipfshash) {
     kthoom.ipfs.getNode().then(node => {
-      kthoom.getApp().setProgressMeter({loadPct: 0.3, label: 'Fetching data from IPFS...'});
+      kthoom.getApp().updateProgressMeter('Fetching data from IPFS...');
       node.files.cat(ipfshash, (err, data) => {
         if (err) throw err;
 
