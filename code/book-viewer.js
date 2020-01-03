@@ -9,7 +9,7 @@
 import { Book } from './book.js';
 import { BookEventType } from './book-events.js';
 import { assert, getElem } from './helpers.js';
-import { ImagePage, HtmlPage, TextPage } from './page.js';
+import { ImagePage, HtmlPage, TextPage, XhtmlPage } from './page.js';
 
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
 const ID_PAGE_1 = 'page1';
@@ -126,6 +126,8 @@ export class BookViewer {
           // Display first page if we haven't yet.
           if (evt.pageNum == 1) {
             this.updateLayout();
+          } else {
+            this.updatePageMeter_();
           }
           break;
         case BookEventType.BINDING_COMPLETE:
@@ -191,11 +193,7 @@ export class BookViewer {
       return;
     }
 
-    const pageNum = this.currentPageNum_;
-    const numPages = this.currentBook_.getNumberOfPages();
-    getElem('page').innerHTML = (pageNum + 1) + '/' + numPages;
-    getElem('pagemeter').setAttribute('width',
-        100 * (numPages == 0 ? 0 : ((pageNum + 1) / numPages)) + '%');
+    this.updatePageMeter_();
 
     const page = this.currentBook_.getPage(this.currentPageNum_);
     if (!page) {
@@ -380,6 +378,15 @@ export class BookViewer {
     }
   }
 
+  /** @private */
+  updatePageMeter_() {
+    const pageNum = this.currentPageNum_;
+    const numPages = this.currentBook_.getNumberOfPages();
+    getElem('page').innerHTML = (pageNum + 1) + '/' + numPages;
+    getElem('pagemeter').setAttribute('width',
+        100 * (numPages == 0 ? 0 : ((pageNum + 1) / numPages)) + '%');
+  }
+
   /**
    * @param {Book} book
    */
@@ -515,9 +522,14 @@ export class BookViewer {
       labelPct = 100;
     }
     if (label) {
-      labelText = label
+      labelText = label;
     }
     title.appendChild(document.createTextNode(`${labelText} ${labelPct.toFixed(2)}% `));
+    const progressBkgnd = getElem('progress_bkgnd');
+    const totalWidth = getElem('border').width.baseVal.value;
+    const progressBkgndWidth = (labelText.length + 4) * 10;
+    progressBkgnd.setAttribute('width', `${progressBkgndWidth}`);
+    progressBkgnd.setAttribute('x', totalWidth - progressBkgndWidth);
 
     // Update some a11y attributes of the progress meter.
     if (this.currentBook_) {
