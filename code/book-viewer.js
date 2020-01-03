@@ -194,6 +194,7 @@ export class BookViewer {
     }
 
     this.updatePageMeter_();
+    this.updateProgressBackgroundPosition_();
 
     const page = this.currentBook_.getPage(this.currentPageNum_);
     if (!page) {
@@ -387,6 +388,15 @@ export class BookViewer {
         100 * (numPages == 0 ? 0 : ((pageNum + 1) / numPages)) + '%');
   }
 
+  /** @private */
+  updateProgressBackgroundPosition_() {
+    const totalWidth = getElem('border').width.baseVal.value;
+    const progressBkgnd = getElem('progress_bkgnd');
+    const progressBkgndWidth = progressBkgnd.width.baseVal.value;
+    progressBkgnd.setAttribute('x', totalWidth - progressBkgndWidth);
+
+  }
+
   /**
    * @param {Book} book
    */
@@ -525,11 +535,10 @@ export class BookViewer {
       labelText = label;
     }
     title.appendChild(document.createTextNode(`${labelText} ${labelPct.toFixed(2)}% `));
-    const progressBkgnd = getElem('progress_bkgnd');
-    const totalWidth = getElem('border').width.baseVal.value;
+
     const progressBkgndWidth = (labelText.length + 4) * 10;
-    progressBkgnd.setAttribute('width', `${progressBkgndWidth}`);
-    progressBkgnd.setAttribute('x', totalWidth - progressBkgndWidth);
+    getElem('progress_bkgnd').setAttribute('width', `${progressBkgndWidth}`);
+    this.updateProgressBackgroundPosition_();
 
     // Update some a11y attributes of the progress meter.
     if (this.currentBook_) {
