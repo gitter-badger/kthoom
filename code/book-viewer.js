@@ -614,6 +614,11 @@ export class BookViewer {
           '<iframe style="width:100%;height:700px;border:0" src="data:text/html,' +
           page.escapedHtml +
           '"></iframe>';
+    } else if (page instanceof XhtmlPage) {
+      canvasEl.style.display = 'none';
+      textDiv.style.display = '';
+      textDiv.innerHTML = '';
+      textDiv.appendChild(page.pageEl);
     } else if (page instanceof TextPage) {
       canvasEl.style.display = 'none';
       textDiv.style.display = '';

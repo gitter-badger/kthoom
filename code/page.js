@@ -20,6 +20,9 @@ export class Page {
   getAspectRatio() { return 6.625 / 10.25; }
 }
 
+/**
+ * A page that holds a single image element.
+ */
 export class ImagePage extends Page {
   /**
    * @param {string} name
@@ -33,6 +36,9 @@ export class ImagePage extends Page {
   getAspectRatio() { return this.img.naturalWidth / this.img.naturalHeight; }
 }
 
+/**
+ * A page that holds raw text.
+ */
 export class TextPage extends Page {
   /**
    * @param {string} name
@@ -53,6 +59,21 @@ export class HtmlPage extends TextPage {
   constructor(name, rawHtml) {
     super(name, rawHtml);
     this.escapedHtml = escape(rawHtml);
+  }
+}
+
+/**
+ * A page that holds a single sanitized XHTML <div> element.
+ */
+export class XhtmlPage extends Page {
+  /**
+   * @param {string} name
+   * @param {HTMLDivElement} pageEl
+   */
+  constructor(name, pageEl) {
+    super(name);
+    /** @type {HTMLDivElement} */
+    this.pageEl = pageEl;
   }
 }
 
