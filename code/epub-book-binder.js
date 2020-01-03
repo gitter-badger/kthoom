@@ -9,77 +9,31 @@
  /**
   * Notes:
   *
-  * - create an HTML target doc
-  * - have a "cursor" that remembers where we are in parsing the spine (which itemref, which element)
-  * - for each XHTML spine itemref:
-  *   - create a unique id
-  *   - create a top-level div element in HTML target doc
-  *   - do node DFT, if each element type matches whitelist, create one in target doc
-  *     - (if not, then use div?)
-  *   - for each attribute in the whitelist, create one in target doc
-  *   - some elements (img) might have src/href, if so, then create a Blob URL for that reference and
-  *     update the attribute to be the blob URL
-  * - Add elements until the page is too long... remove the last node.
-  * - put the target doc into a HtmlPage and emit a PageExtracted event
-  *
-  * - use flex-direction=row and treat each column as a "page" in kthoom.  Fixed height and flows
-  *   between columns naturally?
+  * - Using iframe to isolate the CSS styles within the XHTML pages in the book archive.
+  * - Upon any DOM node needing a reference to another file (img, etc), then create a Blob URL.
+  * - Trick is that every time the page needs rendering, we will need to create a new Blob URL,
+  *   because the iframe content doc is destroyed, thereby revoking all Blob URLs.
+  * - Have a page-setting phase where we go through all DOM nodes, rendering to a non-displayed
+  *   iframe to size things right.  Each page can remember the DOM it needs to show.
+  * - Once that phase is done, we can eject the archive files from memory and just keep around the
+  *   page objects.
+  * - Each page object must be able to re-render itself (and create any Blob URLs it needs).
   */
 
 import { BookBinder } from './book-binder.js';
 import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
-import { TextPage } from './page.js';
+import { NodeType, walkDom } from './dom-walker.js';
+import { ATTRIBUTE_WHITELIST, BLOB_URL_ATTRIBUTES, ELEMENT_WHITELIST} from './epub-whitelists.js';
+import { FileRef } from './file-ref.js';
+import { TextPage, XhtmlPage } from './page.js';
 
+const ATTR_PREFIX = 'data-kthoom-';
 const CONTAINER_FILE = 'META-INF/container.xml';
 const CONTAINER_NAMESPACE = 'urn:oasis:names:tc:opendocument:xmlns:container';
 const EPUB_MIMETYPE = 'application/epub+zip';
 const OPF_NAMESPACE = 'http://www.idpf.org/2007/opf';
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 const XHTML_MIMETYPE = 'application/xhtml+xml';
-
-class FileRef {
-  /**
-   * @param {string} id
-   * @param {string} href
-   * @param {string} mediaType
-   * @param {Uint8Array} data
-   */
-  constructor(id, href, mediaType, data) {
-    /** @type {string} */
-    this.id = id;
-
-    /** @type {string} */
-    this.href = href;
-
-    /** @type {string} */
-    this.mediaType = mediaType;
-
-    /** @type {Uint8Array} */
-    this.data = data;
-
-    /** @private {Blob} */
-    this.blob_ = undefined;
-
-    /** @private {string} */
-    this.blobURL_ = undefined;
-  }
-
-  getBlob() {
-    if (!this.blob) this.initializeBlob_();
-    return this.blob;
-  }
-
-  getBlobURL() {
-    if (!this.blobURL) this.initializeBlob_();
-    return this.blobURL;
-  }
-
-  /** @private */
-  initializeBlob_() {
-    this.blob = new Blob(data, {type: mediaType});
-    this.blobURL = URL.createObjectURL(this.blob);
-  }
-}
 
 /**
  * The BookBinder for EPUB files.  Do not use, since this is a WIP.
@@ -137,6 +91,23 @@ export class EPUBBookBinder extends BookBinder {
 
   // TODO: Proper error handling throughout.
 
+  /**
+   * @param {string} href
+   * @param {string} rootDir
+   * @return {FileRef}
+   * @private
+   */
+  getManifestFileRef_(href, rootDir) {
+    // TODO: Do full path resolution here.
+    const fullPath = rootDir + href;
+    for (const ref of this.manifestFileMap_.values()) {
+      if (ref.href === fullPath) {
+        return ref;
+      }
+    }
+    return null;
+  }
+
   inflateSpine_() {
     let monsterText = '';
     let xhtmlChunks = [];
@@ -153,49 +124,103 @@ export class EPUBBookBinder extends BookBinder {
       this.notify(new BookProgressEvent(this, 1));
     }
 
-    /*
-    new Promise((resolve, reject) => {
-      // TODO: Styling for overflow, color.
-      const svgDoc = document.implementation.createDocument(SVG_NAMESPACE, 'svg');
-      svgDoc.documentElement.setAttributeNS(null, 'viewBox', '0 0 100 100');
-      const styleElem = svgDoc.createElementNS(SVG_NAMESPACE, 'style');
-//      styleElem 
-      const foreignObject = svgDoc.createElementNS(null, 'foreignObject');
-      foreignObject.setAttributeNS(null, 'x', '0');
-      foreignObject.setAttributeNS(null, 'y', '0');
-      foreignObject.setAttributeNS(null, 'width', '100');
-      foreignObject.setAttributeNS(null, 'height', '100');
-      svgDoc.documentElement.appendChild(foreignObject);
-
-      debugger;
-      // For each HTML chunk, create a foreignObject element.
-      for (const xhtmlChunk of xhtmlChunks) {
-        const htmlElem = xhtmlChunk.documentElement;
-        foreignObject.appendChild(htmlElem);
-        svgDoc.documentElement.appendChild(foreignObject);
-      }
-      const dataURI = 'data:image/svg+xml;utf8,' + new XMLSerializer().serializeToString(svgDoc);
-      const img = new Image();
-      img.onload = () => { resolve(new ImagePage('page-1', img)); };
-      img.onerror = (e) => {
-        debugger;
-        resolve(new TextPage('bad-page', `Could not open SVG image`));
-      };
-      img.src = dataURI;
-      debugger;
-    }).then(page => {
-      // Emit all events in the expected order for our single page.
-      this.notify(new BookProgressEvent(this, 1));
-      this.notify(new BookPageExtractedEvent(this, page, 1));
-      this.notify(new BookBindingCompleteEvent(this, [page]));
-    });
-    */
-
     const onePager = new TextPage('page-1', monsterText);
     // Emit all events in the expected order for our single page.
     this.notify(new BookProgressEvent(this, 1));
     this.notify(new BookPageExtractedEvent(this, onePager, 1));
-    this.notify(new BookBindingCompleteEvent(this, [onePager]));
+
+    // Create an iframe element and add it to our document so that the contentWindow is available.
+    // We need the contentWindow to ensure the elements and Blob URLs are created in the right
+    // HTML context.
+    const iframeEl = document.createElement('iframe');
+    iframeEl.style.display = 'none';
+    document.body.appendChild(iframeEl);
+    const contentWindow = iframeEl.contentWindow;
+    const htmlDoc = iframeEl.contentDocument;
+    const pageEl = htmlDoc.documentElement;
+
+    let outEl = pageEl;
+    const nodeCopyMap = {};
+
+    // Process all serialized nodes of XHTML and make sanitized copies in the new DOM context.
+    let curNode = xhtmlChunks[0].documentElement;
+    nodeCopyMap[curNode] = pageEl;
+    walkDom(curNode, curNode => {
+      // Ensure that we are in the current place in the copy tree to insert the new element.
+      if (nodeCopyMap[curNode.parentElement]) {
+        outEl = nodeCopyMap[curNode.parentElement];
+      }
+
+      let nodeName = curNode.nodeName;
+      // Special handling for text nodes.
+      if (nodeName === '#text') {
+        outEl.appendChild(curNode.cloneNode());
+      } else if (ELEMENT_WHITELIST.includes(nodeName)) {
+
+        let newEl;
+        // Special handling for the iframe's head and body elements which are created for us.
+        if (nodeName === 'head') {
+          newEl = htmlDoc.head;
+        } else if (nodeName === 'body') {
+          newEl = htmlDoc.body;
+        } else {
+          // Make a safe copy of the current node, if it is in our whitelist.
+          newEl = contentWindow.document.createElement(nodeName);
+        }
+        // Update map of serialized XHTML nodes to iframe'd sanitized nodes.
+        nodeCopyMap[curNode] = newEl;
+
+        // Copy over all whitelisted attributes.
+        if (curNode.nodeType === NodeType.ELEMENT && curNode.hasAttributes()) {
+          const attrs = curNode.attributes;
+          for (let i = 0; i < attrs.length; ++i) {
+            const attr =  attrs.item(i);
+            if (ATTRIBUTE_WHITELIST[nodeName] &&
+                ATTRIBUTE_WHITELIST[nodeName].includes(attr.name)) {
+              newEl.setAttribute(attr.name, attr.value);
+            }
+          }
+        }
+        outEl.appendChild(newEl);
+      }
+    });
+
+    const curHead = htmlDoc.head;
+    const curBody = htmlDoc.body;
+    const nextPage = new XhtmlPage('htmlpage', iframeEl, () => {
+      const cdoc = iframeEl.contentDocument;
+      const cwin = iframeEl.contentWindow;
+      cdoc.head.innerHTML = new XMLSerializer().serializeToString(curHead);
+      cdoc.body.innerHTML = new XMLSerializer().serializeToString(curBody);
+
+      walkDom(cdoc.documentElement, curNode => {
+        if (curNode.nodeType === NodeType.ELEMENT && curNode.hasAttributes()) {
+          const nodeName = curNode.nodeName.toLowerCase();
+          const attrs = curNode.attributes;
+          for (let i = 0; i < attrs.length; ++i) {
+            const attr =  attrs.item(i);
+            if (BLOB_URL_ATTRIBUTES[nodeName] &&
+                BLOB_URL_ATTRIBUTES[nodeName].includes(attr.name)) {
+              const ref = this.getManifestFileRef_(attr.value, this.spineRefs_[0].rootDir);
+              if (!ref) {
+                throw `Could not find a referenced file: ${attr.name}`;
+              }
+              curNode.setAttribute(ATTR_PREFIX + attr.name, attr.value);
+              curNode.setAttribute(attr.name, ref.getBlobURL(cwin));
+            }
+          }
+        }
+      });
+      // TODO: Move this styling into the BookViewer.
+      iframeEl.setAttribute('style', 'width:100%;height:700px;border:0');
+    });
+
+    // TODO: Keep track of which document and element we are in, and keep creating XhtmlPages.
+
+    this.notify(new BookProgressEvent(this, 2));
+    this.notify(new BookPageExtractedEvent(this, nextPage, 2));
+
+    this.notify(new BookBindingCompleteEvent(this, [onePager, nextPage]));
   }
 
   /** @private */
@@ -262,7 +287,7 @@ export class EPUBBookBinder extends BookBinder {
       const filename = (rootDir + href);
       assert(this.fileMap_.has(filename), `EPUB archive was missing file: ${filename}`);
 
-      const fileRef = new FileRef(id, filename, mediaType, this.fileMap_.get(filename));
+      const fileRef = new FileRef(id, filename, rootDir, mediaType, this.fileMap_.get(filename));
       this.manifestFileMap_.set(id, fileRef);
     }
 

@@ -374,8 +374,8 @@ export class BookViewer {
       const pageB = (this.rotateTimes_ >= 2) ? page1 : page2;
       this.setPageContents_(pageA, this.currentPageNum_);
       this.setPageContents_(pageB,
-        (this.currentPageNum_ < this.currentBook_.getNumberOfPages() - 1) ?
-        this.currentPageNum_ + 1 : 0);
+          (this.currentPageNum_ < this.currentBook_.getNumberOfPages() - 1) ?
+          this.currentPageNum_ + 1 : 0);
     }
   }
 
@@ -394,7 +394,6 @@ export class BookViewer {
     const progressBkgnd = getElem('progress_bkgnd');
     const progressBkgndWidth = progressBkgnd.width.baseVal.value;
     progressBkgnd.setAttribute('x', totalWidth - progressBkgndWidth);
-
   }
 
   /**
@@ -627,7 +626,8 @@ export class BookViewer {
       canvasEl.style.display = 'none';
       textDiv.style.display = '';
       textDiv.innerHTML = '';
-      textDiv.appendChild(page.pageEl);
+      textDiv.appendChild(page.iframeEl);
+      page.scrub();
     } else if (page instanceof TextPage) {
       canvasEl.style.display = 'none';
       textDiv.style.display = '';

@@ -63,17 +63,25 @@ export class HtmlPage extends TextPage {
 }
 
 /**
- * A page that holds a single sanitized XHTML <div> element.
+ * A page that holds an iframe with sanitized XHTML.
  */
 export class XhtmlPage extends Page {
   /**
    * @param {string} name
-   * @param {HTMLDivElement} pageEl
+   * @param {HTMLIframeElement} iframeEl
+   * @param {Function(HTMLIframeElement)} scrubberFn Function to be called after the iframe has been
+   *     added back into the DOM.
    */
-  constructor(name, pageEl) {
+  constructor(name, iframeEl, scrubberFn) {
     super(name);
-    /** @type {HTMLDivElement} */
-    this.pageEl = pageEl;
+    /** @type {HTMLIframeElement} */
+    this.iframeEl = iframeEl;
+    /** @type {Function} */
+    this.scrubberFn = scrubberFn;
+  }
+
+  scrub() {
+    return this.scrubberFn(this.pageEl);
   }
 }
 
