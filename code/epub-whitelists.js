@@ -7,13 +7,24 @@
  */
 
 export const ELEMENT_WHITELIST = [
-  'body', 'br', 'div', 'head', 'hr', 'img', 'link', 'p', 'span', 'style', 'title',
+  'a', 'body', 'br', 'div',
+  'head', 'h1', 'h2', 'h3',
+  'h4', 'h5', 'h6', 'hr',
+  'img', 'link', 'p', 'span',
+  'style', 'title',
 ];
 
 export const ATTRIBUTE_WHITELIST = {
+  'a': ['class', 'id', 'title'],
   'body': ['class', 'id'],
   'br': ['class', 'id'],
   'div': ['class', 'id'],
+  'h1': ['class', 'id'],
+  'h2': ['class', 'id'],
+  'h3': ['class', 'id'],
+  'h4': ['class', 'id'],
+  'h5': ['class', 'id'],
+  'h6': ['class', 'id'],
   'hr': ['class', 'id'],
   'img': ['alt', 'class', 'id', 'src'],
   'link': ['href', 'rel', 'type'],

@@ -247,6 +247,10 @@ ul.menuItems li {
   width: 100%;
 }
 
+#firstText, #secondText {
+  background-color: #999;
+}
+
 #mainText {
   text-align: left;
   width: 90%;
