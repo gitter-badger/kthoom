@@ -7,15 +7,18 @@
  */
 
 export const ELEMENT_WHITELIST = [
-  'body', 'div', 'head', 'img', 'p', 'style', 'title',
+  'body', 'br', 'div', 'head', 'hr', 'img', 'link', 'p', 'span', 'style', 'title',
 ];
 
 export const ATTRIBUTE_WHITELIST = {
-  'body': [],
-  'div': [],
-  'head': [],
-  'img': ['alt', 'src'],
-  'p': [],
+  'body': ['class', 'id'],
+  'br': ['class', 'id'],
+  'div': ['class', 'id'],
+  'hr': ['class', 'id'],
+  'img': ['alt', 'class', 'id', 'src'],
+  'link': ['href', 'rel', 'type'],
+  'p': ['class', 'id'],
+  'span': ['class', 'id'],
 };
 
 export const BLOB_URL_ATTRIBUTES = {
