@@ -109,7 +109,6 @@ export class EPUBBookBinder extends BookBinder {
   }
 
   inflateSpine_() {
-    let monsterText = '';
     let xhtmlChunks = [];
     const numSpineRefs = this.spineRefs_.length;
     for (let i = 0; i < numSpineRefs; ++i) {
@@ -118,109 +117,106 @@ export class EPUBBookBinder extends BookBinder {
       if (mediaType === XHTML_MIMETYPE) {
         const htmlDoc = new DOMParser().parseFromString(toText(data), XHTML_MIMETYPE);
         xhtmlChunks.push(htmlDoc);
-        monsterText += htmlDoc.documentElement.textContent;
       }
       this.layoutPercentage_ = (i+1) / numSpineRefs;
       this.notify(new BookProgressEvent(this, 1));
     }
 
-    const onePager = new TextPage('page-1', monsterText);
-    // Emit all events in the expected order for our single page.
-    this.notify(new BookProgressEvent(this, 1));
-    this.notify(new BookPageExtractedEvent(this, onePager, 1));
-
-    // Create an iframe element and add it to our document so that the contentWindow is available.
-    // We need the contentWindow to ensure the elements and Blob URLs are created in the right
-    // HTML context.
-    const iframeEl = document.createElement('iframe');
-    iframeEl.style.display = 'none';
-    document.body.appendChild(iframeEl);
-    const contentWindow = iframeEl.contentWindow;
-    const htmlDoc = iframeEl.contentDocument;
-    const pageEl = htmlDoc.documentElement;
-
-    let outEl = pageEl;
-    const nodeCopyMap = {};
+    const allPages = [];
 
     // Process all serialized nodes of XHTML and make sanitized copies in the new DOM context.
-    let curNode = xhtmlChunks[0].documentElement;
-    nodeCopyMap[curNode] = pageEl;
-    walkDom(curNode, curNode => {
-      // Ensure that we are in the current place in the copy tree to insert the new element.
-      if (nodeCopyMap[curNode.parentElement]) {
-        outEl = nodeCopyMap[curNode.parentElement];
-      }
+    for (const xhtmlChunk of xhtmlChunks) {
+      // Create an iframe element and add it to our document so that the contentWindow is available.
+      // We need the contentWindow to ensure the elements and Blob URLs are created in the right
+      // HTML context.
+      const iframeEl = document.createElement('iframe');
+      iframeEl.style.display = 'none';
+      document.body.appendChild(iframeEl);
+      const contentWindow = iframeEl.contentWindow;
+      const htmlDoc = iframeEl.contentDocument;
+      const pageEl = htmlDoc.documentElement;
 
-      let nodeName = curNode.nodeName;
-      // Special handling for text nodes.
-      if (nodeName === '#text') {
-        outEl.appendChild(curNode.cloneNode());
-      } else if (ELEMENT_WHITELIST.includes(nodeName)) {
+      let outEl = pageEl;
+      const nodeCopyMap = {};
 
-        let newEl;
-        // Special handling for the iframe's head and body elements which are created for us.
-        if (nodeName === 'head') {
-          newEl = htmlDoc.head;
-        } else if (nodeName === 'body') {
-          newEl = htmlDoc.body;
-        } else {
-          // Make a safe copy of the current node, if it is in our whitelist.
-          newEl = contentWindow.document.createElement(nodeName);
+      let curNode = xhtmlChunk.documentElement;
+      nodeCopyMap[curNode] = pageEl;
+      walkDom(curNode, curNode => {
+        // Ensure that we are in the current place in the copy tree to insert the new element.
+        if (nodeCopyMap[curNode.parentElement]) {
+          outEl = nodeCopyMap[curNode.parentElement];
         }
-        // Update map of serialized XHTML nodes to iframe'd sanitized nodes.
-        nodeCopyMap[curNode] = newEl;
 
-        // Copy over all whitelisted attributes.
-        if (curNode.nodeType === NodeType.ELEMENT && curNode.hasAttributes()) {
-          const attrs = curNode.attributes;
-          for (let i = 0; i < attrs.length; ++i) {
-            const attr =  attrs.item(i);
-            if (ATTRIBUTE_WHITELIST[nodeName] &&
-                ATTRIBUTE_WHITELIST[nodeName].includes(attr.name)) {
-              newEl.setAttribute(attr.name, attr.value);
-            }
+        let nodeName = curNode.nodeName;
+        // Special handling for text nodes.
+        if (nodeName === '#text') {
+          outEl.appendChild(curNode.cloneNode());
+        } else if (ELEMENT_WHITELIST.includes(nodeName)) {
+          let newEl;
+          // Special handling for the iframe's head and body elements which are created for us.
+          if (nodeName === 'head') {
+            newEl = htmlDoc.head;
+          } else if (nodeName === 'body') {
+            newEl = htmlDoc.body;
+          } else {
+            // Make a safe copy of the current node, if it is in our whitelist.
+            newEl = contentWindow.document.createElement(nodeName);
           }
-        }
-        outEl.appendChild(newEl);
-      }
-    });
+          // Update map of serialized XHTML nodes to iframe'd sanitized nodes.
+          nodeCopyMap[curNode] = newEl;
 
-    const curHead = htmlDoc.head;
-    const curBody = htmlDoc.body;
-    const nextPage = new XhtmlPage('htmlpage', iframeEl, () => {
-      const cdoc = iframeEl.contentDocument;
-      const cwin = iframeEl.contentWindow;
-      cdoc.head.innerHTML = new XMLSerializer().serializeToString(curHead);
-      cdoc.body.innerHTML = new XMLSerializer().serializeToString(curBody);
-
-      walkDom(cdoc.documentElement, curNode => {
-        if (curNode.nodeType === NodeType.ELEMENT && curNode.hasAttributes()) {
-          const nodeName = curNode.nodeName.toLowerCase();
-          const attrs = curNode.attributes;
-          for (let i = 0; i < attrs.length; ++i) {
-            const attr =  attrs.item(i);
-            if (BLOB_URL_ATTRIBUTES[nodeName] &&
-                BLOB_URL_ATTRIBUTES[nodeName].includes(attr.name)) {
-              const ref = this.getManifestFileRef_(attr.value, this.spineRefs_[0].rootDir);
-              if (!ref) {
-                throw `Could not find a referenced file: ${attr.name}`;
+          // Copy over all whitelisted attributes.
+          if (curNode.nodeType === NodeType.ELEMENT && curNode.hasAttributes()) {
+            const attrs = curNode.attributes;
+            for (let i = 0; i < attrs.length; ++i) {
+              const attr =  attrs.item(i);
+              if (ATTRIBUTE_WHITELIST[nodeName] &&
+                  ATTRIBUTE_WHITELIST[nodeName].includes(attr.name)) {
+                newEl.setAttribute(attr.name, attr.value);
               }
-              curNode.setAttribute(ATTR_PREFIX + attr.name, attr.value);
-              curNode.setAttribute(attr.name, ref.getBlobURL(cwin));
             }
           }
+          outEl.appendChild(newEl);
         }
       });
-      // TODO: Move this styling into the BookViewer.
-      iframeEl.setAttribute('style', 'width:100%;height:700px;border:0');
-    });
 
-    // TODO: Keep track of which document and element we are in, and keep creating XhtmlPages.
+      const curHead = htmlDoc.head;
+      const curBody = htmlDoc.body;
+      const nextPage = new XhtmlPage('htmlpage', iframeEl, () => {
+        const cdoc = iframeEl.contentDocument;
+        const cwin = iframeEl.contentWindow;
+        cdoc.head.innerHTML = new XMLSerializer().serializeToString(curHead);
+        cdoc.body.innerHTML = new XMLSerializer().serializeToString(curBody);
 
-    this.notify(new BookProgressEvent(this, 2));
-    this.notify(new BookPageExtractedEvent(this, nextPage, 2));
+        walkDom(cdoc.documentElement, curNode => {
+          if (curNode.nodeType === NodeType.ELEMENT && curNode.hasAttributes()) {
+            const nodeName = curNode.nodeName.toLowerCase();
+            const attrs = curNode.attributes;
+            for (let i = 0; i < attrs.length; ++i) {
+              const attr =  attrs.item(i);
+              if (BLOB_URL_ATTRIBUTES[nodeName] &&
+                  BLOB_URL_ATTRIBUTES[nodeName].includes(attr.name)) {
+                const ref = this.getManifestFileRef_(attr.value, this.spineRefs_[0].rootDir);
+                if (!ref) {
+                  throw `Could not find a referenced file: ${attr.name}`;
+                }
+                curNode.setAttribute(ATTR_PREFIX + attr.name, attr.value);
+                curNode.setAttribute(attr.name, ref.getBlobURL(cwin));
+              }
+            }
+          }
+        });
+        // TODO: Move this styling into the BookViewer.
+        iframeEl.setAttribute('style', 'width:100%;height:700px;border:0');
+      });
 
-    this.notify(new BookBindingCompleteEvent(this, [onePager, nextPage]));
+      // TODO: Keep track of which document and element we are in, and keep creating XhtmlPages.
+      allPages.push(nextPage);
+      this.notify(new BookProgressEvent(this, allPages.length));
+      this.notify(new BookPageExtractedEvent(this, nextPage, allPages.length));
+    }
+
+    this.notify(new BookBindingCompleteEvent(this, allPages));
   }
 
   /** @private */
