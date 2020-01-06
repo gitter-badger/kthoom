@@ -136,7 +136,7 @@ export const createPageFromFileAsync = function(file) {
     const filename = file.filename;
     const mimeType = guessMimeType(filename);
     if (!mimeType) {
-      resolve(new TextPage(file, `Could not determine type of file "${filename}"`));
+      resolve(new TextPage(filename, `Could not determine type of file "${filename}"`));
       return;
     }
 

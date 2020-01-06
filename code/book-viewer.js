@@ -183,9 +183,9 @@ export class BookViewer {
   }
 
   /**
-   * Updates the layout based on window size, scale mode, fit mode and page mode
-   * and then sets the page contents based on the current page of the current book.
-   * If there is no current book, we clear the contents of all the canvas elements.
+   * Updates the layout based on window size, scale mode, fit mode, rotations, and page mode and
+   * then sets the page contents based on the current page of the current book.  If there is no
+   * current book, we clear the contents of all the canvas elements.
    */
   updateLayout() {
     if (!this.currentBook_ || this.currentPageNum_ === -1) {
