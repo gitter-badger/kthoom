@@ -588,9 +588,9 @@ export class BookViewer {
 
     const page = this.currentBook_.getPage(pageNum);
     assert(page, 'Page not defined in setPageContents_()');
-    const textDiv = pageEl.querySelector('div');
+    const textDiv = pageEl.querySelector('div.textDiv');
     const canvasEl = pageEl.querySelector('canvas');
-    assert(canvasEl, 'Canvas not found in pageEl in setPageContents_()');
+    assert(canvasEl instanceof HTMLCanvasElement, 'Canvas not found in pageEl in setPageContents_()');
     const ctx = canvasEl.getContext('2d');
 
     // TODO(epub): Put all page contents into the canvas so that they can be rotated properly and

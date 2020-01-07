@@ -43,9 +43,11 @@ if (search && search[0] === '?') {
 }
 
 export const assert = function(cond, str = 'Unknown error') {
-  if (Params.debug) {
-    if (!cond) {
+  if (!cond) {
+    if (Params.debug) {
       throw str;
+    } else {
+      console.error(str);
     }
   }
 }

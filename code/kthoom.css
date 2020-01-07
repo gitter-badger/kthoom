@@ -237,17 +237,17 @@ ul.menuItems li {
   position: absolute;
 }
 
-#page1, #page2 {
+div.pageDiv {
+  overflow: scroll;
   position: absolute;
 }
 
-#page1 canvas,
-#page2 canvas {
+.pageDiv canvas {
   height: 100%;
   width: 100%;
 }
 
-#firstText, #secondText {
+.textDiv {
   background-color: #999;
 }
 
