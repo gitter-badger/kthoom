@@ -42,12 +42,20 @@ if (search && search[0] === '?') {
   }
 }
 
-export const assert = function(cond, str = 'Unknown error') {
+/**
+ * @param {boolaen} cond
+ * @param {string=} str
+ * @param {Object=} optContextObj
+ */
+export function assert(cond, str = 'Unknown error', optContextObj = undefined) {
   if (!cond) {
     if (Params.debug) {
       throw str;
     } else {
       console.error(str);
+      if (optContextObj) {
+        console.dir(optContextObj);
+      }
     }
   }
 }

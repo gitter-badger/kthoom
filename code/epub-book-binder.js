@@ -9,10 +9,6 @@
  /**
   * Notes:
   *
-  * - Using iframe to isolate the CSS styles within the XHTML pages in the book archive.
-  * - Upon any DOM node needing a reference to another file (img, etc), then create a Blob URL.
-  * - Trick is that every time the page needs rendering, we will need to create a new Blob URL,
-  *   because the iframe content doc is destroyed, thereby revoking all Blob URLs.
   * - Have a page-setting phase where we go through all DOM nodes, rendering to a non-displayed
   *   iframe to size things right.  Each page can remember the DOM it needs to show.
   * - Once that phase is done, we can eject the archive files from memory and just keep around the
@@ -25,7 +21,8 @@ import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } f
 import { NodeType, walkDom } from './dom-walker.js';
 import { ATTRIBUTE_WHITELIST, BLOB_URL_ATTRIBUTES, ELEMENT_WHITELIST} from './epub-whitelists.js';
 import { FileRef } from './file-ref.js';
-import { TextPage, XhtmlPage } from './page.js';
+import { XhtmlPage } from './page.js';
+import { assert } from './helpers.js';
 
 const ATTR_PREFIX = 'data-kthoom-';
 const CONTAINER_FILE = 'META-INF/container.xml';
@@ -214,7 +211,8 @@ export class EPUBBookBinder extends BookBinder {
             }
           }
         });
-        iframeEl.setAttribute('style', 'width:100%;height:100%;border:0');
+        // TODO: Decide where this style should go.
+        iframeEl.setAttribute('style', 'width:100%;height:100%;border:0;background-color:#999');
       });
 
       allPages.push(nextPage);
@@ -315,15 +313,6 @@ export class EPUBBookBinder extends BookBinder {
     assert(theFile.filename === 'mimetype', `The first file was not named 'mimetype'`);
     const fileText = toText(theFile.fileData);
     assert(fileText === EPUB_MIMETYPE, `The 'mimetype' file had invalid contents: ${fileText}`);
-  }
-}
-
-function assert(cond, err, optContextObj = undefined) {
-  if (!cond) {
-    console.error(err);
-    if (optContextObj) {
-      console.dir(optContextObj);
-    }
   }
 }
 
