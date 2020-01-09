@@ -18,7 +18,7 @@ Or a [comic book reading list](https://github.com/codedread/kthoom/tree/master/r
   * .cbz (zip)
   * .cbr ([rar](https://codedread.github.io/bitjs/docs/unrar.html))
   * .cbt (tar)
-  * .epub (primitive support, a work-in-progress, see [issue #16]](https://github.com/codedread/kthoom/issues/16))
+  * .epub (primitive support, a work-in-progress, see [issue #16](https://github.com/codedread/kthoom/issues/16))
 
 ### Keyboard Shortcuts
   * O / U / G: Open files from computer, network or Google Drive.
