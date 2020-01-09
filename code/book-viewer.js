@@ -132,6 +132,7 @@ export class BookViewer {
           break;
         case BookEventType.BINDING_COMPLETE:
           getElem('header').classList.remove('animating');
+          this.updateLayout();
           this.updateProgressMeter();
           break;
       }
@@ -619,6 +620,7 @@ export class BookViewer {
         progressElem.removeAttribute('aria-valuemax');
       }
     }
+    this.updatePageMeter_();
   }
 
   /**
