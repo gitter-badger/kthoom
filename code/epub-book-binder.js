@@ -32,6 +32,15 @@ const OPF_NAMESPACE = 'http://www.idpf.org/2007/opf';
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 const XHTML_MIMETYPE = 'application/xhtml+xml';
 
+const textDecoder = new TextDecoder();
+
+/**
+ * @param {ArrayBuffer} bytes
+ */
+function toText(bytes) {
+  return textDecoder.decode(bytes);
+}
+
 /**
  * The BookBinder for EPUB files.  Do not use, since this is a WIP.
  */
@@ -315,13 +324,4 @@ export class EPUBBookBinder extends BookBinder {
     const fileText = toText(theFile.fileData);
     assert(fileText === EPUB_MIMETYPE, `The 'mimetype' file had invalid contents: ${fileText}`);
   }
-}
-
-// TODO: Use TextDecoder?
-const textDecoder = new TextDecoder();
-/**
- * @param {ArrayBuffer} bytes 
- */
-function toText(bytes) {
-  return textDecoder.decode(bytes);
 }
