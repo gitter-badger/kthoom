@@ -34,4 +34,5 @@ export const ATTRIBUTE_WHITELIST = {
 
 export const BLOB_URL_ATTRIBUTES = {
   'img': ['src'],
+  'link': ['href'],
 }
