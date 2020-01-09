@@ -96,6 +96,7 @@ export class EPUBBookBinder extends BookBinder {
    */
   getManifestFileRef_(href, rootDir) {
     // TODO: Do full path resolution here.
+    // TODO: Strip off the anchor part of the URL here.
     const fullPath = rootDir + href;
     for (const ref of this.manifestFileMap_.values()) {
       if (ref.href === fullPath) {
@@ -175,7 +176,7 @@ export class EPUBBookBinder extends BookBinder {
                 BLOB_URL_ATTRIBUTES[nodeName].includes(attr.name)) {
                 const ref = this.getManifestFileRef_(attr.value, this.spineRefs_[0].rootDir);
                 if (!ref) {
-                  throw `Could not find a referenced file: ${attr.name}`;
+                  throw `Could not find a referenced file: ${attr.value}`;
                 }
                 newEl.setAttribute(ATTR_PREFIX + attr.name, attr.value);
               }
@@ -317,11 +318,10 @@ export class EPUBBookBinder extends BookBinder {
 }
 
 // TODO: Use TextDecoder?
+const textDecoder = new TextDecoder();
+/**
+ * @param {ArrayBuffer} bytes 
+ */
 function toText(bytes) {
-  const num = bytes.byteLength;
-  let result = new Array(num);
-  for (let i = 0; i < num; ++i) {
-    result[i] = String.fromCharCode(bytes[i]);
-  }
-  return result.join('');
+  return textDecoder.decode(bytes);
 }

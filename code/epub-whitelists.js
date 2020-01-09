@@ -33,6 +33,8 @@ export const ATTRIBUTE_WHITELIST = {
 };
 
 export const BLOB_URL_ATTRIBUTES = {
+  // TODO: Properly strip off anchor hash of the URL before whitelisting hyperlink href.
+//  'a': ['href'],
   'img': ['src'],
   'link': ['href'],
 }
