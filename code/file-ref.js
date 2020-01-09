@@ -45,7 +45,7 @@ export class FileRef {
    * @return {Blob}
    */
   getBlob(win) {
-    if (!this.blob) this.initializeBlob_(win);
+    this.initializeBlob_(win);
     return this.blob;
   }
 
@@ -54,7 +54,7 @@ export class FileRef {
    * @return {stribng}
    */
   getBlobURL(win) {
-    if (!this.blobURL) this.initializeBlob_(win);
+    this.initializeBlob_(win);
     return this.blobURL;
   }
 
