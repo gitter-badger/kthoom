@@ -174,6 +174,14 @@ export class EPUBBookBinder extends BookBinder {
                   ATTRIBUTE_WHITELIST[nodeName].includes(attr.name)) {
                 newEl.setAttribute(attr.name, attr.value);
               }
+              if (BLOB_URL_ATTRIBUTES[nodeName] &&
+                BLOB_URL_ATTRIBUTES[nodeName].includes(attr.name)) {
+                const ref = this.getManifestFileRef_(attr.value, this.spineRefs_[0].rootDir);
+                if (!ref) {
+                  throw `Could not find a referenced file: ${attr.name}`;
+                }
+                newEl.setAttribute(ATTR_PREFIX + attr.name, attr.value);
+              }
             }
           }
           outEl.appendChild(newEl);
@@ -196,21 +204,19 @@ export class EPUBBookBinder extends BookBinder {
               const attr =  attrs.item(i);
               if (BLOB_URL_ATTRIBUTES[nodeName] &&
                   BLOB_URL_ATTRIBUTES[nodeName].includes(attr.name)) {
-                const ref = this.getManifestFileRef_(attr.value, this.spineRefs_[0].rootDir);
+                const attrValue = curNode.getAttribute(ATTR_PREFIX + attr.name);
+                const ref = this.getManifestFileRef_(attrValue, this.spineRefs_[0].rootDir);
                 if (!ref) {
                   throw `Could not find a referenced file: ${attr.name}`;
                 }
-                curNode.setAttribute(ATTR_PREFIX + attr.name, attr.value);
                 curNode.setAttribute(attr.name, ref.getBlobURL(cwin));
               }
             }
           }
         });
-        // TODO: Move this styling into the BookViewer.
-        iframeEl.setAttribute('style', 'width:100%;height:700px;border:0');
+        iframeEl.setAttribute('style', 'width:100%;height:100%;border:0');
       });
 
-      // TODO: Keep track of which document and element we are in, and keep creating XhtmlPages.
       allPages.push(nextPage);
       this.notify(new BookProgressEvent(this, allPages.length));
       this.notify(new BookPageExtractedEvent(this, nextPage, allPages.length));

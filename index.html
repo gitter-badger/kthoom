@@ -111,14 +111,18 @@
         </div>
       </div> <!-- header -->
       <div id="bookViewer">
-        <div id="page1" class="pageDiv">
-          <div id="firstText" class="textDiv" style="display:none"></div>
-          <canvas id="firstImage"></canvas>
-        </div>
-        <div id="page2" class="pageDiv" style="display:none">
-          <div id="secondText" class="textDiv" style="display:none"></div>
-          <canvas id="secondImage"></canvas>
-        </div>
+        <svg id="pages" style="display:none">
+          <g id="bvViewport">
+            <g id="page1">
+              <image id="page1Image"></image>
+              <foreignObject id="page1Html"></foreignObject>
+            </g>
+            <g id="page2">
+              <image id="page2Image"></image>
+              <foreignObject id="page2Html"></foreignObject>
+            </g>
+          </g>
+        </svg>
       </div> <!-- bookViewer -->
       <div id="readingStackOverlay" class="fullScreenOverlay" style="display:none"></div>
       <div id="readingStack">

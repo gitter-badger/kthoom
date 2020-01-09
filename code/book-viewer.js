@@ -9,7 +9,7 @@
 import { Book } from './book.js';
 import { BookEventType } from './book-events.js';
 import { assert, getElem } from './helpers.js';
-import { ImagePage, HtmlPage, TextPage, XhtmlPage } from './page.js';
+import { ImagePage, TextPage, XhtmlPage } from './page.js';
 
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
 const ID_PAGE_1 = 'page1';
@@ -123,8 +123,8 @@ export class BookViewer {
           this.updateProgressMeter();
           break;
         case BookEventType.PAGE_EXTRACTED:
-          // Display first page if we haven't yet.
-          if (evt.pageNum == 1) {
+          // Display first page(s) if we haven't yet.
+          if (evt.pageNum <= this.numPagesInViewer_) {
             this.updateLayout();
           } else {
             this.updatePageMeter_();
@@ -177,7 +177,6 @@ export class BookViewer {
 
     if (this.numPagesInViewer_ !== numPages) {
       this.numPagesInViewer_ = numPages;
-      getElem(ID_PAGE_2).style.display = (numPages === 2) ? '' : 'none';
       this.updateLayout();
     }
   }
@@ -185,7 +184,7 @@ export class BookViewer {
   /**
    * Updates the layout based on window size, scale mode, fit mode, rotations, and page mode and
    * then sets the page contents based on the current page of the current book.  If there is no
-   * current book, we clear the contents of all the canvas elements.
+   * current book, we clear the contents of all the page elements.
    */
   updateLayout() {
     if (!this.currentBook_ || this.currentPageNum_ === -1) {
@@ -202,181 +201,241 @@ export class BookViewer {
       return;
     }
 
-    const portraitMode = (this.rotateTimes_ % 2 === 0);
-    const par = portraitMode ? page.getAspectRatio() : 1 / page.getAspectRatio();
-
+    // This is the dimensions of the book viewer "window".
     const bvElem = getElem(BOOK_VIEWER_ELEM_ID);
     const bv = {
-      left: 5,
-      width: bvElem.offsetWidth - 10,
-      top: bvElem.offsetTop + 5,
-      height: window.innerHeight - bvElem.offsetTop - 10,
+      left: 0,
+      width: bvElem.offsetWidth,
+      top: 0,
+      height: window.innerHeight - bvElem.offsetTop,
       ar: (bvElem.offsetWidth) / (window.innerHeight - bvElem.offsetTop),
     };
     assert(bv.width, 'bv.width not set');
     assert(bv.height, 'bv.height not set');
 
+    const svgTop = getElem('pages');
+    const bvViewport = getElem('bvViewport');
     const page1 = getElem(ID_PAGE_1);
     const page2 = getElem(ID_PAGE_2);
-    // Single page viewer mode.
+    const page1Elems = [getElem('page1Image'), getElem('page1Html')];
+    const page2Elems = [getElem('page2Image'), getElem('page2Html')];
+
+    const portraitMode = (this.rotateTimes_ % 2 === 0);
+    const par = page.getAspectRatio();
+
+    let topw = bv.width, toph = bv.height;
+
+    // This is the center of rotation, always rotating around the center of the book viewer.
+    let rotx = bv.left + bv.width / 2;
+    let roty = bv.top + bv.height / 2;
+    let angle = 90 * this.rotateTimes_;
+
     if (this.numPagesInViewer_ === 1) {
+      page1.style.display = '';
       page2.style.display = 'none';
 
-      // fit-width, 1-page
-      // fit-best, 1-page
-      if (this.fitMode_ === FitMode.Width ||
-          (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
-        page1.style.left = px(bv.left);
-        page1.style.width = px(bv.width);
-        const ph = bv.width / par;
-        page1.style.height = px(ph);
-        if (par > bv.ar) {
-          page1.style.top = px(bv.top + bv.height / 2 - ph / 2);
+      // This is the dimensions before transformation.  They can go beyond the bv dimensions.
+      let pw, ph, pl, pt;
+
+      if (portraitMode) {
+        // Portrait, 1-page.
+        if (this.fitMode_ === FitMode.Width ||
+            (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
+          // fit-width, 1-page.
+          // fit-best, 1-page, width maxed.
+          pw = bv.width;
+          ph = pw / par;
+          pl = bv.left;
+          if (par > bv.ar) { // not scrollable.
+            pt = roty - ph / 2;
+          } else { // fit-width, scrollable.
+            pt = roty - bv.height / 2;
+            if (this.rotateTimes_ === 2) {
+              pt += bv.height - ph;
+            }
+          }
         } else {
-          page1.style.top = px(bv.top);
+          // fit-height, 1-page.
+          // fit-best, 1-page, height maxed.
+          ph = bv.height;
+          pw = ph * par;
+          pt = bv.top;
+          if (par < bv.ar) { // not scrollable.
+            pl = rotx - pw / 2;
+          } else { // fit-height, scrollable.
+            pl = bv.left;
+            if (this.rotateTimes_ === 2) {
+              pl += bv.width - pw;
+            }
+          }
         }
+
+        if (topw < pw) topw = pw;
+        if (toph < ph) toph = ph;
       } else {
-        // fit-height, 1-page
-        // fit-best, 1-page
-        page1.style.top = px(bv.top);
-        page1.style.height = px(bv.height);
-        const pw = bv.height * par;
-        page1.style.width = px(pw);
-        if (par < bv.ar) {
-          page1.style.left = px(bv.left + bv.width / 2 - pw / 2);
+        // Landscape, 1-page.
+        if (this.fitMode_ === FitMode.Width ||
+            (this.fitMode_ === FitMode.Best && par > (1/bv.ar))) {
+          // fit-best, 1-page, width-maxed.
+          // fit-width, 1-page.
+          pw = bv.height;
+          ph = pw / par;
+          pl = rotx - pw / 2;
+          if (par > (1/bv.ar)) { // not scrollable.
+            pt = roty - ph / 2;
+          } else { // fit-width, scrollable.
+            pt = roty - bv.width / 2;
+            if (this.rotateTimes_ === 1) {
+              pt += bv.width - ph;
+            }
+          }
         } else {
-          page1.style.left = px(bv.left);
+          // fit-best, 1-page, height-maxed.
+          // fit-height, 1-page.
+          ph = bv.width;
+          pw = ph * par;
+          pt = roty - ph / 2;
+          if (par < (1/bv.ar)) { // not scrollable.
+            pl = rotx - pw / 2;
+          } else { // fit-height, scrollable.
+            pl = rotx - bv.height / 2;
+            if (this.rotateTimes_ === 3) {
+              pl += bv.height - pw;
+            }
+          }
         }
+
+        if (topw < ph) topw = ph;
+        if (toph < pw) toph = pw;
+      } // Landscape
+
+      // Now size the page elements.
+      for (const pageElem of page1Elems) {
+        pageElem.setAttribute('x', pl);
+        pageElem.setAttribute('y', pt);
+        pageElem.setAttribute("width", pw);
+        pageElem.setAttribute("height", ph);
       }
 
       this.setPageContents_(page1, this.currentPageNum_);
-    } else if (this.numPagesInViewer_ === 2) {
-      // Two-page viewer mode.
+    } else {
+      // 2-page view.
+      page1.style.display = '';
       page2.style.display = '';
 
+      // This is the dimensions before transformation.  They can go beyond the bv dimensions.
+      let pw, ph, pl1, pt1, pl2, pt2;
+
       if (portraitMode) {
-        const bv1 = {
-          left: bv.left,
-          width: bv.width / 2,
-          top: bv.top,
-          height: bv.height,
-          ar: (bv.width / 2) / bv.height,
-        };
-        const bv2 = {
-          left: bv.left + (bv.width / 2),
-          width: bv1.width,
-          top: bv1.top,
-          height: bv1.height,
-          ar: bv1.ar,
-        };
+        // It is as if the book viewer width is cut in half horizontally for the purposes of
+        // measuring the page fit.
+        bv.ar /= 2;
 
-        // portrait, fit-width, 2-page
-        // portrait, fit-best, 1-page
+        // Portrait, 2-page.
         if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && bv1.ar <= par)) {
-          page1.style.left = px(bv1.left);
-          page1.style.width = px(bv1.width);
-          const ph = bv1.width / par;
-          page1.style.height = px(ph);
-          if (par > bv1.ar) {
-            page1.style.top = px(bv1.top + bv1.height / 2 - ph / 2);
-          } else {
-            page1.style.top = px(bv1.top);
-          }
-
-          page2.style.left = px(bv2.left);
-          page2.style.width = px(bv2.width);
-          page2.style.height = px(ph);
-          if (par > bv2.ar) {
-            page2.style.top = px(bv2.top + bv2.height / 2 - ph / 2);
-          } else {
-            page2.style.top = px(bv2.top);
+            (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
+          // fit-width, 2-page.
+          // fit-best, 2-page, width maxed.
+          pw = bv.width / 2;
+          ph = pw / par;
+          pl1 = bv.left;
+          if (par > bv.ar) { // not scrollable.
+            pt1 = roty - ph / 2;
+          } else { // fit-width, scrollable.
+            pt1 = roty - bv.height / 2;
+            if (this.rotateTimes_ === 2) {
+              pt1 += bv.height - ph;
+            }
           }
         } else {
-          // portrait, fit-height, 2-page
-          // portrait, fit-best, 2-page
-          page1.style.top = px(bv1.top);
-          page1.style.height = px(bv1.height);
-          const pw = bv1.height * par;
-          page1.style.width = px(pw);
-          let p1left;
-          if (par < bv1.ar) {
-            p1left = bv1.left + bv1.width - pw;
-          } else {
-            p1left = bv1.left;
+          // fit-height, 2-page.
+          // fit-best, 2-page, height maxed.
+          ph = bv.height;
+          pw = ph * par;
+          pt1 = bv.top;
+          if (par < bv.ar) { // not scrollable.
+            pl1 = rotx - pw;
+          } else { // fit-height, scrollable.
+            pl1 = bv.left;
+            if (this.rotateTimes_ === 2) {
+              pl1 += bv.width - pw * 2;
+            }
           }
-          page1.style.left = px(p1left);
-
-          page2.style.top = px(bv2.top);
-          page2.style.height = px(bv2.height);
-          page2.style.width = px(pw);
-          page2.style.left = px(p1left + pw);
         }
+
+        if (topw < pw * 2) topw = pw * 2;
+        if (toph < ph) toph = ph;
       } else {
-        const bv1 = {
-          left: bv.left,
-          width: bv.width,
-          top: bv.top,
-          height: (bv.height / 2),
-          ar: bv.width / (bv.height / 2),
-        };
-        const bv2 = {
-          left: bv1.left,
-          width: bv1.width,
-          top: bv.top + (bv.height / 2),
-          height: bv1.height,
-          ar: bv1.ar,
-        };
+        bv.ar *= 2;
 
-        // landscape, fit-width, 2-page
-        // landscape, fit-best, 2-page
+        // Landscape, 2-page.
         if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && bv1.ar <= par)) {
-          page1.style.left = px(bv1.left);
-          page1.style.width = px(bv1.width);
-          const ph = bv1.width / par;
-          page1.style.height = px(ph);
-          let p1top;
-          if (par > bv1.ar) {
-            p1top = bv1.top + bv1.height / 2 - ph / 2;
-          } else {
-            p1top = bv1.top;
+            (this.fitMode_ === FitMode.Best && par > (1/bv.ar))) {
+          // fit-best, 2-page, width-maxed.
+          // fit-width, 2-page.
+          pw = bv.height / 2;
+          ph = pw / par;
+          pl1 = rotx - pw;
+          if (par > (1/bv.ar)) { // not scrollable.
+            pt1 = roty - ph / 2;
+          } else { // fit-width, scrollable.
+            pt1 = roty - bv.width / 2;
+            if (this.rotateTimes_ === 1) {
+              pt1 += bv.width - ph;
+            }
           }
-          page1.style.top = px(p1top);
-
-          page2.style.left = px(bv2.left);
-          page2.style.width = px(bv2.width);
-          page2.style.height = px(ph);
-          page2.style.top = px(p1top + ph);
         } else {
-          // landscape, fit-height, 2-page
-          // landscape, fit-best, 2-page
-          page1.style.top = px(bv1.top);
-          page1.style.height = px(bv1.height);
-          const pw = bv1.height * par;
-          page1.style.width = px(pw);
-          let p1left;
-          if (par < bv1.ar) {
-            p1left = bv1.left + bv1.width / 2 - pw / 2;
-          } else {
-            p1left = bv1.left;
+          // fit-best, 2-page, height-maxed.
+          // fit-height, 2-page.
+          ph = bv.width;
+          pw = ph * par;
+          pt1 = roty - ph / 2;
+          if (par < (1/bv.ar)) { // not scrollable.
+            pl1 = rotx - pw;
+          } else { // fit-height, scrollable.
+            pl1 = rotx - bv.height / 2;
+            if (this.rotateTimes_ === 3) {
+              pl1 += bv.height - pw * 2;
+            }
           }
-          page1.style.left = px(p1left);
-
-          page2.style.top = px(bv2.top);
-          page2.style.height = px(bv2.height);
-          page2.style.width = px(pw);
-          page2.style.left = px(p1left);
         }
+        if (topw < ph) topw = ph;
+        if (toph < pw * 2) toph = pw * 2;
+      } // Landscape
+
+      pl2 = pl1 + pw;
+      pt2 = pt1;
+
+      // Now size the page elements.
+      for (const pageElem of page1Elems) {
+        pageElem.setAttribute('x', pl1);
+        pageElem.setAttribute('y', pt1);
+        pageElem.setAttribute("width", pw);
+        pageElem.setAttribute("height", ph);
+      }
+      for (const pageElem of page2Elems) {
+        pageElem.setAttribute('x', pl2);
+        pageElem.setAttribute('y', pt2);
+        pageElem.setAttribute("width", pw);
+        pageElem.setAttribute("height", ph);
       }
 
-      const pageA = (this.rotateTimes_ >= 2) ? page2 : page1;
-      const pageB = (this.rotateTimes_ >= 2) ? page1 : page2;
-      this.setPageContents_(pageA, this.currentPageNum_);
-      this.setPageContents_(pageB,
+      this.setPageContents_(page1, this.currentPageNum_);
+      this.setPageContents_(page2,
           (this.currentPageNum_ < this.currentBook_.getNumberOfPages() - 1) ?
-          this.currentPageNum_ + 1 : 0);
+              this.currentPageNum_ + 1 : 0);
     }
+
+    // Rotate the book viewer viewport.
+    const tr = `translate(${rotx}, ${roty}) rotate(${angle}) translate(${-rotx}, ${-roty})`;
+    bvViewport.setAttribute('transform', tr);
+
+    // Now size the top-level SVG element of the BookViewer.
+    svgTop.style.display = '';
+    svgTop.setAttribute('x', 0);
+    svgTop.setAttribute('y', 0);
+    svgTop.setAttribute('width', topw);
+    svgTop.setAttribute('height', toph);
   }
 
   /** @private */
@@ -563,21 +622,25 @@ export class BookViewer {
   }
 
   /**
-   * Wipes out the contents of all canvas elements.
+   * Wipes out the contents of all book viewer elements.
    */
   clearPageContents_() {
-    const pageIds = [ID_PAGE_1, ID_PAGE_2];
-    for (const pageId of pageIds) {
-      const canvasEls = getElem(pageId).querySelectorAll('canvas');
-      for (let i = 0; i < canvasEls.length; ++i) {
-        const canvas = canvasEls.item(i);
-        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    const imageElems = [getElem('page1Image'), getElem('page2Image')];
+    const objElems = [getElem('page1Html'), getElem('page2Html')];
+    for (const imageEl of imageElems) {
+      imageEl.style.display = '';
+      imageEl.setAttribute('href', '');
+    }
+    for (const objEl of objElems) {
+      objEl.style.display = '';
+      while (objEl.firstChild) {
+        objEl.firstChild.remove();
       }
     }
   }
 
   /**
-   * @param {Element} pageEl The div for the page.
+   * @param {Element} pageEl The <g> for the page.
    * @param {Number} pageNum The page number to render into the div.
    * @private
    */
@@ -586,54 +649,35 @@ export class BookViewer {
     assert(this.currentBook_.getNumberOfPages() > pageNum,
         'Book does not have enough pages in setPageContents_()');
 
-    const page = this.currentBook_.getPage(pageNum);
-    assert(page, 'Page not defined in setPageContents_()');
-    const textDiv = pageEl.querySelector('div.textDiv');
-    const canvasEl = pageEl.querySelector('canvas');
-    assert(canvasEl instanceof HTMLCanvasElement, 'Canvas not found in pageEl in setPageContents_()');
-    const ctx = canvasEl.getContext('2d');
+    const thePage = this.currentBook_.getPage(pageNum);
+    // It's possible we are in a 2-page viewer, but the page is not in the book yet.
+    if (!thePage) {
+      return;
+    }
 
-    // TODO(epub): Put all page contents into the canvas so that they can be rotated properly and
-    //     so we don't have this giant if-else construct.  Page can have a render method that takes
-    //     a Canvas element and each Page type can do what it needs to do.
-    if (page instanceof ImagePage) {
-      canvasEl.style.display = '';
-      textDiv.style.display = 'none';
-      const img = page.img;
-      const h = img.height;
-      const w = img.width;
-      let sw = w;
-      let sh = h;
-      if (this.rotateTimes_ % 2 == 1) { sh = w; sw = h; }
-
-      canvasEl.height = sh;
-      canvasEl.width = sw;
-
-      ctx.save();
-      ctx.translate(sw/2, sh/2);
-      ctx.rotate(Math.PI/2 * this.rotateTimes_);
-      ctx.translate(-w/2, -h/2);
-      ctx.drawImage(img, 0, 0);
-      ctx.restore();
-    } else if (page instanceof HtmlPage) {
-      canvasEl.style.display = 'none';
-      textDiv.style.display = '';
-      textDiv.innerHTML =
-          '<iframe style="width:100%;height:700px;border:0" src="data:text/html,' +
-          page.escapedHtml +
-          '"></iframe>';
-    } else if (page instanceof XhtmlPage) {
-      canvasEl.style.display = 'none';
-      textDiv.style.display = '';
-      textDiv.innerHTML = '';
-      textDiv.appendChild(page.iframeEl);
-      page.scrub();
-    } else if (page instanceof TextPage) {
-      canvasEl.style.display = 'none';
-      textDiv.style.display = '';
-      textDiv.innerText = page.rawText;
-    } else {
-      ctx.fillText('Cannot display this type of file', 100, 200);
+    const imageEl = pageEl.querySelector('image');
+    const objEl = pageEl.querySelector('foreignObject');
+    if (thePage instanceof ImagePage) {
+      imageEl.style.display = '';
+      objEl.style.display = 'none';
+      imageEl.setAttribute('href', thePage.dataURI);
+    } else if (thePage instanceof XhtmlPage) {
+      imageEl.style.display = 'none';
+      while (objEl.firstChild) {
+        objEl.firstChild.remove();
+      }
+      objEl.appendChild(thePage.iframeEl);
+      thePage.inflate();
+      objEl.style.display = '';
+    } else if (thePage instanceof TextPage) {
+      imageEl.style.display = 'none';
+      while (objEl.firstChild) {
+        objEl.firstChild.remove();
+      }
+      const textDiv = document.createElement('div');
+      textDiv.innerHTML = `<pre>${thePage.rawText}</pre>`;
+      objEl.appendChild(textDiv);
+      objEl.style.display = '';
     }
   }
 }

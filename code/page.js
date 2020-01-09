@@ -8,7 +8,6 @@
 
  /**
   * Base class for Pages.  Every Page has an aspect ratio method.
-  * TODO(epub): Page should have a render() method that takes in a Canvas element.
   */
 export class Page {
   constructor(pageName) {
@@ -27,10 +26,12 @@ export class ImagePage extends Page {
   /**
    * @param {string} name
    * @param {Image} img The Image object created.
+   * @param {string} dataURI
    */
-  constructor(name, img) {
+  constructor(name, img, dataURI) {
     super(name);
     this.img = img;
+    this.dataURI = dataURI;
   }
 
   getAspectRatio() { return this.img.naturalWidth / this.img.naturalHeight; }
@@ -50,38 +51,28 @@ export class TextPage extends Page {
   }
 }
 
-// TODO(epub): Do not just escape the raw HTML, that would be bad.
-export class HtmlPage extends TextPage {
-  /**
-   * @param {string} name
-   * @param {string} rawHtml The raw html in the page.
-   */
-  constructor(name, rawHtml) {
-    super(name, rawHtml);
-    this.escapedHtml = escape(rawHtml);
-  }
-}
-
 /**
- * A page that holds an iframe with sanitized XHTML.
+ * A page that holds an iframe with sanitized XHTML.  Every time this page is added into a
+ * Book Viewer page <g> element, its inflate() method is called.
  */
 export class XhtmlPage extends Page {
   /**
    * @param {string} name
    * @param {HTMLIframeElement} iframeEl
-   * @param {Function(HTMLIframeElement)} scrubberFn Function to be called after the iframe has been
-   *     added back into the DOM.
+   * @param {Function(HTMLIframeElement)} inflaterFn Function to be called after the iframe is
+   *     appended to the foreignObject element.
    */
-  constructor(name, iframeEl, scrubberFn) {
+  constructor(name, iframeEl, inflaterFn) {
     super(name);
     /** @type {HTMLIframeElement} */
     this.iframeEl = iframeEl;
     /** @type {Function} */
-    this.scrubberFn = scrubberFn;
+    this.inflaterFn = inflaterFn;
   }
 
-  scrub() {
-    return this.scrubberFn(this.pageEl);
+  /** @param {HTMLIframeElement} */
+  inflate() {
+    this.inflaterFn(this.iframeEl);
   }
 }
 
@@ -144,15 +135,9 @@ export const createPageFromFileAsync = function(file) {
 
     if (mimeType.indexOf('image/') === 0) {
       const img = new Image();
-      img.onload = () => { resolve(new ImagePage(filename, img)); };
+      img.onload = () => { resolve(new ImagePage(filename, img, dataURI)); };
       img.onerror = (e) => { resolve(new TextPage(filename, `Could not open file ${filename}`)); };
       img.src = dataURI;
-    } else if (mimeType === 'text/html') {
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', dataURI, true);
-      xhr.onload = () => { resolve(new HtmlPage(filename, xhr.responseText)); };
-      xhr.onerror = (e) => { reject(e); };
-      xhr.send(null);
     } else if (mimeType.startsWith('text/')) {
       // TextPage.
       const xhr = new XMLHttpRequest();
@@ -161,7 +146,7 @@ export const createPageFromFileAsync = function(file) {
         if (xhr.responseText.length < 1000 * 1024) {
           resolve(new TextPage(filename, xhr.responseText));
         } else {
-          reject('Could not create a new page from file ' + filename);
+          reject('Could not create a new text page from file ' + filename);
         }
       };
       xhr.onerror = (e) => { reject(e); };
