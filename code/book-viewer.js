@@ -445,7 +445,7 @@ export class BookViewer {
     const numPages = this.currentBook_.getNumberOfPages();
     getElem('page').innerHTML = (pageNum + 1) + '/' + numPages;
     getElem('pagemeter').setAttribute('width',
-        100 * (numPages == 0 ? 0 : ((pageNum + 1) / numPages)) + '%');
+        100 * (numPages == 0 ? 0 : ((pageNum + this.numPagesInViewer_) / numPages)) + '%');
   }
 
   /** @private */
@@ -504,8 +504,9 @@ export class BookViewer {
 
   /** @return {boolean} If the next page was shown. */
   showNextPage() {
+    // If there is no current book, or the viewer is showing the last pages of the book, just return.
     if (!this.currentBook_ ||
-        this.currentPageNum_ == this.currentBook_.getNumberOfPages() - 1) {
+        (this.currentPageNum_ === this.currentBook_.getNumberOfPages() - this.numPagesInViewer_)) {
       return false;
     }
 
