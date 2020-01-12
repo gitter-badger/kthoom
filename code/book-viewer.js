@@ -532,19 +532,7 @@ export class BookViewer {
     let currentMeterPct = parseFloat(meterElem.getAttribute('width'), 10);
     if (currentMeterPct >= pct) return;
 
-    this.progressBarAnimationPromise_ = this.progressBarAnimationPromise_.then(() => {
-      let partway = (pct - currentMeterPct) / 2;
-      if (partway < 0.001) {
-        partway = pct - currentMeterPct;
-      }
-      currentMeterPct = Math.min(currentMeterPct + partway, pct);
-
-      meterElem.setAttribute('width', currentMeterPct + '%');
-
-      if (currentMeterPct < pct) {
-        setTimeout(() => this.animateMeterTo_(pct, meterId), 50);
-      }
-    });
+    meterElem.setAttribute('width', pct + '%');
   }
 
   /**

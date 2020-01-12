@@ -142,6 +142,10 @@ dl.helplist dd {
   text-align: right;
 }
 
+.meter {
+  transition: width .3s;
+}
+
 #background {
   background-size: 100% 100%;
   position: absolute;
