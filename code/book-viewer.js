@@ -529,11 +529,7 @@ export class BookViewer {
    * @param {string} meterId
    */
   animateMeterTo_(pct, meterId) {
-    const meterElem = getElem(meterId);
-    let currentMeterPct = parseFloat(meterElem.getAttribute('width'), 10);
-    if (currentMeterPct >= pct) return;
-
-    meterElem.setAttribute('width', pct + '%');
+    getElem(meterId).setAttribute('width', pct + '%');
   }
 
   /**
