@@ -107,36 +107,30 @@ class KthoomApp {
 
       // Two-page viewer mode is simpler to figure out what the click means.
       if (this.bookViewer_.getNumPagesInViewer() === 2) {
-        const inverted = (this.bookViewer_.getRotateTimes() >= 2);
-        if (evt.target === getElem('firstImage')) {
-          if (!inverted) this.showPrevPage();
-          else this.showNextPage();
-        } else if (evt.target === getElem('secondImage')) {
-          if (!inverted) this.showNextPage();
-          else this.showPrevPage();
+        const targetId = evt.target.id;
+        if (targetId === 'page1Image' || targetId === 'page1Html') {
+          this.showPrevPage();
+        } else if (targetId === 'page2Image' || targetId === 'page2Html') {
+          this.showNextPage();
         }
         return;
       }
 
-      // Firefox does not support offsetX/Y so we have to manually calculate
-      // where the user clicked in the image.
-      const mainContentWidth = bookViewerElem.clientWidth;
-      const mainContentHeight = firstPageElem.clientHeight;
-      const comicWidth = evt.target.clientWidth;
-      const comicHeight = evt.target.clientHeight;
-      const offsetX = (mainContentWidth - comicWidth) / 2;
-      const offsetY = (mainContentHeight - comicHeight) / 2;
-      const clickX = !!evt.offsetX ? evt.offsetX : (evt.clientX - offsetX);
-      const clickY = !!evt.offsetY ? evt.offsetY : (evt.clientY - offsetY);
+      // Calculate where the user clicked in the image.
+      const mainContentBbox = firstPageElem.getBoundingClientRect();
+      const bookWidth = mainContentBbox.width;
+      const bookHeight = mainContentBbox.height;
+      const clickX = evt.clientX - mainContentBbox.left;
+      const clickY = evt.clientY - mainContentBbox.top;
 
       // Determine if the user clicked/tapped the left side or the
       // right side of the page.
       let clickedPrev = false;
       switch (this.bookViewer_.getRotateTimes()) {
-        case 0: clickedPrev = clickX < (comicWidth / 2); break;
-        case 1: clickedPrev = clickY < (comicHeight / 2); break;
-        case 2: clickedPrev = clickX > (comicWidth / 2); break;
-        case 3: clickedPrev = clickY > (comicHeight / 2); break;
+        case 0: clickedPrev = clickX < (bookWidth / 2); break;
+        case 1: clickedPrev = clickY < (bookHeight / 2); break;
+        case 2: clickedPrev = clickX > (bookWidth / 2); break;
+        case 3: clickedPrev = clickY > (bookHeight / 2); break;
       }
       if (clickedPrev) {
         this.showPrevPage();
