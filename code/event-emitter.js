@@ -1,6 +1,8 @@
 /**
  * event-emitter.js
+ *
  * Licensed under the MIT License
+ *
  * Copyright(c) 2019 Google Inc.
  */
 
@@ -98,7 +100,7 @@ export class EventEmitter {
       }
     }
 
-    // Now send to all subscribes that are subscribed to all events from this EventEmitter.
+    // Now send to all subscribers that are subscribed to all events from this EventEmitter.
     for (const context of this.allEventSubscriberMap_.keys()) {
       const boundCallbackFn = this.allEventSubscriberMap_.get(context).bind(context);
       boundCallbackFn(evt);

@@ -146,42 +146,7 @@
         </button>
       </div> <!-- readingStack -->
     </div>
-    <div id="menu">
-      <div id="menuOverlay" class="fullScreenOverlay"></div>
-      <ul id ="menuItems" class="menuItems" role="menu" aria-label="Main Menu">
-        <li role="none">
-          <button id="menu-open-local-files" class="menuItem" role="menuitem" tabindex="-1">
-            Open from Your Computer
-          </button>
-          <input id="menu-open-local-files-input" type="file" multiple tabindex="-1">
-        </li>
-        <li role="none">
-          <button id="menu-open-url" class="menuItem" role="menuitem" tabindex="-1">
-            Open from URL
-          </button>
-        </li>
-        <li role="none">
-          <button id="menu-open-google-drive" class="menuItem" role="menuitem" tabindex="-1">
-            Open from Google Drive
-          </button>
-        </li>
-        <li role="none">
-          <button id="menu-open-ipfs-hash" class="menuItem" role="menuitem" tabindex="-1">
-            Open from IPFS
-          </button>
-        </li>
-        <li role="none">
-          <button id="menu-close-all" style="display:none" class="menuItem" role="menuitem" tabindex="-1">
-            Close All
-          </button>
-        </li>
-        <li role="none">
-          <button id="menu-help" class="menuItem" role="menuitem" tabindex="-1">
-            Help (Keyboard Shortcuts)
-          </button>
-        </li>
-      </ul>
-    </div>
+
     <div id="helpOverlay">
       <section class="helpSection">
         <h2>Navigation</h2>
@@ -224,7 +189,6 @@
           <dd>Toggle Fullscreen Mode (if available)</dd>
         </dl>
       </section>
-
       <section class="helpSection">
         <h2>Loading Books</h2>
         <dl class="helplist">
@@ -239,6 +203,42 @@
         </dl>
       </section>
     </div>
+
+    <template id="mainMenu">
+      <ul id ="menuItems" class="menuItems" role="menu" aria-label="Main Menu">
+        <li role="none">
+          <button id="menu-open-local-files" class="menuItem" role="menuitem" tabindex="-1">
+            Open from Your Computer
+          </button>
+          <input id="menu-open-local-files-input" type="file" multiple tabindex="-1">
+        </li>
+        <li role="none">
+          <button id="menu-open-url" class="menuItem" role="menuitem" tabindex="-1">
+            Open from URL
+          </button>
+        </li>
+        <li role="none">
+          <button id="menu-open-google-drive" class="menuItem" role="menuitem" tabindex="-1">
+            Open from Google Drive
+          </button>
+        </li>
+        <li role="none">
+          <button id="menu-open-ipfs-hash" class="menuItem" role="menuitem" tabindex="-1">
+            Open from IPFS
+          </button>
+        </li>
+        <li role="none">
+          <button id="menu-close-all" style="display:none" class="menuItem" role="menuitem" tabindex="-1">
+            Close All
+          </button>
+        </li>
+        <li role="none">
+          <button id="menu-help" class="menuItem" role="menuitem" tabindex="-1">
+            Help (Keyboard Shortcuts)
+          </button>
+        </li>
+      </ul>
+    </template>
   </body>
   <script>
     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){

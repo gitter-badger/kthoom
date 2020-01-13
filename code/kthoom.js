@@ -9,6 +9,7 @@
 
 import { Book } from './book.js';
 import { BookViewer, FitMode } from './book-viewer.js';
+import { Menu, MenuEventType } from './menu.js';
 import { ReadingStack } from './reading-stack.js';
 import { Key, Params, getElem } from './helpers.js';
 
@@ -29,6 +30,9 @@ class KthoomApp {
     this.readingStack_ = new ReadingStack();
 
     this.currentBook_ = null;
+
+    /** @private {Menu} */
+    this.mainMenu_ = null;
 
     // This Promise resolves when kthoom is ready.
     this.initializedPromise_ = new Promise((resolve, reject) => {
@@ -66,20 +70,29 @@ class KthoomApp {
 
   /** @private */
   initMenu_() {
+    this.mainMenu_ = new Menu(getElem('mainMenu'));
+
+    getElem('menu-open').addEventListener('click', (e) => this.toggleMenuOpen_());
+
     const fileInput = getElem('menu-open-local-files-input');
-    getElem('menuOverlay').addEventListener('click', (e) => this.toggleMenuOpen_());
+    fileInput.addEventListener('change', (e) => this.loadLocalFiles_(e));
+
+    this.mainMenu_.subscribe(this, evt => getElem('menu-open').focus(), MenuEventType.CLOSE);
+    this.mainMenu_.subscribe(this, evt => {
+      switch (evt.item.id) {
+        case 'menu-open-local-files': fileInput.click(); break;
+        case 'menu-open-url': this.loadFileViaUrl_(); break;
+        case 'menu-open-google-drive': kthoom.google.doDrive(); break;
+        case 'menu-open-ipfs-hash': kthoom.ipfs.ipfsHashWindow(); break;
+        case 'menu-close-all': this.closeAll_(); break;
+        case 'menu-help': this.toggleHelpOpen_(); break;
+      }
+    }, MenuEventType.ITEM_SELECTED);
+
     getElem('readingStackButton').addEventListener('click', () => this.toggleReadingStackOpen_());
     getElem('readingStackOverlay').addEventListener('click', (e) => {
       this.toggleReadingStackOpen_();
     });
-    getElem('menu-open').addEventListener('click', (e) => this.toggleMenuOpen_());
-    getElem('menu-open-local-files').addEventListener('click', (e) => fileInput.click());
-    getElem('menu-open-url').addEventListener('click', (e) => this.loadFileViaUrl_());
-    getElem('menu-open-google-drive').addEventListener('click', kthoom.google.doDrive);
-    getElem('menu-open-ipfs-hash').addEventListener('click', kthoom.ipfs.ipfsHashWindow);
-    getElem('menu-close-all').addEventListener('click', (e) => this.closeAll_());
-    getElem('menu-help').addEventListener('click', (e) => this.toggleHelpOpen_());
-    fileInput.addEventListener('change', (e) => this.loadLocalFiles_(e));
   }
 
   /** @private */
@@ -199,14 +212,6 @@ class KthoomApp {
     return getElem('helpOverlay').classList.contains('opened');
   }
 
-  /**
-   * @return {boolean}
-   * @private
-   */
-  isMenuOpened_() {
-    return getElem('menu').classList.contains('opened');
-  }
-
   /** @private */
   async parseParams_() {
     const bookUri = Params['bookUri'];
@@ -280,74 +285,45 @@ class KthoomApp {
       return;
     }
 
-    let isMenuOpen = this.isMenuOpened_();
+    let isMenuOpen = this.mainMenu_.isOpen() ;
     let isReadingStackOpen = this.readingStack_.isOpen();
+
+    if (isMenuOpen) {
+      // If the menu handled the key, then we are done.
+      if (this.mainMenu_.handleKeyEvent(evt)) {
+        return;
+      }
+    }
 
     // Handle keystrokes that do not depend on whether a book is loaded.
     switch (code) {
-      case Key.O:
-        getElem('menu-open-local-files-input').click();
-        if (isMenuOpen) {
-          this.toggleMenuOpen_();
-          isMenuOpen = false;
-        }
-        break;
-      case Key.U:
-        this.loadFileViaUrl_();
-        break;
-      case Key.F:
-        this.toggleFullscreen_();
-        break;
-      case Key.G:
-        kthoom.google.doDrive();
-        break;
-      case Key.I:
-        kthoom.ipfs.ipfsHashWindow();
-        break;
+      case Key.O: getElem('menu-open-local-files-input').click(); break;
+      case Key.U: this.loadFileViaUrl_(); break;
+      case Key.F: this.toggleFullscreen_(); break;
+      case Key.G: kthoom.google.doDrive(); break;
+      case Key.I: kthoom.ipfs.ipfsHashWindow(); break;
+      case Key.QUESTION_MARK: this.toggleHelpOpen_(); break;
       case Key.M:
-        this.toggleMenuOpen_();
-        break;
-      case Key.QUESTION_MARK:
-        this.toggleHelpOpen_();
+        if (!isMenuOpen) {
+          this.mainMenu_.open();
+        }
         break;
       case Key.ESCAPE:
-        if (isMenuOpen) {
-          this.toggleMenuOpen_();
-          isMenuOpen = false;
-        }
         if (isReadingStackOpen) {
           this.toggleReadingStackOpen_();
           isReadingStackOpen = false;
         }
         break;
       case Key.UP:
-        if (isMenuOpen) {
-          evt.preventDefault();
-          evt.stopPropagation();
-          this.selectMenuItem(-1);
-          return;
-        } else if (isReadingStackOpen) {
+        if (isReadingStackOpen) {
           this.readingStack_.changeToPrevBook();
           return;
         }
         break;
       case Key.DOWN:
-        if (isMenuOpen) {
-          evt.preventDefault();
-          evt.stopPropagation();
-          this.selectMenuItem(1);
-          return;
-        } else if (isReadingStackOpen) {
+        if (isReadingStackOpen) {
           this.readingStack_.changeToNextBook();
           return;
-        }
-        break;
-      case Key.TAB:
-        // If the menu is open, close it and focus thee menu button so that the tab brings us to the
-        // next tab stop.
-        if (isMenuOpen) {
-          this.toggleMenuOpen_();
-          getElem('menu-open').focus();
         }
         break;
       case Key.S:
@@ -359,13 +335,8 @@ class KthoomApp {
     }
 
     // All other key strokes below this are only valid if the menu and reading stack are closed.
-    if (isMenuOpen || isReadingStackOpen) {
-      if (isMenuOpen)  {
-        this.toggleMenuOpen_();
-      }
-      if (isReadingStackOpen) {
-        this.toggleReadingStackOpen_();
-      }
+    if (isReadingStackOpen) {
+      this.toggleReadingStackOpen_();
       return;
     }
 
@@ -445,38 +416,6 @@ class KthoomApp {
     });
   }
 
-  /**
-   * Assumes the menu is open.
-   * @private {Number} delta Can be negative (up) or positive (down)
-   */
-  selectMenuItem(delta = 1) {
-    const menuItems = getElem('menuItems').querySelectorAll('.menuItem:not([style="display:none"])');
-    const numMenuItems = menuItems.length;
-    const currentlyFocusedMenuItem = document.activeElement;
-    let i = 0;
-    for ( ; i < numMenuItems; ++i) {
-      const menuItem = menuItems.item(i);
-      if (menuItem === currentlyFocusedMenuItem) {
-        break;
-      }
-    }
-    // If somehow the currently focused item is not in the menu, then start at the top of the menu.
-    if (i === menuItems.length) {
-      i = 0;
-    }
-
-    i += delta;
-    while (i >= numMenuItems) {
-      i -= numMenuItems;
-    }
-    while (i < 0) {
-      i += numMenuItems;
-    }
-
-    const newlySelectedMenuItem = menuItems.item(i);
-    newlySelectedMenuItem.focus();
-  }
-
   updateProgressMeter(label) {
     this.bookViewer_.updateProgressMeter(label);
   }
@@ -521,11 +460,13 @@ class KthoomApp {
 
   /** @private */
   toggleMenuOpen_() {
-    const expanded = getElem('menu').classList.toggle('opened');
-    getElem('menu-open').setAttribute('aria-expanded', expanded ? 'true' : 'false');
-
-    const firstMenuElem = getElem('menuItems').querySelector('.menuItem:not([style="display:none"])');
-    firstMenuElem.focus();
+    if (!this.mainMenu_.isOpen()) {
+      getElem('menu-open').setAttribute('aria-expanded', 'true');
+      this.mainMenu_.open();
+    } else {
+      getElem('menu-open').setAttribute('aria-expanded', 'false');
+      this.mainMenu_.close();
+    }
   }
 
   /** @private */
@@ -601,9 +542,6 @@ class KthoomApp {
     if (filelist.length <= 0) {
       return;
     }
-    if (this.isMenuOpened_()) {
-      this.toggleMenuOpen_();
-    }
 
     for (let fileNum = 0; fileNum < filelist.length; ++fileNum) {
       const theFile = filelist[fileNum];
@@ -647,19 +585,15 @@ class KthoomApp {
    * Closes all open files.
    */
   closeAll_() {
-    if (this.isMenuOpened_()) {
-      this.toggleMenuOpen_();
-    }
-
     if (this.readingStack_.getNumberOfBooks() > 0) {
       this.readingStack_.removeAll();
 
       this.bookViewer_.closeBook();
       this.currentBook_ = null;
       getElem('background').setAttribute('style', 'background-image: url("images/logo.svg")');
-      getElem('menu-close-all').setAttribute('style', 'display:none');
+      this.mainMenu_.showMenuItem('menu-close-all', false);
       for (const button of ['prevBook', 'prev', 'next', 'nextBook'].map(getElem)) {
-        button.setAttribute('disabled');
+        button.setAttribute('disabled', 'true');
       }
     }
   }
@@ -794,7 +728,7 @@ class KthoomApp {
       }
     }
     // Show the Close All menu item.
-    getElem('menu-close-all').removeAttribute('style');
+    this.mainMenu_.showMenuItem('menu-close-all', true);
   }
 }
 
