@@ -119,6 +119,7 @@ export class Menu extends EventEmitter {
   }
 
   /**
+   * If the last menu is closed, the menu overlay is also hidden.
    */
   close() {
     assert(openMenus.has(this), 'Menu was already closed!');
@@ -259,6 +260,10 @@ export class Menu extends EventEmitter {
     return !(this.dom_.style.display === 'none');
   }
 
+  /**
+   * @param {number} left The left px value.
+   * @param {number} top The top px value.
+   */
   open(left = 0, top = 0) {
     assert(!openMenus.has(this), 'Menu was already open!');
     overlay.style = MENU_OVERLAY_OPEN_STYLE;
