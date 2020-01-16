@@ -47,7 +47,7 @@
     <div id="background" style="background-image: url('images/logo.svg')"></div>
     <div class="foreground">
       <div id="header">
-        <button id="menu-open" class="menuButton" tabindex="0"
+        <button id="main-menu-button" class="menuButton" tabindex="0"
             aria-haspopup="true" aria-expanded="false" aria-label="Menu button">
           <svg viewBox="0 0 100 100" stroke="currentColor">
             <line stroke-width="10" x1="20" x2="80" y1="30" y2="30"></line>
@@ -207,38 +207,88 @@
     <template id="mainMenu">
       <ul id ="menuItems" class="menuItems" role="menu" aria-label="Main Menu">
         <li role="none">
+          <button id="menu-open" class="menuItem" role="menuitem" tabindex="-1" aria-expanded="false">
+            Open<span class="subMenuArrow">&#x25B6;</span>
+          </button>
+        </li>
+        <li role="none">
+          <button id="menu-close-all" style="display:none" disabled="true" class="menuItem" role="menuitem" tabindex="-1">
+            Close All
+          </button>
+        </li>
+        <li role="none">
+          <hr class="menuSeparator" />
+        </li>
+        <li role="none">
+          <button id="menu-view" class="menuItem" role="menuitem" tabindex="-1" aria-expanded="false">
+            View<span class="subMenuArrow">&#x25B6;</span>
+          </button>
+        </li>
+        <li role="none">
+          <hr class="menuSeparator" />
+        </li>
+        <li role="none">
+          <button id="menu-help" class="menuItem" role="menuitem" tabindex="-1">
+            Help (Keyboard Shortcuts)<span class="menuItemKey">?</span>
+          </button>
+        </li>
+      </ul>
+    </template>
+
+    <template id="openMenu">
+      <ul id ="menuItems" class="menuItems" role="menu" aria-label="View Menu">
+        <li role="none">
           <button id="menu-open-local-files" class="menuItem" role="menuitem" tabindex="-1">
-            Open from Your Computer
+            Open from Your Computer<span class="menuItemKey">O</span>
           </button>
           <input id="menu-open-local-files-input" type="file" multiple tabindex="-1">
         </li>
         <li role="none">
           <button id="menu-open-url" class="menuItem" role="menuitem" tabindex="-1">
-            Open from URL
+            Open from URL<span class="menuItemKey">U</span>
           </button>
         </li>
         <li role="none">
           <button id="menu-open-google-drive" class="menuItem" role="menuitem" tabindex="-1">
-            Open from Google Drive
+            Open from Google Drive<span class="menuItemKey">G</span>
           </button>
         </li>
         <li role="none">
           <button id="menu-open-ipfs-hash" class="menuItem" role="menuitem" tabindex="-1">
-            Open from IPFS
-          </button>
-        </li>
-        <li role="none">
-          <button id="menu-close-all" style="display:none" class="menuItem" role="menuitem" tabindex="-1">
-            Close All
-          </button>
-        </li>
-        <li role="none">
-          <button id="menu-help" class="menuItem" role="menuitem" tabindex="-1">
-            Help (Keyboard Shortcuts)
+            Open from IPFS<span class="menuItemKey">I</span>
           </button>
         </li>
       </ul>
     </template>
+
+    <template id="viewMenu">
+      <ul id ="menuItems" class="menuItems" role="menu" aria-label="View Menu">
+        <li role="none">
+          <button id="menu-view-rotate-right" class="menuItem" role="menuitem" tabindex="-1">
+            Rotate Right<span class="menuItemKey">R</span>
+          </button>
+        </li>
+        <li role="none">
+          <button id="menu-view-rotate-left" class="menuItem" role="menuitem" tabindex="-1">
+            Rotate Left<span class="menuItemKey">L</span>
+          </button>
+        </li>
+        <li role="none">
+          <hr class="menuSeparator" />
+        </li>
+        <li role="none">
+          <button id="menu-view-one-page" style="display:none" disabled="true" class="menuItem" role="menuitem" tabindex="-1">
+            Switch to 1-page view<span class="menuItemKey">1</span>
+          </button>
+        </li>
+        <li role="none">
+          <button id="menu-view-two-page" style="display:none" disabled="true" class="menuItem" role="menuitem" tabindex="-1">
+            Switch to 2-page view<span class="menuItemKey">2</span>
+          </button>
+        </li>
+      </ul>
+    </template>
+
   </body>
   <script>
     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){

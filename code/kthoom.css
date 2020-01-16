@@ -185,6 +185,16 @@ dl.helplist dd {
   display: block;
 }
 
+.menuSeparator {
+  border-top: solid .1px yellow;
+}
+
+span.subMenuArrow,
+span.menuItemKey {
+  float: right;
+  pointer-events: none;
+}
+
 .fullScreenOverlay {
   position: absolute;
   bottom: 0;

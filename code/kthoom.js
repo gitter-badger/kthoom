@@ -34,6 +34,12 @@ class KthoomApp {
     /** @private {Menu} */
     this.mainMenu_ = null;
 
+    /** @private {Menu} */
+    this.openMenu_ = null;
+
+    /** @private {Menu} */
+    this.viewMenu_ = null;
+
     // This Promise resolves when kthoom is ready.
     this.initializedPromise_ = new Promise((resolve, reject) => {
       // This Promise resolves when the DOM is ready.
@@ -50,7 +56,7 @@ class KthoomApp {
   /** @private */
   init_() {
     this.readingStack_.whenCurrentBookChanged(book => this.handleCurrentBookChanged_(book));
-    this.initMenu_();
+    this.initMenus_();
     this.initNav_();
     this.initDragDrop_();
     this.initClickHandlers_();
@@ -63,31 +69,75 @@ class KthoomApp {
     this.loadSettings_();
     this.parseParams_();
 
-    getElem('menu-open').focus();
+    getElem('main-menu-button').focus();
 
     console.log('kthoom initialized');
   }
 
   /** @private */
-  initMenu_() {
+  initMenus_() {
     this.mainMenu_ = new Menu(getElem('mainMenu'));
+    this.openMenu_ = new Menu(getElem('openMenu'));
+    this.viewMenu_ = new Menu(getElem('viewMenu'));
 
-    getElem('menu-open').addEventListener('click', (e) => this.toggleMenuOpen_());
+    this.mainMenu_.addSubMenu('menu-open', this.openMenu_);
+    this.mainMenu_.addSubMenu('menu-view', this.viewMenu_);
+    const closeMainMenu = () => {
+      if (this.mainMenu_.isOpen()) {
+        this.mainMenu_.close();
+      }
+    };
 
-    const fileInput = getElem('menu-open-local-files-input');
-    fileInput.addEventListener('change', (e) => this.loadLocalFiles_(e));
+    this.openMenu_.subscribe(this, evt => {
+      switch (evt.item.id) {
+        case 'menu-open-local-files': fileInput.click(); closeMainMenu(); break;
+        case 'menu-open-url': this.loadFileViaUrl_(); closeMainMenu(); break;
+        case 'menu-open-google-drive': kthoom.google.doDrive(); closeMainMenu(); break;
+        case 'menu-open-ipfs-hash': kthoom.ipfs.ipfsHashWindow(); closeMainMenu(); break;
+      }
+    }, MenuEventType.ITEM_SELECTED);
 
-    this.mainMenu_.subscribe(this, evt => getElem('menu-open').focus(), MenuEventType.CLOSE);
+    this.viewMenu_.subscribe(this, evt => {
+      switch (evt.item.id) {
+        case 'menu-view-rotate-left':
+          this.bookViewer_.rotateCounterClockwise();
+          this.saveSettings_();
+          closeMainMenu();
+          break;
+        case 'menu-view-rotate-right':
+          this.bookViewer_.rotateClockwise();
+          this.saveSettings_();
+          closeMainMenu();
+          break;
+        case 'menu-view-one-page':
+          this.bookViewer_.setNumPagesInViewer(1);
+          this.viewMenu_.showMenuItem('menu-view-one-page', false);
+          this.viewMenu_.showMenuItem('menu-view-two-page', true);
+          this.saveSettings_();
+          closeMainMenu();
+          break;
+        case 'menu-view-two-page':
+          this.bookViewer_.setNumPagesInViewer(2);
+          this.viewMenu_.showMenuItem('menu-view-one-page', true);
+          this.viewMenu_.showMenuItem('menu-view-two-page', false);
+          this.saveSettings_();
+          closeMainMenu();
+          break;
+      }
+    }, MenuEventType.ITEM_SELECTED);
+
+    this.mainMenu_.subscribe(this, evt => getElem('main-menu-button').focus(), MenuEventType.CLOSE);
     this.mainMenu_.subscribe(this, evt => {
       switch (evt.item.id) {
-        case 'menu-open-local-files': fileInput.click(); break;
-        case 'menu-open-url': this.loadFileViaUrl_(); break;
-        case 'menu-open-google-drive': kthoom.google.doDrive(); break;
-        case 'menu-open-ipfs-hash': kthoom.ipfs.ipfsHashWindow(); break;
         case 'menu-close-all': this.closeAll_(); break;
         case 'menu-help': this.toggleHelpOpen_(); break;
       }
     }, MenuEventType.ITEM_SELECTED);
+
+    const fileInput = getElem('menu-open-local-files-input');
+    fileInput.addEventListener('change', (e) => this.loadLocalFiles_(e));
+
+    getElem('main-menu-button').addEventListener('click', (e) => this.toggleMenuOpen_());
 
     getElem('readingStackButton').addEventListener('click', () => this.toggleReadingStackOpen_());
     getElem('readingStackOverlay').addEventListener('click', (e) => {
@@ -271,6 +321,13 @@ class KthoomApp {
 
       if (s.numPagesInViewer) {
         this.bookViewer_.setNumPagesInViewer(s.numPagesInViewer);
+        if (s.numPagesInViewer === 1) {
+          this.viewMenu_.showMenuItem('menu-view-one-page', false);
+          this.viewMenu_.showMenuItem('menu-view-two-page', true);
+        } else {
+          this.viewMenu_.showMenuItem('menu-view-one-page', true);
+          this.viewMenu_.showMenuItem('menu-view-two-page', false);
+        }
       }
     } catch(err) {}
   }
@@ -399,7 +456,15 @@ class KthoomApp {
         this.saveSettings_();
         break;
       case Key.NUM_1: case Key.NUM_2:
-        this.bookViewer_.setNumPagesInViewer(code - Key.NUM_1 + 1);
+        const numPages = code - Key.NUM_1 + 1;
+        this.bookViewer_.setNumPagesInViewer(numPages);
+        if (numPages === 1) {
+          this.viewMenu_.showMenuItem('menu-view-one-page', false);
+          this.viewMenu_.showMenuItem('menu-view-two-page', true);
+        } else {
+          this.viewMenu_.showMenuItem('menu-view-one-page', true);
+          this.viewMenu_.showMenuItem('menu-view-two-page', false);
+        }
         this.saveSettings_();
         break;
       default:
@@ -461,10 +526,10 @@ class KthoomApp {
   /** @private */
   toggleMenuOpen_() {
     if (!this.mainMenu_.isOpen()) {
-      getElem('menu-open').setAttribute('aria-expanded', 'true');
+      getElem('main-menu-button').setAttribute('aria-expanded', 'true');
       this.mainMenu_.open();
     } else {
-      getElem('menu-open').setAttribute('aria-expanded', 'false');
+      getElem('main-menu-button').setAttribute('aria-expanded', 'false');
       this.mainMenu_.close();
     }
   }
