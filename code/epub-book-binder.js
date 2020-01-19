@@ -13,7 +13,8 @@
   *   iframe to size things right.  Each page can remember the DOM it needs to show.
   * - Once that phase is done, we can eject the archive files from memory and just keep around the
   *   page objects.
-  * - Each page object must be able to re-render itself (and create any Blob URLs it needs).
+  * - Find an example of an EPUB book that uses a custom font.
+  *   - Parse CSS and see if any rules reference a url() and do Blob URLs at render time.
   */
 
 import { BookBinder } from './book-binder.js';
@@ -188,6 +189,7 @@ export class EPUBBookBinder extends BookBinder {
                   throw `Could not find a referenced file: ${attr.value}`;
                 }
                 newEl.setAttribute(ATTR_PREFIX + attr.name, attr.value);
+                newEl.setAttribute(attr.name, ref.getBlobURL(contentWindow));
               }
             }
           }
@@ -195,6 +197,9 @@ export class EPUBBookBinder extends BookBinder {
         }
       });
 
+      // TODO: This has a problem in that the serialized doc has blob URLs in it that will no
+      //     longer be valid.  We really need a method that will take a DOM node and make a
+      //     sanitized copy of it with new Blob URLs.
       const curHead = htmlDoc.head;
       const curBody = htmlDoc.body;
       const nextPage = new XhtmlPage('htmlpage', iframeEl, () => {
