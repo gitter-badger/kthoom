@@ -8,7 +8,8 @@
 
 import { BookBinder } from './book-binder.js';
 import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
-import { createPageFromFileAsync } from './page.js';
+import { createPageFromFileAsync, guessMimeType } from './page.js';
+import { Params } from './helpers.js';
 
 /**
  * The default BookBinder used in kthoom.  It takes each extracted file from the Unarchiver and
@@ -30,8 +31,14 @@ export class ComicBookBinder extends BookBinder {
       // Convert each unarchived file into a Page.
       // TODO: Error if not present?
       if (evt.unarchivedFile) {
-        // TODO: Error if we have more pages than totalPages_.
-        this.pagePromises_.push(createPageFromFileAsync(evt.unarchivedFile));
+        const filename = evt.unarchivedFile.filename;
+        const mimeType = guessMimeType(filename);
+        if (mimeType.startsWith('image/')) {
+          // TODO: Error if we have more pages than totalPages_.
+          this.pagePromises_.push(createPageFromFileAsync(evt.unarchivedFile));
+        } else if (filename.toLowerCase() === 'comicinfo.xml' && Params.metadata) {
+          alert('Found a book with comicinfo.xml');
+        }
 
         // Emit a Progress event for each unarchived file.
         this.notify(new BookProgressEvent(this, this.pagePromises_.length));
@@ -43,6 +50,9 @@ export class ComicBookBinder extends BookBinder {
     this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, evt => {
       this.setUnarchiveComplete();
 
+      if (evt.metadata.comment && Params.metadata) {
+        alert(evt.metadata.comment);
+      }
       let pages = [];
       let foundError = false;
       let pagePromiseChain = Promise.resolve(true);

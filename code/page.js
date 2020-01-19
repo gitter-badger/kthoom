@@ -95,7 +95,7 @@ function createURLFromArray(ab, mimeType) {
  * @param {string} filename
  * @return {string|undefined} The MIME type or undefined if we could not guess it.
  */
-function guessMimeType(filename) {
+export function guessMimeType(filename) {
   const fileExtension = filename.split('.').pop().toLowerCase();
   switch (fileExtension) {
     case 'png': return 'image/png';
