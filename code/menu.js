@@ -187,6 +187,40 @@ export class Menu extends EventEmitter {
   }
 
   /**
+   * Assumes the menu is open.  Moves the menu item focus.
+   * @param {Number} delta Can be negative (up) or positive (down)
+   * @private
+   */
+  focusMenuItem_(delta = 1) {
+    const menuEl = this.dom_.firstElementChild;
+    const menuItems = menuEl.querySelectorAll('[role="menuitem"]:not([disabled="true"])');
+    const numMenuItems = menuItems.length;
+    const currentlyFocusedMenuItem = document.activeElement;
+    let i = 0;
+    for ( ; i < numMenuItems; ++i) {
+      const menuItem = menuItems.item(i);
+      if (menuItem === currentlyFocusedMenuItem) {
+        break;
+      }
+    }
+    // If somehow the currently focused item is not in the menu, then start at the top of the menu.
+    if (i === menuItems.length) {
+      i = 0;
+    }
+
+    i += delta;
+    while (i >= numMenuItems) {
+      i -= numMenuItems;
+    }
+    while (i < 0) {
+      i += numMenuItems;
+    }
+
+    const newlySelectedMenuItem = menuItems.item(i);
+    newlySelectedMenuItem.focus();
+  }
+
+  /**
    * @param {KeyboardEvent} evt
    * @return {boolean} True if the event was handled.
    */
@@ -228,12 +262,12 @@ export class Menu extends EventEmitter {
       case Key.UP:
         evt.preventDefault();
         evt.stopPropagation();
-        this.selectMenuItem_(-1);
+        this.focusMenuItem_(-1);
         return true;
       case Key.DOWN:
         evt.preventDefault();
         evt.stopPropagation();
-        this.selectMenuItem_(1);
+        this.focusMenuItem_(1);
         return true;
       case Key.RIGHT:
         const currentlyFocusedMenuItem = document.activeElement;
@@ -278,37 +312,17 @@ export class Menu extends EventEmitter {
   }
 
   /**
-   * Assumes the menu is open.
-   * @param {Number} delta Can be negative (up) or positive (down)
-   * @private
+   * Sets the selected state on a menu item.  Assumes the menu item has a span with the
+   * menuCheckmark class.
+   * @param {string} itemId 
+   * @param {boolean} selected True to select, false to de-select.
    */
-  selectMenuItem_(delta = 1) {
+  setMenuItemSelected(itemId, selected) {
     const menuEl = this.dom_.firstElementChild;
-    const menuItems = menuEl.querySelectorAll('[role="menuitem"]:not([disabled="true"])');
-    const numMenuItems = menuItems.length;
-    const currentlyFocusedMenuItem = document.activeElement;
-    let i = 0;
-    for ( ; i < numMenuItems; ++i) {
-      const menuItem = menuItems.item(i);
-      if (menuItem === currentlyFocusedMenuItem) {
-        break;
-      }
-    }
-    // If somehow the currently focused item is not in the menu, then start at the top of the menu.
-    if (i === menuItems.length) {
-      i = 0;
-    }
+    const menuItemCheckmark = menuEl.querySelector(`[id="${itemId}"][role="menuitem"] .menuCheckmark`);
+    assert(!!menuItemCheckmark, `Could not find checkmark span for menu item ${itemId}`);
 
-    i += delta;
-    while (i >= numMenuItems) {
-      i -= numMenuItems;
-    }
-    while (i < 0) {
-      i += numMenuItems;
-    }
-
-    const newlySelectedMenuItem = menuItems.item(i);
-    newlySelectedMenuItem.focus();
+    menuItemCheckmark.innerHTML = selected ? '✔︎' : '&nbsp;';
   }
 
   /**

@@ -195,6 +195,12 @@ span.menuItemKey {
   pointer-events: none;
 }
 
+span.menuCheckmark {
+  float: left;
+  pointer-events: none;
+  width: 1.5em;
+}
+
 .fullScreenOverlay {
   position: absolute;
   bottom: 0;

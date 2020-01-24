@@ -98,7 +98,8 @@ class KthoomApp {
     }, MenuEventType.ITEM_SELECTED);
 
     this.viewMenu_.subscribe(this, evt => {
-      switch (evt.item.id) {
+      const id = evt.item.id;
+      switch (id) {
         case 'menu-view-rotate-left':
           this.bookViewer_.rotateCounterClockwise();
           this.saveSettings_();
@@ -111,17 +112,28 @@ class KthoomApp {
           break;
         case 'menu-view-one-page':
           this.bookViewer_.setNumPagesInViewer(1);
-          this.viewMenu_.showMenuItem('menu-view-one-page', false);
-          this.viewMenu_.showMenuItem('menu-view-two-page', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
           this.saveSettings_();
           closeMainMenu();
           break;
         case 'menu-view-two-page':
           this.bookViewer_.setNumPagesInViewer(2);
-          this.viewMenu_.showMenuItem('menu-view-one-page', true);
-          this.viewMenu_.showMenuItem('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
           this.saveSettings_();
           closeMainMenu();
+          break;
+        case 'menu-view-fit-best':
+        case 'menu-view-fit-height':
+        case 'menu-view-fit-width':
+          const fitMode = (id === 'menu-view-fit-best'   ? FitMode.Best :
+                           id === 'menu-view-fit-height' ? FitMode.Height :
+                           id === 'menu-view-fit-width'  ? FitMode.Width : undefined);
+          this.bookViewer_.setFitMode(fitMode);
+          this.viewMenu_.setMenuItemSelected('menu-view-fit-best', fitMode === FitMode.Best);
+          this.viewMenu_.setMenuItemSelected('menu-view-fit-height', fitMode === FitMode.Height);
+          this.viewMenu_.setMenuItemSelected('menu-view-fit-width', fitMode === FitMode.Width);
           break;
       }
     }, MenuEventType.ITEM_SELECTED);
@@ -309,12 +321,17 @@ class KthoomApp {
       this.bookViewer_.setRotateTimes(s.rotateTimes);
       // Obsolete settings:  hflip. vflip.
 
-      if (s.fitMode) {
+      const fitMode = s.fitMode;
+      if (fitMode) {
+        this.viewMenu_.setMenuItemSelected('menu-view-fit-best', fitMode === FitMode.Best);
+        this.viewMenu_.setMenuItemSelected('menu-view-fit-height', fitMode === FitMode.Height);
+        this.viewMenu_.setMenuItemSelected('menu-view-fit-width', fitMode === FitMode.Width);
+        
         // We used to store the key code for the mode... check for stale settings.
-        switch (s.fitMode) {
+        switch (fitMode) {
           case Key.B: s.fitMode = FitMode.Best; break;
-          case Key.W: s.fitMode = FitMode.Width; break;
           case Key.H: s.fitMode = FitMode.Height; break;
+          case Key.W: s.fitMode = FitMode.Width; break;
         }
         this.bookViewer_.setFitMode(s.fitMode);
       }
@@ -322,11 +339,11 @@ class KthoomApp {
       if (s.numPagesInViewer) {
         this.bookViewer_.setNumPagesInViewer(s.numPagesInViewer);
         if (s.numPagesInViewer === 1) {
-          this.viewMenu_.showMenuItem('menu-view-one-page', false);
-          this.viewMenu_.showMenuItem('menu-view-two-page', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
         } else {
-          this.viewMenu_.showMenuItem('menu-view-one-page', true);
-          this.viewMenu_.showMenuItem('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
         }
       }
     } catch(err) {}
@@ -447,23 +464,26 @@ class KthoomApp {
         this.bookViewer_.rotateClockwise();
         this.saveSettings_();
         break;
-      case Key.W: case Key.H: case Key.B: case Key.N:
+      case Key.W: case Key.H: case Key.B:
         const fitMode =
             code === Key.W ? FitMode.Width :
             code === Key.H ? FitMode.Height :
             code === Key.B ? FitMode.Best : undefined;
         this.bookViewer_.setFitMode(fitMode);
+        this.viewMenu_.setMenuItemSelected('menu-view-fit-best', fitMode === FitMode.Best);
+        this.viewMenu_.setMenuItemSelected('menu-view-fit-height', fitMode === FitMode.Height);
+        this.viewMenu_.setMenuItemSelected('menu-view-fit-width', fitMode === FitMode.Width);
         this.saveSettings_();
         break;
       case Key.NUM_1: case Key.NUM_2:
         const numPages = code - Key.NUM_1 + 1;
         this.bookViewer_.setNumPagesInViewer(numPages);
         if (numPages === 1) {
-          this.viewMenu_.showMenuItem('menu-view-one-page', false);
-          this.viewMenu_.showMenuItem('menu-view-two-page', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
         } else {
-          this.viewMenu_.showMenuItem('menu-view-one-page', true);
-          this.viewMenu_.showMenuItem('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
         }
         this.saveSettings_();
         break;

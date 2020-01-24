@@ -276,14 +276,33 @@
         <li role="none">
           <hr class="menuSeparator" />
         </li>
+        <!-- TODO: Proper a11y for which item is selected -->
         <li role="none">
-          <button id="menu-view-one-page" style="display:none" disabled="true" class="menuItem" role="menuitem" tabindex="-1">
-            Switch to 1-page view<span class="menuItemKey">1</span>
+          <button id="menu-view-one-page" class="menuItem" role="menuitem" tabindex="-1">
+            <span class="menuCheckmark"></span>1-page viewer<span class="menuItemKey">1</span>
           </button>
         </li>
         <li role="none">
-          <button id="menu-view-two-page" style="display:none" disabled="true" class="menuItem" role="menuitem" tabindex="-1">
-            Switch to 2-page view<span class="menuItemKey">2</span>
+          <button id="menu-view-two-page" class="menuItem" role="menuitem" tabindex="-1">
+            <span class="menuCheckmark"></span>2-page viewer<span class="menuItemKey">2</span>
+          </button>
+        </li>
+        <li role="none">
+          <hr class="menuSeparator" />
+        </li>
+        <li role="none">
+          <button id="menu-view-fit-best" class="menuItem" role="menuitem" tabindex="-1">
+            <span class="menuCheckmark"></span>Best Fit mode<span class="menuItemKey">B</span>
+          </button>
+        </li>
+        <li role="none">
+          <button id="menu-view-fit-height" class="menuItem" role="menuitem" tabindex="-1">
+            <span class="menuCheckmark"></span>Fit Height mode<span class="menuItemKey">H</span>
+          </button>
+        </li>
+        <li role="none">
+          <button id="menu-view-fit-width" class="menuItem" role="menuitem" tabindex="-1">
+            <span class="menuCheckmark"></span>Fit Width mode<span class="menuItemKey">W</span>
           </button>
         </li>
       </ul>
