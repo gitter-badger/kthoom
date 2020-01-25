@@ -31,7 +31,13 @@ const px = v => v + 'px';
 export class BookViewer {
   constructor() {
     this.currentBook_ = null;
+
+    /**
+     * The current page number (zero-based).
+     * @type {number}
+     */
     this.currentPageNum_ = -1;
+
     this.rotateTimes_ = 0;
     /** @type {!FitMode} */
     this.fitMode_ = FitMode.Best;
@@ -506,7 +512,7 @@ export class BookViewer {
   showNextPage() {
     // If there is no current book, or the viewer is showing the last pages of the book, just return.
     if (!this.currentBook_ ||
-        (this.currentPageNum_ === this.currentBook_.getNumberOfPages() - this.numPagesInViewer_)) {
+        (this.currentPageNum_ >= this.currentBook_.getNumberOfPages() - this.numPagesInViewer_)) {
       return false;
     }
 
