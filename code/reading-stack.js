@@ -144,6 +144,10 @@ export class ReadingStack {
       }
       // Re-render to update selected highlight.
       this.renderStack_();
+
+      if (this.isOpen()) {
+        this.toggleReadingStackOpen();
+      }
     }
   }
 
