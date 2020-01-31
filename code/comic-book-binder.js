@@ -32,7 +32,7 @@ export class ComicBookBinder extends BookBinder {
       // TODO: Error if not present?
       if (evt.unarchivedFile) {
         const filename = evt.unarchivedFile.filename;
-        const mimeType = guessMimeType(filename);
+        const mimeType = guessMimeType(filename) || '';
         if (mimeType.startsWith('image/')) {
           // TODO: Error if we have more pages than totalPages_.
           this.pagePromises_.push(createPageFromFileAsync(evt.unarchivedFile));

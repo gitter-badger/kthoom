@@ -109,8 +109,8 @@ export function guessMimeType(filename) {
     case 'txt': return 'text/plain';
   }
 
-  // Skip over PAR files (.PAR, .P01, etc).
-  if (fileExtension === 'par' || /^p\d\d$/.test(fileExtension)) {
+  // Skip over PAR files (.PAR, .PAR2, .P01, etc).
+  if (fileExtension === 'par' || fileExtension === 'par2' || /^p\d\d$/.test(fileExtension)) {
     return 'application/octet-stream';
   }
 
