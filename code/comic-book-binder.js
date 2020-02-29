@@ -11,6 +11,8 @@ import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } f
 import { createPageFromFileAsync, guessMimeType } from './page.js';
 import { Params } from './helpers.js';
 
+const STREAM_OPTIMIZED_NS = 'http://www.codedread.com/sop';
+
 /**
  * The default BookBinder used in kthoom.  It takes each extracted file from the Unarchiver and
  * turns that directly into a Page for the comic book.
@@ -23,6 +25,9 @@ export class ComicBookBinder extends BookBinder {
     // to construct a Page object.  After all pages are retrieved, we sort them.
     /** @private {Promise<Page>} */
     this.pagePromises_ = [];
+
+    /** @private {boolean} */
+    this.optimizedForStreaming_ = false;
   }
 
   /** @override */
@@ -34,17 +39,34 @@ export class ComicBookBinder extends BookBinder {
         const filename = evt.unarchivedFile.filename;
         const mimeType = guessMimeType(filename) || '';
         if (mimeType.startsWith('image/')) {
+          const pagePromise = createPageFromFileAsync(evt.unarchivedFile);
           // TODO: Error if we have more pages than totalPages_.
-          this.pagePromises_.push(createPageFromFileAsync(evt.unarchivedFile));
-        } else if (filename.toLowerCase() === 'comicinfo.xml' && Params.metadata) {
-          alert('Found a book with comicinfo.xml');
+          this.pagePromises_.push(pagePromise);
+
+          pagePromise.then(page => {
+            if (this.optimizedForStreaming_) {
+              this.notify(new BookPageExtractedEvent(this, page, this.pagePromises_.length));
+            }
+          });
+        } else if (filename.toLowerCase() === 'comicinfo.xml' && this.pagePromises_.length === 0) {
+          // If the book's metadata says the comic book is optimizedForStreaming, then we will emit
+          // page extracted events as they are extracted instead of upon all files being extracted
+          // to display the first page as fast as possible.
+          const metadataXml = new TextDecoder().decode(evt.unarchivedFile.fileData);
+          if (metadataXml) {
+            const dom = new DOMParser().parseFromString(metadataXml, 'text/xml');
+            const infoEls = dom.getElementsByTagNameNS(STREAM_OPTIMIZED_NS, 'ArchiveFileInfo');
+            if (infoEls && infoEls.length > 0) {
+              const infoEl = infoEls.item(0);
+              if (infoEl.getAttribute('optimizedForStreaming') === 'true') {
+                this.optimizedForStreaming_ = true;
+              }
+            }
+          }
         }
 
         // Emit a Progress event for each unarchived file.
         this.notify(new BookProgressEvent(this, this.pagePromises_.length));
-
-        // Do not send extracted events yet, because the pages may not be in the correct order.
-        //this.notify_(new UnarchivePageExtractedEvent(this, newPage, this.pages_.length));
       }
     });
     this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, evt => {
@@ -78,9 +100,11 @@ export class ComicBookBinder extends BookBinder {
           return a.pageName.toLowerCase() > b.pageName.toLowerCase() ? 1 : -1;
         });
 
-        // Emit an extract event for each page in its proper order.
-        for (let i = 0; i < pages.length; ++i) {
-          this.notify(new BookPageExtractedEvent(this, pages[i], i + 1));
+        if (!this.optimizedForStreaming_) {
+          // Emit an extract event for each page in its proper order.
+          for (let i = 0; i < pages.length; ++i) {
+            this.notify(new BookPageExtractedEvent(this, pages[i], i + 1));
+          }
         }
 
         // Emit a complete event.
