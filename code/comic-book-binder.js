@@ -32,6 +32,7 @@ export class ComicBookBinder extends BookBinder {
 
   /** @override */
   beforeStart_() {
+    let prevExtractPromise = Promise.resolve(true);
     this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT, evt => {
       // Convert each unarchived file into a Page.
       // TODO: Error if not present?
@@ -43,11 +44,14 @@ export class ComicBookBinder extends BookBinder {
           // TODO: Error if we have more pages than totalPages_.
           this.pagePromises_.push(pagePromise);
 
-          pagePromise.then(page => {
-            if (this.optimizedForStreaming_) {
-              this.notify(new BookPageExtractedEvent(this, page, this.pagePromises_.length));
-            }
-          });
+          if (this.optimizedForStreaming_) {
+            const numPages = this.pagePromises_.length;
+            prevExtractPromise = prevExtractPromise.then(() => {
+              return pagePromise.then(page => {
+                this.notify(new BookPageExtractedEvent(this, page, numPages));
+              });
+            });
+          }
         } else if (filename.toLowerCase() === 'comicinfo.xml' && this.pagePromises_.length === 0) {
           // If the book's metadata says the comic book is optimizedForStreaming, then we will emit
           // page extracted events as they are extracted instead of upon all files being extracted
