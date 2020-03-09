@@ -91,6 +91,10 @@ dl.helplist dd {
   overflow: hidden;
 }
 
+#helpOverlay a {
+  color: inherit;
+}
+
 #nav {
   position: absolute;
   right: 0;

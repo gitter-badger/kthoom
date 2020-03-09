@@ -2,7 +2,7 @@
 
 kthoom is a comic book / ebook reader that runs in the browser using client-side open web technologies such as JavaScript, HTML5, the File API, Web Workers, and Typed Arrays.  It can open files from your local hard drive, the network, or Google Drive.
 
-[OPEN KTHOOM COMIC BOOK READER](https://codedread.github.io/kthoom/index.html).
+[OPEN KTHOOM COMIC BOOK READER](https://codedread.com/kthoom/index.html).
 
 You can also specify a comic book to load via the ?bookUri parameter.  Some examples:
 
@@ -21,7 +21,7 @@ Or a [comic book reading list](https://github.com/codedread/kthoom/tree/master/r
   * .epub (primitive support, a work-in-progress, see [issue #16](https://github.com/codedread/kthoom/issues/16))
 
 ### Keyboard Shortcuts
-  * O / U / G: Open files from computer, network or Google Drive.
+  * O / U: Open files from computer, network.
   * Right/Left: Next/Previous page of book.
   * Shift + Right/Left: Last/First page of book.
   * [ / ]: Prev / Next book

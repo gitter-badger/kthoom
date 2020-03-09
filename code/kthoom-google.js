@@ -5,9 +5,9 @@
  *
  * Copyright(c) 2018 Google Inc.
  */
+
 /**
  * Code for handling file access through Google Drive.
- *
  * Ideally, we don't want any Google code to load unless the user clicks
  * the Open menu item.
  */
@@ -78,6 +78,8 @@ function defineGoogleHooks() {
                 const hasScopes = currentUser.hasGrantedScopes(SCOPE);
                 if (hasScopes) {
                   const result = gapi.client.getToken();
+                  // TODO: It is possible to revoke kthoom's access, but this still returns
+                  //     an access token.
                   if (result && !result.error && result.access_token) {
                     kthoom.google.isAuthorized = true;
                     kthoom.google.oathToken = result.access_token;
@@ -271,6 +273,6 @@ function defineGoogleHooks() {
     openMenu.showMenuItem('menu-open-google-drive', true);
   } catch (err) {
     // Die.
-    console.warn(`Google integration was not found: ${err}`);
+    console.warn(`No Google Drive Integration: ${err}`);
   }
 })();
