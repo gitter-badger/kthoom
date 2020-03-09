@@ -21,6 +21,14 @@ const LOCAL_STORAGE_KEY = 'kthoom_settings';
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
 const READING_STACK_ELEM_ID = 'readingStack';
 
+const MENU = {
+  MAIN: 'mainMenu',
+  OPEN: 'openMenu',
+  VIEW: 'viewMenu',
+};
+
+const GOOGLE_MENU_ITEM_ID = 'menu-open-google-drive';
+
 /**
  * The main class for the kthoom reader.
  */
@@ -51,6 +59,21 @@ class KthoomApp {
     }).then(() => {
       this.init_();
     });
+  }
+
+  /**
+   * @param {string} id is one of 'main', 'open', 'view'
+   * @returns {Menu}
+  */
+  getMenu(id) {
+    switch (id) {
+      case 'main':
+        return this.mainMenu_;
+      case 'open':
+        return this.openMenu_;
+      case 'main':
+        return this.viewMenu_;
+    }
   }
 
   /** @private */
@@ -92,7 +115,7 @@ class KthoomApp {
       switch (evt.item.id) {
         case 'menu-open-local-files': fileInput.click(); closeMainMenu(); break;
         case 'menu-open-url': this.loadFileViaUrl_(); closeMainMenu(); break;
-        case 'menu-open-google-drive': kthoom.google.doDrive(); closeMainMenu(); break;
+        case GOOGLE_MENU_ITEM_ID: kthoom.google.doDrive(); closeMainMenu(); break;
         case 'menu-open-ipfs-hash': kthoom.ipfs.ipfsHashWindow(); closeMainMenu(); break;
       }
     }, MenuEventType.ITEM_SELECTED);
@@ -374,7 +397,12 @@ class KthoomApp {
       case Key.O: getElem('menu-open-local-files-input').click(); break;
       case Key.U: this.loadFileViaUrl_(); break;
       case Key.F: this.toggleFullscreen_(); break;
-      case Key.G: kthoom.google.doDrive(); break;
+      case Key.G:
+        const menuItem = getElem(GOOGLE_MENU_ITEM_ID);
+        if (menuItem && menuItem.getAttribute('disabled') !== 'true') {
+          kthoom.google.doDrive();
+        }
+        break;
       case Key.I: kthoom.ipfs.ipfsHashWindow(); break;
       case Key.QUESTION_MARK: this.toggleHelpOpen_(); break;
       case Key.M:

@@ -163,6 +163,9 @@ export class Book extends EventEmitter {
         });
       };
       return readAndProcessNextChunk();
+    }).catch(e => {
+      console.error(`Error from fetch: ${e}`);
+      throw e;
     });
   }
 
