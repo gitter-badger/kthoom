@@ -21,6 +21,7 @@
          all browsers support ES6 modules natively. -->
     <script nomodule src="code/traceur/traceur.js"></script>
     <script nomodule>
+      console.log('No ES module support detected:  Using traceur.');
       var options = new traceur.util.Options();
       options.asyncFunctions = true;
       var pathname = document.location.pathname;
@@ -39,9 +40,6 @@
     <script type="application/javascript" src="code/kthoom-google.js"></script>
     <script type="application/javascript" src="code/kthoom-ipfs.js"></script>
     <script type="application/javascript" src="code/bitjs/archive/archive.js"></script>
-    <script id="google"
-        src="//apis.google.com/js/client.js?onload=kthoom.google.boot"
-        onerror="window.onload=kthoom.google.boot" async></script>
   </head>
   <body>
     <div id="background" style="background-image: url('images/logo.svg')"></div>
@@ -249,7 +247,7 @@
           </button>
         </li>
         <li role="none">
-          <button id="menu-open-google-drive" class="menuItem" role="menuitem" tabindex="-1">
+          <button id="menu-open-google-drive" style="display:none" disabled="true" class="menuItem" role="menuitem" tabindex="-1">
             Open from Google Drive<span class="menuItemKey">G</span>
           </button>
         </li>
