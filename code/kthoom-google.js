@@ -99,7 +99,9 @@ function defineGoogleHooks() {
           // Try to download using fetch, otherwise use XHR.
           try {
             const myHeaders = new Headers();
+            debugger;
             myHeaders.append('Authorization', 'OAuth ' + kthoom.google.oathToken);
+            myHeaders.append('Origin', window.location.origin);
             const myInit = {
               method: 'GET',
               headers: myHeaders,
@@ -107,7 +109,7 @@ function defineGoogleHooks() {
               cache: 'default',
             };
 
-            kthoom.getApp().loadSingleBookFromFetch(bookName, bookUrl, myInit, fullSize);
+            kthoom.getApp().loadSingleBookFromFetch(bookName, bookUrl, fullSize, myInit);
           } catch (e) {
             if (typeof e === 'string' && e.startsWith('No browser support')) {
               kthoom.getApp().loadSingleBookFromXHR(bookName, bookUrl, fullSize, {

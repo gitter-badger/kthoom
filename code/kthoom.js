@@ -729,17 +729,17 @@ class KthoomApp {
   /**
    * @param {string} name The book name.
    * @param {string} uri The resource to fetch.
-   * @param {Object} init An object to initialize the Fetch API.
    * @param {number} expectedSize Unarchived size in bytes.
+   * @param {Object} init An object to initialize the Fetch API.
    * @return {Promise<Book>}
    */
-  loadSingleBookFromFetch(name, uri, init, expectedSize) {
+  loadSingleBookFromFetch(name, uri, expectedSize, init) {
     if (!window['fetch'] || !window['Response'] || !window['ReadableStream']) {
       throw 'No browser support for fetch/ReadableStream';
     }
 
     const book = new Book(name, uri);
-    const bookPromise = book.loadFromFetch(init, expectedSize);
+    const bookPromise = book.loadFromFetch(expectedSize, init);
     this.readingStack_.addBook(book);
     return bookPromise;
   }

@@ -129,11 +129,11 @@ export class Book extends EventEmitter {
 
   /**
    * Starts a fetch and progressively loads in the book.
-   * @param {Object<string, string>} init A map of request header keys and values.
    * @param {Number} expectedSize The total number of bytes expected.
+   * @param {Object<string, string>} init A map of request header keys and values.
    * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
-  loadFromFetch(init, expectedSize) {
+  loadFromFetch(expectedSize, init) {
     if (!this.needsLoading_) {
       throw 'Cannot try to load via XHR when the Book is already loading or loaded';
     }
