@@ -60,9 +60,9 @@ function defineGoogleHooks() {
                 'apiKey': kthoom.google.apiKey,
                 'clientId': kthoom.google.clientId,
                 'scope': SCOPE,
-                'discoveryDocs': [
-                  'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
-                ],
+                // 'discoveryDocs': [
+                //   'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+                // ],
               }).then(() => {
                 kthoom.google.isBooted = true;
 
@@ -135,7 +135,7 @@ function defineGoogleHooks() {
 
       return new Promise((resolve, reject) => {
         // Load the Drive and Picker APIs.
-        gapi.client.load('drive', 'v3', () => {
+        gapi.client.load('drive', 'v2', () => {
           gapi.load('picker', {
             callback: () => {
               kthoom.google.isReadyToCallAPIs = true;
@@ -155,7 +155,6 @@ function defineGoogleHooks() {
 
     doDrive: async function() {
       // TODO: Show "Please wait" or a spinner while things get ready.
-
       if (!kthoom.google.isBooted) {
         await kthoom.google.boot();
       }
@@ -196,11 +195,13 @@ function defineGoogleHooks() {
         });
         gRequest.execute(function(response) {
           const bookName = data.docs[0].name;
-          const bookUrl = response.webContentLink;
+          const fileId = data.docs[0].id;
+          // NOTE:  The CORS headers are not set properly on the webContentLink (URLs from
+          //     drive.google.com).  See https://issuetracker.google.com/issues/149891169.
+          const bookUrl = `https://www.googleapis.com/drive/v2/files/${fileId}?alt=media`;
           // Try to download using fetch, otherwise use XHR.
           try {
             const myHeaders = new Headers();
-            debugger;
             myHeaders.append('Authorization', 'OAuth ' + kthoom.google.oathToken);
             myHeaders.append('Origin', window.location.origin);
             const myInit = {
@@ -210,6 +211,8 @@ function defineGoogleHooks() {
               cache: 'default',
             };
 
+            // TODO: This seems to pause a long time between making the first fetch and actually
+            //     starting to download.  Show something in the UI?  A spinner?
             kthoom.getApp().loadSingleBookFromFetch(bookName, bookUrl, fullSize, myInit);
           } catch (e) {
             if (typeof e === 'string' && e.startsWith('No browser support')) {
