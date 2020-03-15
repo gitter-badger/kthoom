@@ -16,12 +16,10 @@ const DEFAULT_ASPECT_RATIO = 6.625 / 10.25;
  */
 function createURLFromArray(ab, mimeType) {
   if (mimeType === 'image/xml+svg') {
-    const xmlStr = new TextDecoder('utf-8').decode(ab);
-    return 'data:image/svg+xml;utf8,' + encodeURIComponent(xmlStr);
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(new TextDecoder('utf-8').decode(ab));
   }
   const offset = ab.byteOffset;
-  const len = ab.byteLength;
-  let blob = new Blob([ab], {type: mimeType}).slice(offset, offset + len, mimeType);
+  let blob = new Blob([ab], {type: mimeType}).slice(offset, offset + ab.byteLength, mimeType);
   return URL.createObjectURL(blob);
 };
 
@@ -99,6 +97,9 @@ export class WebPShimImagePage extends Page {
 
     /** @private {string} */
     this.dataURI_ = null;
+
+    /** @private {Promise} */
+    this.inflatingPromise_ = null;
   }
 
   getAspectRatio() { return this.aspectRatio_; }
@@ -107,17 +108,17 @@ export class WebPShimImagePage extends Page {
   inflate() {
     if (this.dataURI_) {
       return Promise.resolve();
+    } else if (this.inflatingPromise_) {
+      return this.inflatingPromise_;
     }
-    return convertWebPtoPNG(this.webpBuffer_).then(pngBuffer => {
-      const dataURI = createURLFromArray(pngBuffer, 'image/png');
-      const img = new Image();
-      img.onload = () => {
-        this.aspectRatio_ = img.naturalWidth / img.naturalHeight;
-        this.dataURI_ = dataURI;
-      };
-      img.src = dataURI;
+    return this.inflatingPromise_ = convertWebPtoPNG(this.webpBuffer_).then(pngBuffer => {
+      // Release references so they can be garbage-collected.
+      this.webpBuffer_ = null;
+      return createURLFromArray(pngBuffer, 'image/png');
     });
   }
+
+  isInflated() { return !!this.dataURI_; }
 
   /**
    * Renders this page into the page viewer.
@@ -125,16 +126,19 @@ export class WebPShimImagePage extends Page {
    * @param {SVGForeignObjectElement} objEl
    */
   renderIntoViewer(imageEl, objEl) {
-    if (this.dataURI_) {
-      imageEl.style.display = '';
-      objEl.style.display = 'none';
-      imageEl.setAttribute('href', this.dataURI_);
-    } else {
-      this.inflate().then(() => {
-        this.dataURI_
-        this.renderIntoViewer(imageEl, objEl)
+    if (!this.isInflated()) {
+      this.inflate().then(dataURI => {
+        this.dataURI_ = dataURI;
+        this.inflatingPromise_ = null;
+        this.renderIntoViewer(imageEl, objEl);
       });
+      return;
     }
+
+    imageEl.style.display = '';
+    objEl.style.display = 'none';
+    imageEl.setAttribute('href', this.dataURI_);
+    // TODO: Set aspect ratio properly from here?
   }
 }
 
