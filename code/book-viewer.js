@@ -324,7 +324,7 @@ export class BookViewer {
         pageElem.setAttribute("height", ph);
       }
 
-      this.setPageContents_(page1, this.currentPageNum_);
+      this.showPageInViewer_(this.currentPageNum_, page1);
     } else {
       // 2-page view.
       page1.style.display = '';
@@ -427,10 +427,9 @@ export class BookViewer {
         pageElem.setAttribute("height", ph);
       }
 
-      this.setPageContents_(page1, this.currentPageNum_);
-      this.setPageContents_(page2,
-          (this.currentPageNum_ < this.currentBook_.getNumberOfPages() - 1) ?
-              this.currentPageNum_ + 1 : 0);
+      this.showPageInViewer_(this.currentPageNum_, page1);
+      this.showPageInViewer_((this.currentPageNum_ < this.currentBook_.getNumberOfPages() - 1) ?
+          this.currentPageNum_ + 1 : 0, page2);
     }
 
     // Rotate the book viewer viewport.
@@ -633,11 +632,12 @@ export class BookViewer {
   }
 
   /**
-   * @param {Element} pageEl The <g> for the page.
+   * Renders contents of page number pageNum in the page viewer element.
    * @param {Number} pageNum The page number to render into the div.
+   * @param {Element} pageViewerEl The <g> for the page viewer.
    * @private
    */
-  setPageContents_(pageEl, pageNum) {
+  showPageInViewer_(pageNum, pageViewerEl) {
     assert(this.currentBook_, 'Current book not defined in setPageContents_()');
     assert(this.currentBook_.getNumberOfPages() > pageNum,
         'Book does not have enough pages in setPageContents_()');
@@ -648,29 +648,8 @@ export class BookViewer {
       return;
     }
 
-    const imageEl = pageEl.querySelector('image');
-    const objEl = pageEl.querySelector('foreignObject');
-    if (thePage instanceof ImagePage) {
-      imageEl.style.display = '';
-      objEl.style.display = 'none';
-      imageEl.setAttribute('href', thePage.dataURI);
-    } else if (thePage instanceof XhtmlPage) {
-      imageEl.style.display = 'none';
-      while (objEl.firstChild) {
-        objEl.firstChild.remove();
-      }
-      objEl.appendChild(thePage.iframeEl);
-      thePage.inflate();
-      objEl.style.display = '';
-    } else if (thePage instanceof TextPage) {
-      imageEl.style.display = 'none';
-      while (objEl.firstChild) {
-        objEl.firstChild.remove();
-      }
-      const textDiv = document.createElement('div');
-      textDiv.innerHTML = `<pre>${thePage.rawText}</pre>`;
-      objEl.appendChild(textDiv);
-      objEl.style.display = '';
-    }
+    const imageEl = pageViewerEl.querySelector('image');
+    const objEl = pageViewerEl.querySelector('foreignObject');
+    thePage.renderIntoViewer(imageEl, objEl);
   }
 }
