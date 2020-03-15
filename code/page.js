@@ -6,7 +6,7 @@
  * Copyright(c) 2018 Google Inc.
  */
 
-import {convertWebPtoPNG} from './bitjs/image/webp-shim/webp-shim.js';
+import {convertWebPtoJPG} from './bitjs/image/webp-shim/webp-shim.js';
 
 const DEFAULT_ASPECT_RATIO = 6.625 / 10.25;
 
@@ -111,10 +111,10 @@ export class WebPShimImagePage extends Page {
     } else if (this.inflatingPromise_) {
       return this.inflatingPromise_;
     }
-    return this.inflatingPromise_ = convertWebPtoPNG(this.webpBuffer_).then(pngBuffer => {
+    return this.inflatingPromise_ = convertWebPtoJPG(this.webpBuffer_).then(jpgBuffer => {
       // Release references so they can be garbage-collected.
       this.webpBuffer_ = null;
-      return createURLFromArray(pngBuffer, 'image/png');
+      return createURLFromArray(jpgBuffer, 'image/jpeg');
     });
   }
 
