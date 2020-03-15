@@ -6,75 +6,9 @@
  * Copyright(c) 2018 Google Inc.
  */
 
- /**
-  * Base class for Pages.  Every Page has an aspect ratio method.
-  */
-export class Page {
-  constructor(pageName) {
-    /** @type {string} */
-    this.pageName = pageName;
-  }
+import {convertWebPtoPNG} from './bitjs/image/webp-shim/webp-shim.js';
 
-  /** @return {Number} The width-height aspect ratio. */
-  getAspectRatio() { return 6.625 / 10.25; }
-}
-
-/**
- * A page that holds a single image element.
- */
-export class ImagePage extends Page {
-  /**
-   * @param {string} name
-   * @param {Image} img The Image object created.
-   * @param {string} dataURI
-   */
-  constructor(name, img, dataURI) {
-    super(name);
-    this.img = img;
-    this.dataURI = dataURI;
-  }
-
-  getAspectRatio() { return this.img.naturalWidth / this.img.naturalHeight; }
-}
-
-/**
- * A page that holds raw text.
- */
-export class TextPage extends Page {
-  /**
-   * @param {string} name
-   * @param {string} text The raw text in the page.
-   */
-  constructor(name, text) {
-    super(name);
-    this.rawText = text;
-  }
-}
-
-/**
- * A page that holds an iframe with sanitized XHTML.  Every time this page is added into a
- * Book Viewer page <g> element, its inflate() method is called.
- */
-export class XhtmlPage extends Page {
-  /**
-   * @param {string} name
-   * @param {HTMLIframeElement} iframeEl
-   * @param {Function(HTMLIframeElement)} inflaterFn Function to be called after the iframe is
-   *     appended to the foreignObject element.
-   */
-  constructor(name, iframeEl, inflaterFn) {
-    super(name);
-    /** @type {HTMLIframeElement} */
-    this.iframeEl = iframeEl;
-    /** @type {Function} */
-    this.inflaterFn = inflaterFn;
-  }
-
-  /** @param {HTMLIframeElement} */
-  inflate() {
-    this.inflaterFn(this.iframeEl);
-  }
-}
+const DEFAULT_ASPECT_RATIO = 6.625 / 10.25;
 
 /**
  * @param {ArrayBuffer} ab
@@ -91,7 +25,190 @@ function createURLFromArray(ab, mimeType) {
   return URL.createObjectURL(blob);
 };
 
+ /**
+  * Base class for Pages.  Every Page has an aspect ratio method.
+  */
+export class Page {
+  constructor(pageName) {
+    /** @type {string} */
+    this.pageName = pageName;
+  }
+
+  /** @return {Number} The width-height aspect ratio. */
+  getAspectRatio() { return DEFAULT_ASPECT_RATIO; }
+
+  /**
+   * Renders this page into the page viewer.
+   * @param {SVGImageElement} imageEl
+   * @param {SVGForeignObjectElement} objEl
+   */
+  renderIntoViewer(imageEl, objEl) {
+    throw 'Cannot render an abstract Page object, use a subclass.';
+  }
+}
+
 /**
+ * A page that holds a single image.
+ */
+export class ImagePage extends Page {
+  /**
+   * @param {string} name
+   * @param {number} Aspect ratio.
+   * @param {string} dataURI
+   */
+  constructor(name, aspectRatio, dataURI) {
+    super(name);
+
+    /** @private {number} */
+    this.aspectRatio_ = aspectRatio;
+
+    /** @private {string} */
+    this.dataURI_ = dataURI;
+  }
+
+  getAspectRatio() { return this.aspectRatio_; }
+
+  /**
+   * Renders this page into the page viewer.
+   * @param {SVGImageElement} imgEl
+   * @param {SVGForeignObjectElement} objEl
+   */
+  renderIntoViewer(imageEl, objEl) {
+    imageEl.style.display = '';
+    objEl.style.display = 'none';
+    imageEl.setAttribute('href', this.dataURI_);
+  }
+}
+
+/**
+ * A page that needs to use the webp-shim to convert, done on first render.
+ */
+export class WebPShimImagePage extends Page {
+  /**
+   * @param {string} name
+   * @param {ArrayBuffer} webpBuffer
+   */
+  constructor(name, webpBuffer) {
+    super(name);
+
+    /** @private {number} */
+    this.aspectRatio_ = DEFAULT_ASPECT_RATIO;
+
+    /** @private {ArrayBuffer} */
+    this.webpBuffer_ = webpBuffer;
+
+    /** @private {string} */
+    this.dataURI_ = null;
+  }
+
+  getAspectRatio() { return this.aspectRatio_; }
+
+  /** @returns {Promise} A Promise that resolves when conversion is complete. */
+  inflate() {
+    if (this.dataURI_) {
+      return Promise.resolve();
+    }
+    return convertWebPtoPNG(this.webpBuffer_).then(pngBuffer => {
+      const dataURI = createURLFromArray(pngBuffer, 'image/png');
+      const img = new Image();
+      img.onload = () => {
+        this.aspectRatio_ = img.naturalWidth / img.naturalHeight;
+        this.dataURI_ = dataURI;
+      };
+      img.src = dataURI;
+    });
+  }
+
+  /**
+   * Renders this page into the page viewer.
+   * @param {SVGImageElement} imgEl
+   * @param {SVGForeignObjectElement} objEl
+   */
+  renderIntoViewer(imageEl, objEl) {
+    if (this.dataURI_) {
+      imageEl.style.display = '';
+      objEl.style.display = 'none';
+      imageEl.setAttribute('href', this.dataURI_);
+    } else {
+      this.inflate().then(() => {
+        this.dataURI_
+        this.renderIntoViewer(imageEl, objEl)
+      });
+    }
+  }
+}
+
+/**
+ * A page that holds raw text.
+ */
+export class TextPage extends Page {
+  /**
+   * @param {string} name
+   * @param {string} text The raw text in the page.
+   */
+  constructor(name, text) {
+    super(name);
+
+    /** @private {string} */
+    this.rawText_ = text;
+  }
+
+  /**
+   * Renders this page into the page viewer.
+   * @param {SVGImageElement} imageEl
+   * @param {SVGForeignObjectElement} objEl
+   */
+  renderIntoViewer(imageEl, objEl) {
+    imageEl.style.display = 'none';
+    while (objEl.firstChild) {
+      objEl.firstChild.remove();
+    }
+    const textDiv = document.createElement('div');
+    textDiv.innerHTML = `<pre>${this.rawText_}</pre>`;
+    objEl.appendChild(textDiv);
+    objEl.style.display = '';
+  }
+}
+
+/**
+ * A page that holds an iframe with sanitized XHTML.  Every time this page is added into a
+ * Book Viewer page <g> element, it inflates itself.
+ */
+export class XhtmlPage extends Page {
+  /**
+   * @param {string} name
+   * @param {HTMLIframeElement} iframeEl
+   * @param {Function(HTMLIframeElement)} inflaterFn Function to be called after the iframe is
+   *     appended to the foreignObject element.
+   */
+  constructor(name, iframeEl, inflaterFn) {
+    super(name);
+
+    /** @private {HTMLIframeElement} */
+    this.iframeEl_ = iframeEl;
+
+    /** @private {Function} */
+    this.inflaterFn_ = inflaterFn;
+  }
+
+  /**
+   * Renders this page into the page viewer.
+   * @param {SVGImageElement} imageEl
+   * @param {SVGForeignObjectElement} objEl
+   */
+  renderIntoViewer(imageEl, objEl) {
+    imageEl.style.display = 'none';
+    while (objEl.firstChild) {
+      objEl.firstChild.remove();
+    }
+    objEl.appendChild(this.iframeEl_);
+    this.inflaterFn_(this.iframeEl_);
+    objEl.style.display = '';
+  }
+}
+
+/**
+ * TODO: Add something to bitjs.image to sniff the bytes of an image file and get its MIME type?
  * @param {string} filename
  * @return {string|undefined} The MIME type or undefined if we could not guess it.
  */
@@ -117,6 +234,11 @@ export function guessMimeType(filename) {
   return undefined;
 };
 
+function isSafari() {
+  var ua = navigator.userAgent.toLowerCase();
+  return ua.indexOf('safari') !== -1 && ua.indexOf('chrome') === -1;
+}
+
 /**
  * Factory method that creates a Page from a File.
  * @param {UnarchivedFile} file
@@ -131,15 +253,22 @@ export const createPageFromFileAsync = function(file) {
       return;
     }
 
-    const dataURI = createURLFromArray(file.fileData, mimeType);
+    const ab = file.fileData;
+    if (mimeType === 'image/webp' && isSafari()) {
+      resolve(new WebPShimImagePage(filename, ab));
+      return;
+    }
+
+    const dataURI = createURLFromArray(ab, mimeType);
 
     if (mimeType.indexOf('image/') === 0) {
       const img = new Image();
-      img.onload = () => { resolve(new ImagePage(filename, img, dataURI)); };
+      img.onload = () => {
+        resolve(new ImagePage(filename, img.naturalWidth / img.naturalHeight, dataURI));
+      };
       img.onerror = (e) => { resolve(new TextPage(filename, `Could not open file ${filename}`)); };
       img.src = dataURI;
     } else if (mimeType.startsWith('text/')) {
-      // TextPage.
       const xhr = new XMLHttpRequest();
       xhr.open('GET', dataURI, true);
       xhr.onload = () => {
