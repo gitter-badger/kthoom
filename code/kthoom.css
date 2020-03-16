@@ -225,6 +225,10 @@ ul.menuItems {
   width: 12em;
 }
 
+ul.menuItems#viewerContextMenuItems {
+  width: 8em;
+}
+
 ul.menuItems li {
   margin-left: -40px;
 }

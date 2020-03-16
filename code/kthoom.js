@@ -11,7 +11,9 @@ import { Book } from './book.js';
 import { BookViewer, FitMode } from './book-viewer.js';
 import { Menu, MenuEventType } from './menu.js';
 import { ReadingStack } from './reading-stack.js';
-import { Key, Params, getElem } from './helpers.js';
+import { Key, Params, getElem, assert } from './helpers.js';
+import { ImagePage, WebPShimImagePage } from './page.js';
+import { convertWebPtoJPG, convertWebPtoPNG } from './bitjs/image/webp-shim/webp-shim.js';
 
 if (window.kthoom == undefined) {
   window.kthoom = {};
@@ -21,10 +23,15 @@ const LOCAL_STORAGE_KEY = 'kthoom_settings';
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
 const READING_STACK_ELEM_ID = 'readingStack';
 
+const PNG = 'image/png';
+const JPG = 'image/jpeg';
+const WEBP = 'image/webp';
+
 const MENU = {
   MAIN: 'mainMenu',
   OPEN: 'openMenu',
   VIEW: 'viewMenu',
+  VIEWER_CONTEXT: 'viewerContextMenu',
 };
 
 const GOOGLE_MENU_ITEM_ID = 'menu-open-google-drive';
@@ -47,6 +54,9 @@ class KthoomApp {
 
     /** @private {Menu} */
     this.viewMenu_ = null;
+
+    /** @private {Menu} */
+    this.viewerContextMenu_ = null;
 
     // This Promise resolves when kthoom is ready.
     this.initializedPromise_ = new Promise((resolve, reject) => {
@@ -102,6 +112,7 @@ class KthoomApp {
     this.mainMenu_ = new Menu(getElem('mainMenu'));
     this.openMenu_ = new Menu(getElem('openMenu'));
     this.viewMenu_ = new Menu(getElem('viewMenu'));
+    this.viewerContextMenu_ = new Menu(getElem('viewerContextMenu'));
 
     this.mainMenu_.addSubMenu('menu-open', this.openMenu_);
     this.mainMenu_.addSubMenu('menu-view', this.viewMenu_);
@@ -178,6 +189,19 @@ class KthoomApp {
     getElem('readingStackOverlay').addEventListener('click', (e) => {
       this.toggleReadingStackOpen_();
     });
+
+    this.viewerContextMenu_.subscribe(this, evt => {
+      const pageNum = evt.item.dataset.pagenum;
+      switch (evt.item.id) {
+        case 'save-page-as-png': this.savePageAs_(pageNum, PNG); break;
+        case 'save-page-as-jpg': this.savePageAs_(pageNum, JPG); break;
+        case 'save-page-as-webp': this.savePageAs_(pageNum, WEBP); break;
+      }
+    }, MenuEventType.ITEM_SELECTED);
+
+    // TODO: Does this mean the book viewer images have to be focusable for keyboard accessibility?
+    getElem('page1Image').addEventListener('contextmenu', evt => this.onContextMenu_(evt));
+    getElem('page2Image').addEventListener('contextmenu', evt => this.onContextMenu_(evt));
   }
 
   /** @private */
@@ -517,6 +541,69 @@ class KthoomApp {
         break;
       default:
         break;
+    }
+  }
+
+  /**
+   * TODO: How can this menu be accessible on mobile?
+   * @param {Event} evt
+   * @private
+   */
+  onContextMenu_(evt) {
+    if (!this.currentBook_) { return; }
+
+    evt.preventDefault();
+    const pageNum = parseInt(evt.target.parentElement.dataset.pagenum, 10);
+    const thisPage = this.currentBook_.getPage(pageNum);
+    const mimeType = thisPage.getMimeType();
+    const menu = this.viewerContextMenu_;
+    menu.showMenuItem('save-page-as-png', [PNG, WEBP].includes(mimeType));
+    menu.showMenuItem('save-page-as-jpg', [JPG, WEBP].includes(mimeType));
+    menu.showMenuItem('save-page-as-webp', [WEBP].includes(mimeType));
+    getElem('save-page-as-png').dataset.pagenum = pageNum;
+    getElem('save-page-as-jpg').dataset.pagenum = pageNum;
+    getElem('save-page-as-webp').dataset.pagenum = pageNum;
+    menu.open(evt.offsetX, evt.offsetY);
+  }
+
+  /**
+   * @param {number} pageNum
+   * @param {string} saveMimeType
+   */
+  savePageAs_(pageNum, saveMimeType) {
+    assert(!!this.currentBook_, `Current book not set in savePageAs_()`);
+    const page = this.currentBook_.getPage(pageNum);
+    assert(page instanceof ImagePage || page instanceof WebPShimImagePage, `Page not an image`);
+    const pageName = page.getPageName();
+
+    const saveFile = (defaultFilename, uri) => {
+      const filename = prompt('Filename?', defaultFilename);
+      if (!filename) { return; }
+      const aEl = document.createElement('a');
+      aEl.setAttribute('download', filename);
+      aEl.setAttribute('href', uri);
+      document.body.appendChild(aEl);
+      aEl.click();
+      document.body.removeChild(aEl);
+    };
+
+    const curMimeType = page.getMimeType();
+    if (curMimeType === saveMimeType) {
+      saveFile(pageName, page.getURI());
+    } else if (curMimeType === WEBP) {
+      if (saveMimeType === PNG) {
+        fetch(page.getURI())
+            .then(blob => blob.arrayBuffer())
+            .then(ab => convertWebPtoPNG(ab))
+            .then(pngBuffer => new Blob([pngBuffer], {type: PNG}))
+            .then(pngBlob => saveFile(pageName, URL.createObjectURL(pngBlob)));
+      } else if (saveMimeType === JPG) {
+        fetch(page.getURI())
+            .then(blob => blob.arrayBuffer())
+            .then(ab => convertWebPtoJPG(ab))
+            .then(jpgBuffer => new Blob([jpgBuffer], {type: JPG}))
+            .then(jpgBlob => saveFile(pageName, URL.createObjectURL(jpgBlob)));
+      }
     }
   }
 

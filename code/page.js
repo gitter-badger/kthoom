@@ -6,13 +6,14 @@
  * Copyright(c) 2018 Google Inc.
  */
 
-import {convertWebPtoJPG} from './bitjs/image/webp-shim/webp-shim.js';
+import { convertWebPtoJPG } from './bitjs/image/webp-shim/webp-shim.js';
 
 const DEFAULT_ASPECT_RATIO = 6.625 / 10.25;
 
 /**
  * @param {ArrayBuffer} ab
  * @param {string} mimeType
+ * @return {string} A URL representing the ArrayBuffer.
  */
 function createURLFromArray(ab, mimeType) {
   if (mimeType === 'image/xml+svg') {
@@ -24,16 +25,20 @@ function createURLFromArray(ab, mimeType) {
 };
 
  /**
-  * Base class for Pages.  Every Page has an aspect ratio method.
+  * Base class for Pages.
   */
 export class Page {
-  constructor(pageName) {
-    /** @type {string} */
-    this.pageName = pageName;
+  constructor(pageName, mimeType) {
+    /** @private {string} */
+    this.pageName_ = pageName;
+
+    /** @private {string} */
+    this.mimeType_ = mimeType;
   }
 
-  /** @return {Number} The width-height aspect ratio. */
   getAspectRatio() { return DEFAULT_ASPECT_RATIO; }
+  getMimeType() { return this.mimeType_; }
+  getPageName() { return this.pageName_; }
 
   /**
    * Renders this page into the page viewer.
@@ -51,11 +56,12 @@ export class Page {
 export class ImagePage extends Page {
   /**
    * @param {string} name
+   * @param {string} mimeType
    * @param {number} Aspect ratio.
    * @param {string} dataURI
    */
-  constructor(name, aspectRatio, dataURI) {
-    super(name);
+  constructor(name, mimeType, aspectRatio, dataURI) {
+    super(name, mimeType);
 
     /** @private {number} */
     this.aspectRatio_ = aspectRatio;
@@ -65,6 +71,7 @@ export class ImagePage extends Page {
   }
 
   getAspectRatio() { return this.aspectRatio_; }
+  getURI() { return this.dataURI_; }
 
   /**
    * Renders this page into the page viewer.
@@ -87,7 +94,7 @@ export class WebPShimImagePage extends Page {
    * @param {ArrayBuffer} webpBuffer
    */
   constructor(name, webpBuffer) {
-    super(name);
+    super(name, 'image/webp');
 
     /** @private {number} */
     this.aspectRatio_ = DEFAULT_ASPECT_RATIO;
@@ -114,6 +121,7 @@ export class WebPShimImagePage extends Page {
     return this.inflatingPromise_ = convertWebPtoJPG(this.webpBuffer_).then(jpgBuffer => {
       // Release references so they can be garbage-collected.
       this.webpBuffer_ = null;
+      this.mimeType_ = 'image/jpeg';
       return createURLFromArray(jpgBuffer, 'image/jpeg');
     });
   }
@@ -151,7 +159,7 @@ export class TextPage extends Page {
    * @param {string} text The raw text in the page.
    */
   constructor(name, text) {
-    super(name);
+    super(name, 'text/plain');
 
     /** @private {string} */
     this.rawText_ = text;
@@ -186,7 +194,7 @@ export class XhtmlPage extends Page {
    *     appended to the foreignObject element.
    */
   constructor(name, iframeEl, inflaterFn) {
-    super(name);
+    super(name, 'application/xhtml+xml');
 
     /** @private {HTMLIframeElement} */
     this.iframeEl_ = iframeEl;
@@ -268,7 +276,7 @@ export const createPageFromFileAsync = function(file) {
     if (mimeType.indexOf('image/') === 0) {
       const img = new Image();
       img.onload = () => {
-        resolve(new ImagePage(filename, img.naturalWidth / img.naturalHeight, dataURI));
+        resolve(new ImagePage(filename, mimeType, img.naturalWidth / img.naturalHeight, dataURI));
       };
       img.onerror = (e) => { resolve(new TextPage(filename, `Could not open file ${filename}`)); };
       img.src = dataURI;

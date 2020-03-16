@@ -9,7 +9,6 @@
 import { Book } from './book.js';
 import { BookEventType } from './book-events.js';
 import { assert, getElem } from './helpers.js';
-import { ImagePage, TextPage, XhtmlPage } from './page.js';
 
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
 const ID_PAGE_1 = 'page1';
@@ -648,6 +647,7 @@ export class BookViewer {
       return;
     }
 
+    pageViewerEl.dataset.pagenum = pageNum;
     const imageEl = pageViewerEl.querySelector('image');
     const objEl = pageViewerEl.querySelector('foreignObject');
     thePage.renderIntoViewer(imageEl, objEl);
