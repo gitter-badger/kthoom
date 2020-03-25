@@ -259,10 +259,14 @@ function isSafari() {
 export const createPageFromFileAsync = function(file) {
   return new Promise((resolve, reject) => {
     const filename = file.filename;
+    const sniffedMimeType = bitjs.file.findMimeType(file.fileData);
     const mimeType = guessMimeType(filename);
     if (!mimeType) {
       resolve(new TextPage(filename, `Could not determine type of file "${filename}"`));
       return;
+    }
+    if (sniffedMimeType !== mimeType) {
+      console.error(`mime type mismatch: ${sniffedMimeType} vs ${mimeType}`);
     }
 
     const ab = file.fileData;
