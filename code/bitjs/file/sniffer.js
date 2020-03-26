@@ -1,0 +1,1 @@
+../../../../bitjs/file/sniffer.js
