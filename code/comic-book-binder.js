@@ -22,7 +22,8 @@ export class ComicBookBinder extends BookBinder {
     super(filenameOrUri, ab, totalExpectedSize);
 
     // As each file becomes available from the Unarchiver, we kick off an async operation
-    // to construct a Page object.  After all pages are retrieved, we sort them.
+    // to construct a Page object.  After all pages are retrieved, we sort and then extract them.
+    // (Or, if the book is stream-optimized, we extract them in order immediately)
     /** @private {Promise<Page>} */
     this.pagePromises_ = [];
 
@@ -85,9 +86,12 @@ export class ComicBookBinder extends BookBinder {
       for (let pageNum = 0; pageNum < this.pagePromises_.length; ++pageNum) {
         pagePromiseChain = pagePromiseChain.then(() => {
           return this.pagePromises_[pageNum]
-              .then(page => pages.push(page))
-              .catch(e => foundError = true)
-              .finally(() => true);
+            .then(page => pages.push(page))
+            .catch(e => {
+              console.error(`Error creating page: ${e}`);
+              foundError = true;
+            })
+            .finally(() => true);
         });
       }
 
@@ -99,12 +103,41 @@ export class ComicBookBinder extends BookBinder {
           alert('Some pages had errors. See the console for more info.')
         }
 
-        // Sort the book's pages based on filename.
-        pages = pages.slice(0).sort((a,b) => {
-          return a.getPageName().toLowerCase().length > b.getPageName().toLowerCase().length ||  a.getPageName().toLowerCase() > b.getPageName().toLowerCase() ? 1 : -1;
-        });
-
+        // Sort the book's pages, if this book was not optimized for streaming.
         if (!this.optimizedForStreaming_) {
+          pages = pages.slice(0).sort((a, b) => {
+            // One of the worst things about the Comic Book Archive format is that it is de facto.
+            // Most definitions say the sort order is supposed to be lexically sorted filenames.
+            // However, some comic books, and therefore some reader apps, do not follow this rule.
+            // We will carefully add special cases here as we find them in the wild.  We may not be
+            // able to handle every case; some books are just broken.
+
+            // Strip off file extension.
+            const aName = a.getPageName().replace(/\.[^/.]+$/, '');
+            const bName = b.getPageName().replace(/\.[^/.]+$/, '');
+
+            // =====================================================================================
+            // Special Case 1:  Files are incorrectly named foo8.jpg, foo9.jpg, foo10.jpg.
+            // This causes foo10.jpg to sort before foo8.jpg when listing alphbatically.
+
+            // If we found numbers at the end of the filenames ...
+            const aMatch = aName.match(/(\d+)$/g);
+            const bMatch = bName.match(/(\d+)$/g);
+            if (aMatch && aMatch.length === 1 && bMatch && bMatch.length === 1) {
+              // ... and the prefixes match exactly ...
+              const aPrefix = aName.substring(0, aName.length - aMatch[0].length);
+              const bPrefix = aName.substring(0, bName.length - bMatch[0].length);
+              if (aPrefix === bPrefix) {
+                // ... then numerically evaluate the numbers for sorting purposes.
+                return parseInt(aMatch[0], 10) > parseInt(bMatch[0], 10) ? 1 : -1;
+              }
+            }
+            // =====================================================================================
+
+            // Default is case-sensitive lexical/alphabetical sort.
+            return aName > bName ? 1 : -1;
+          });
+
           // Emit an extract event for each page in its proper order.
           for (let i = 0; i < pages.length; ++i) {
             this.notify(new BookPageExtractedEvent(this, pages[i], i + 1));
@@ -112,7 +145,7 @@ export class ComicBookBinder extends BookBinder {
         }
 
         // Emit a complete event.
-        this.notify(new BookBindingCompleteEvent(this, pages));
+        this.notify(new BookBindingCompleteEvent(this));
       });
 
       this.stop();
