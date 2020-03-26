@@ -101,7 +101,7 @@ export class ComicBookBinder extends BookBinder {
 
         // Sort the book's pages based on filename.
         pages = pages.slice(0).sort((a,b) => {
-          return a.getPageName().toLowerCase() > b.getPageName().toLowerCase() ? 1 : -1;
+          return a.getPageName().toLowerCase().length > b.getPageName().toLowerCase().length ||  a.getPageName().toLowerCase() > b.getPageName().toLowerCase() ? 1 : -1;
         });
 
         if (!this.optimizedForStreaming_) {
