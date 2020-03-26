@@ -51,7 +51,7 @@ export class FileRef {
 
   /**
    * @param {Window} win 
-   * @return {stribng}
+   * @return {string}
    */
   getBlobURL(win) {
     this.initializeBlob_(win);

@@ -112,13 +112,13 @@ export class ComicBookBinder extends BookBinder {
             // We will carefully add special cases here as we find them in the wild.  We may not be
             // able to handle every case; some books are just broken.
 
-            // Strip off file extension.
-            const aName = a.getPageName().replace(/\.[^/.]+$/, '');
-            const bName = b.getPageName().replace(/\.[^/.]+$/, '');
-
             // =====================================================================================
             // Special Case 1:  Files are incorrectly named foo8.jpg, foo9.jpg, foo10.jpg.
             // This causes foo10.jpg to sort before foo8.jpg when listing alphbatically.
+
+            // Strip off file extension.
+            const aName = a.getPageName().replace(/\.[^/.]+$/, '');
+            const bName = b.getPageName().replace(/\.[^/.]+$/, '');
 
             // If we found numbers at the end of the filenames ...
             const aMatch = aName.match(/(\d+)$/g);
@@ -135,7 +135,7 @@ export class ComicBookBinder extends BookBinder {
             // =====================================================================================
 
             // Default is case-sensitive lexical/alphabetical sort.
-            return aName > bName ? 1 : -1;
+            return a.getPageName() > b.getPageName() ? 1 : -1;
           });
 
           // Emit an extract event for each page in its proper order.

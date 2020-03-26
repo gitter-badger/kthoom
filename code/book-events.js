@@ -54,9 +54,8 @@ export class BookProgressEvent extends BookEvent {
 }
 
 export class BookBindingCompleteEvent extends BookEvent {
-  constructor(source, pages) {
+  constructor(source) {
     super(source);
-    this.pages = pages;
     this.type = BookEventType.BINDING_COMPLETE;
   }
 }

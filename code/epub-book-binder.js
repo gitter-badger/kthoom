@@ -6,21 +6,21 @@
  * Copyright(c) 2019 Google Inc.
  */
 
- /**
-  * Notes:
-  *
-  * - Have a page-setting phase where we go through all DOM nodes, rendering to a non-displayed
-  *   iframe to size things right.  Each page can remember the DOM it needs to show.
-  * - Once that phase is done, we can eject the archive files from memory and just keep around the
-  *   page objects.
-  * - Find an example of an EPUB book that uses a custom font.
-  *   - Parse CSS and see if any rules reference a url() and do Blob URLs at render time.
-  */
+/**
+ * Notes:
+ *
+ * - Have a page-setting phase where we go through all DOM nodes, rendering to a non-displayed
+ *   iframe to size things right.  Each page can remember the DOM it needs to show.
+ * - Once that phase is done, we can eject the archive files from memory and just keep around the
+ *   page objects.
+ * - TODO: Find an example of an EPUB book that uses a custom font.
+ *   - Parse CSS and see if any rules reference a url() and do Blob URLs at render time.
+ */
 
 import { BookBinder } from './book-binder.js';
 import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
 import { NodeType, walkDom } from './dom-walker.js';
-import { ATTRIBUTE_WHITELIST, BLOB_URL_ATTRIBUTES, ELEMENT_WHITELIST} from './epub-whitelists.js';
+import { ATTRIBUTE_WHITELIST, BLOB_URL_ATTRIBUTES, ELEMENT_WHITELIST } from './epub-whitelists.js';
 import { FileRef } from './file-ref.js';
 import { XhtmlPage } from './page.js';
 import { assert } from './helpers.js';
@@ -121,12 +121,12 @@ export class EPUBBookBinder extends BookBinder {
     const numSpineRefs = this.spineRefs_.length;
     for (let i = 0; i < numSpineRefs; ++i) {
       const spref = this.spineRefs_[i];
-      const {mediaType, data} = spref;
+      const { mediaType, data } = spref;
       if (mediaType === XHTML_MIMETYPE) {
         const htmlDoc = new DOMParser().parseFromString(toText(data), XHTML_MIMETYPE);
         xhtmlChunks.push(htmlDoc);
       }
-      this.layoutPercentage_ = (i+1) / numSpineRefs;
+      this.layoutPercentage_ = (i + 1) / numSpineRefs;
       this.notify(new BookProgressEvent(this, 1));
     }
 
@@ -177,9 +177,9 @@ export class EPUBBookBinder extends BookBinder {
           if (curNode.nodeType === NodeType.ELEMENT && curNode.hasAttributes()) {
             const attrs = curNode.attributes;
             for (let i = 0; i < attrs.length; ++i) {
-              const attr =  attrs.item(i);
+              const attr = attrs.item(i);
               if (ATTRIBUTE_WHITELIST[nodeName] &&
-                  ATTRIBUTE_WHITELIST[nodeName].includes(attr.name)) {
+                ATTRIBUTE_WHITELIST[nodeName].includes(attr.name)) {
                 newEl.setAttribute(attr.name, attr.value);
               }
               if (BLOB_URL_ATTRIBUTES[nodeName] &&
@@ -213,9 +213,9 @@ export class EPUBBookBinder extends BookBinder {
             const nodeName = curNode.nodeName.toLowerCase();
             const attrs = curNode.attributes;
             for (let i = 0; i < attrs.length; ++i) {
-              const attr =  attrs.item(i);
+              const attr = attrs.item(i);
               if (BLOB_URL_ATTRIBUTES[nodeName] &&
-                  BLOB_URL_ATTRIBUTES[nodeName].includes(attr.name)) {
+                BLOB_URL_ATTRIBUTES[nodeName].includes(attr.name)) {
                 const attrValue = curNode.getAttribute(ATTR_PREFIX + attr.name);
                 const ref = this.getManifestFileRef_(attrValue, this.spineRefs_[0].rootDir);
                 if (!ref) {
@@ -235,43 +235,43 @@ export class EPUBBookBinder extends BookBinder {
       this.notify(new BookPageExtractedEvent(this, nextPage, allPages.length));
     }
 
-    this.notify(new BookBindingCompleteEvent(this, allPages));
+    this.notify(new BookBindingCompleteEvent(this));
   }
 
   /** @private */
   parseContainer_() {
-      // META-INF/container.xml must exist.
-      assert(this.fileMap_.has(CONTAINER_FILE),
-          `The file ${CONTAINER_FILE} did not exist inside the epub archive`);
+    // META-INF/container.xml must exist.
+    assert(this.fileMap_.has(CONTAINER_FILE),
+      `The file ${CONTAINER_FILE} did not exist inside the epub archive`);
 
-      const containerXml = toText(this.fileMap_.get(CONTAINER_FILE));
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(containerXml, 'text/xml');
-      assert(!!doc, `Container file did not parse as XML`);
-      assert(doc.documentElement.namespaceURI === CONTAINER_NAMESPACE,
-          `The root element in the container was not in the correct namespace:
+    const containerXml = toText(this.fileMap_.get(CONTAINER_FILE));
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(containerXml, 'text/xml');
+    assert(!!doc, `Container file did not parse as XML`);
+    assert(doc.documentElement.namespaceURI === CONTAINER_NAMESPACE,
+      `The root element in the container was not in the correct namespace:
            ${doc.documentElement.namespaceURI}`,
-           doc.documentElement);
-      assert(doc.documentElement.nodeName === 'container',
-          `The root element was not a 'container' element.`,
-          doc.documentElement);
+      doc.documentElement);
+    assert(doc.documentElement.nodeName === 'container',
+      `The root element was not a 'container' element.`,
+      doc.documentElement);
 
-      const rootFile = doc.querySelector(
-          'container > rootfiles > rootfile[media-type="application/oebps-package+xml"]');
-      assert(!!rootFile,
-          `Did not find a rootfile with the proper media-type="application/oebps-package+xml"`,
-          doc.documentElement);
+    const rootFile = doc.querySelector(
+      'container > rootfiles > rootfile[media-type="application/oebps-package+xml"]');
+    assert(!!rootFile,
+      `Did not find a rootfile with the proper media-type="application/oebps-package+xml"`,
+      doc.documentElement);
 
-      this.opfFilename_ = rootFile.getAttribute('full-path');
-      assert(!!this.opfFilename_,
-          `rootfile did not have a 'full-path' attribute`,
-          doc.documentElement);
+    this.opfFilename_ = rootFile.getAttribute('full-path');
+    assert(!!this.opfFilename_,
+      `rootfile did not have a 'full-path' attribute`,
+      doc.documentElement);
   }
 
   /** @private */
   parseOPF_() {
     assert(this.fileMap_.has(this.opfFilename_),
-        `EPUB archive file did not have a file named '${this.opfFilename_}`);
+      `EPUB archive file did not have a file named '${this.opfFilename_}`);
 
     const lastSlash = this.opfFilename_.lastIndexOf('/');
     const rootDir = lastSlash === -1 ? '' : this.opfFilename_.substr(0, lastSlash + 1);
@@ -279,15 +279,15 @@ export class EPUBBookBinder extends BookBinder {
     const opfFile = toText(this.fileMap_.get(this.opfFilename_));
 
     const doc = new DOMParser().parseFromString(opfFile, 'text/xml');
-    assert(!!doc, 'OPF file did not parse as XML') ;
+    assert(!!doc, 'OPF file did not parse as XML');
     assert(doc.documentElement.namespaceURI === OPF_NAMESPACE,
-        `OPF document was not in the correct namespace: ${doc.documentElement.namespaceURI}`);
+      `OPF document was not in the correct namespace: ${doc.documentElement.namespaceURI}`);
     assert(doc.documentElement.nodeName === 'package',
-        `The root element was not a 'package' element.`,
-        doc.documentElement);
+      `The root element was not a 'package' element.`,
+      doc.documentElement);
     assert(doc.documentElement.hasAttribute('unique-identifier'),
-        `package element did not have a unique-identifier.`,
-        doc.documentElement);
+      `package element did not have a unique-identifier.`,
+      doc.documentElement);
 
     const manifestItems = doc.querySelectorAll('package > manifest > item');
     const numManifestItems = manifestItems.length;
