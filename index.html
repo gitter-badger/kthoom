@@ -338,6 +338,18 @@
 
 </body>
 <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js')
+    .then((registration) => {      
+      console.log(`Registered: ${registration}`);
+    })
+    .catch((error) => {
+      console.log(`Registration failed: ${error}`);
+    });
+  }  
+</script>
+  
+<script>
   (function (i, s, o, g, r, a, m) {
   i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
     (i[r].q = i[r].q || []).push(arguments)
