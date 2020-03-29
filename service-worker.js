@@ -2,11 +2,17 @@ const cacheName = 'kthoom';
 let urlsToCache = [
   '.',
   'code/bitjs/archive/archive.js',
-  'code/bitjs/file/sniffer.js',
-  'code/bitjs/image/webp-shim/webp-shim.js',
+  'code/bitjs/archive/rarvm.js',
   'code/bitjs/archive/unzip.js',
   'code/bitjs/archive/unrar.js',
   'code/bitjs/archive/untar.js',
+  'code/bitjs/file/sniffer.js',
+  'code/bitjs/image/webp-shim/webp-shim.js',
+  'code/bitjs/image/webp-shim/webp-shim-module.js',
+  'code/bitjs/image/webp-shim/webp-shim-module.wasm',
+  'code/bitjs/image/io/bitstream.js',
+  'code/bitjs/image/io/bytebuffer.js',
+  'code/bitjs/image/io/bytestream.js',
   'code/book-binder.js',
   'code/book-events.js',
   'code/book-viewer.js',
@@ -35,9 +41,9 @@ let urlsToCache = [
 self.addEventListener('install', async event => {
   event.waitUntil(
     caches.open(cacheName)
-    .then( (cache) => {
-      return cache.addAll(urlsToCache);
-    })
+      .then((cache) => {
+        return cache.addAll(urlsToCache);
+      })
   );
 });
 
