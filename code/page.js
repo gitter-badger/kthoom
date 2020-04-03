@@ -7,6 +7,7 @@
  */
 
 import { convertWebPtoJPG } from './bitjs/image/webp-shim/webp-shim.js';
+import { findMimeType } from './bitjs/file/sniffer.js';
 
 const DEFAULT_ASPECT_RATIO = 6.625 / 10.25;
 
@@ -20,13 +21,13 @@ function createURLFromArray(ab, mimeType) {
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(new TextDecoder('utf-8').decode(ab));
   }
   const offset = ab.byteOffset;
-  let blob = new Blob([ab], {type: mimeType}).slice(offset, offset + ab.byteLength, mimeType);
+  let blob = new Blob([ab], { type: mimeType }).slice(offset, offset + ab.byteLength, mimeType);
   return URL.createObjectURL(blob);
 };
 
- /**
-  * Base class for Pages.
-  */
+/**
+ * Base class for Pages.
+ */
 export class Page {
   constructor(pageName, mimeType) {
     /** @private {string} */
@@ -256,10 +257,10 @@ function isSafari() {
  * @param {UnarchivedFile} file
  * @return {Promise<Page>} A Promise that gets a Page (like an ImagePage).
  */
-export const createPageFromFileAsync = function(file) {
+export const createPageFromFileAsync = function (file) {
   return new Promise((resolve, reject) => {
     const filename = file.filename;
-    const sniffedMimeType = bitjs.file.findMimeType(file.fileData);
+    const sniffedMimeType = findMimeType(file.fileData);
     const mimeType = guessMimeType(filename);
     if (!mimeType) {
       resolve(new TextPage(filename, `Could not determine type of file "${filename}"`));
