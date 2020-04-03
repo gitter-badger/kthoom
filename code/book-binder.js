@@ -6,8 +6,9 @@
  * Copyright(c) 2019 Google Inc.
  */
 
-import {BookProgressEvent} from './book-events.js';
-import {EventEmitter} from './event-emitter.js';
+import { UnarchiveEventType, getUnarchiver } from './bitjs/archive/archive.js';
+import { BookProgressEvent } from './book-events.js';
+import { EventEmitter } from './event-emitter.js';
 
 export const UnarchiveState = {
   UNARCHIVING_NOT_YET_STARTED: 0,
@@ -61,8 +62,8 @@ export class BookBinder extends EventEmitter {
     /** @private {UnarchiveState} */
     this.unarchiveState_ = UnarchiveState.UNARCHIVING_NOT_YET_STARTED;
 
-    /** @private {bitjs.archive.Unarchiver} */
-    this.unarchiver_ = bitjs.archive.GetUnarchiver(ab, 'code/bitjs/');
+    /** @private {Unarchiver} */
+    this.unarchiver_ = getUnarchiver(ab, 'code/bitjs/');
     if (!this.unarchiver_) {
       throw 'Could not determine the unarchiver to use';
     }
@@ -115,7 +116,7 @@ export class BookBinder extends EventEmitter {
   setUnarchiveComplete() {
     this.unarchiveState_ = UnarchiveState.UNARCHIVED;
     this.unarchivingPercentage_ = 1.0;
-    const diff = ((new Date).getTime() - this.startTime_)/1000;
+    const diff = ((new Date).getTime() - this.startTime_) / 1000;
     console.log(`Book = '${this.name_}'`);
     console.log(`  using ${this.unarchiver_.getScriptFileName()}`);
     console.log(`  unarchiving done in ${diff}s`);
@@ -132,14 +133,14 @@ export class BookBinder extends EventEmitter {
     this.startTime_ = (new Date).getTime();
 
     this.unarchiveState_ = UnarchiveState.UNARCHIVING;
-    this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.PROGRESS, evt => {
+    this.unarchiver_.addEventListener(UnarchiveEventType.PROGRESS, evt => {
       this.unarchivingPercentage_ = evt.totalCompressedBytesRead / this.totalExpectedSize_;
       // Total # pages is not always equal to the total # of files, so we do not report that here.
       this.notify(new BookProgressEvent(this));
     });
 
-    this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.INFO,
-        evt => console.log(evt.msg));
+    this.unarchiver_.addEventListener(UnarchiveEventType.INFO,
+      evt => console.log(evt.msg));
 
     this.beforeStart_();
     this.unarchiver_.start();

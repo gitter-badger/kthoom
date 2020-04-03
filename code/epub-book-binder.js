@@ -17,6 +17,7 @@
  *   - Parse CSS and see if any rules reference a url() and do Blob URLs at render time.
  */
 
+import { UnarchiveEventType } from './bitjs/archive/archive.js';
 import { BookBinder } from './book-binder.js';
 import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
 import { NodeType, walkDom } from './dom-walker.js';
@@ -75,7 +76,7 @@ export class EPUBBookBinder extends BookBinder {
   /** @override */
   beforeStart_() {
     let firstFile = true;
-    this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT, evt => {
+    this.unarchiver_.addEventListener(UnarchiveEventType.EXTRACT, evt => {
       const theFile = evt.unarchivedFile;
       this.fileMap_.set(theFile.filename, theFile.fileData);
 
@@ -85,7 +86,7 @@ export class EPUBBookBinder extends BookBinder {
         this.validateMimetype_(theFile);
       }
     });
-    this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, evt => {
+    this.unarchiver_.addEventListener(UnarchiveEventType.FINISH, evt => {
       this.setUnarchiveComplete();
 
       this.parseContainer_();

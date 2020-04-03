@@ -6,6 +6,7 @@
  * Copyright(c) 2019 Google Inc.
  */
 
+import { UnarchiveEventType, getUnarchiver } from './bitjs/archive/archive.js';
 import { BookBinder } from './book-binder.js';
 import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
 import { createPageFromFileAsync, guessMimeType } from './page.js';
@@ -34,7 +35,7 @@ export class ComicBookBinder extends BookBinder {
   /** @override */
   beforeStart_() {
     let prevExtractPromise = Promise.resolve(true);
-    this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.EXTRACT, evt => {
+    this.unarchiver_.addEventListener(UnarchiveEventType.EXTRACT, evt => {
       // Convert each unarchived file into a Page.
       // TODO: Error if not present?
       if (evt.unarchivedFile) {
@@ -74,7 +75,7 @@ export class ComicBookBinder extends BookBinder {
         this.notify(new BookProgressEvent(this, this.pagePromises_.length));
       }
     });
-    this.unarchiver_.addEventListener(bitjs.archive.UnarchiveEvent.Type.FINISH, evt => {
+    this.unarchiver_.addEventListener(UnarchiveEventType.FINISH, evt => {
       this.setUnarchiveComplete();
 
       if (evt.metadata.comment && Params.metadata) {

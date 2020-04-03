@@ -71,7 +71,7 @@ export class Book extends EventEmitter {
    */
   getPage(i) {
     // TODO: This is a bug in the unarchivers.  The only time totalPages_ is set is
-    // upon getting a UnarchiveEvent.Type.PROGRESS which has the total number of files.
+    // upon getting a UnarchiveEventType.PROGRESS which has the total number of files.
     // In some books, we get an EXTRACT event before we get the first PROGRESS event.
     const numPages = this.totalPages_ || this.pages_.length;
     if (i < 0 || i >= numPages) {
@@ -147,7 +147,7 @@ export class Book extends EventEmitter {
     return fetch(this.uri_, init).then(response => {
       const reader = response.body.getReader();
       const readAndProcessNextChunk = () => {
-        reader.read().then(({done, value}) => {
+        reader.read().then(({ done, value }) => {
           if (!done) {
             // value is a chunk of the file as a Uint8Array.
             if (!this.bookBinder_) {
