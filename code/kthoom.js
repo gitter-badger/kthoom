@@ -11,7 +11,7 @@ import { Book } from './book.js';
 import { BookViewer, FitMode } from './book-viewer.js';
 import { Menu, MenuEventType } from './menu.js';
 import { ReadingStack } from './reading-stack.js';
-import { Key, Params, getElem, assert } from './helpers.js';
+import { Key, Params, assert, getElem, serializeParamsToBrowser } from './helpers.js';
 import { ImagePage, WebPShimImagePage } from './page.js';
 import { convertWebPtoJPG, convertWebPtoPNG } from './bitjs/image/webp-shim/webp-shim.js';
 
@@ -931,6 +931,11 @@ class KthoomApp {
       this.currentBook_ = book;
       this.bookViewer_.setCurrentBook(book);
       document.title = book.getName();
+      const bookUri = book.getUri();
+      if (bookUri && Params.bookUri !== bookUri) {
+        Params.bookUri = bookUri;
+      }
+      serializeParamsToBrowser();
       for (const button of ['prevBook', 'prev', 'next', 'nextBook'].map(getElem)) {
         button.removeAttribute('disabled');
       }

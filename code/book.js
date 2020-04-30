@@ -80,6 +80,11 @@ export class Book extends EventEmitter {
     return this.pages_[i];
   }
 
+  /** @return {string} */
+  getUri() {
+    return this.uri_;
+  }
+
   /**
    * Starts an XHR and progressively loads in the book.
    * TODO: Get rid of this and just use loadFromFetch() everywhere.
