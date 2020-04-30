@@ -161,9 +161,9 @@ class KthoomApp {
         case 'menu-view-fit-best':
         case 'menu-view-fit-height':
         case 'menu-view-fit-width':
-          const fitMode = (id === 'menu-view-fit-best'   ? FitMode.Best :
-                           id === 'menu-view-fit-height' ? FitMode.Height :
-                           id === 'menu-view-fit-width'  ? FitMode.Width : undefined);
+          const fitMode = (id === 'menu-view-fit-best' ? FitMode.Best :
+            id === 'menu-view-fit-height' ? FitMode.Height :
+              id === 'menu-view-fit-width' ? FitMode.Width : undefined);
           this.bookViewer_.setFitMode(fitMode);
           this.viewMenu_.setMenuItemSelected('menu-view-fit-best', fitMode === FitMode.Best);
           this.viewMenu_.setMenuItemSelected('menu-view-fit-height', fitMode === FitMode.Height);
@@ -212,7 +212,7 @@ class KthoomApp {
     document.addEventListener('dragover', swallowEvent);
     document.addEventListener('drop', (e) => {
       swallowEvent(e);
-      this.loadLocalFiles_({target: e.dataTransfer});
+      this.loadLocalFiles_({ target: e.dataTransfer });
     });
   }
 
@@ -324,7 +324,16 @@ class KthoomApp {
   /** @private */
   async parseParams_() {
     const bookUri = Params['bookUri'];
-    if (bookUri) {
+    const readingListUri = Params['readingListUri'];
+    if (readingListUri) {
+      try {
+        const readingList = await this.tryLoadAndParseReadingListFromUrl_(readingListUri);
+        this.loadBooksFromReadingList_(readingList);
+        return;
+      } catch (err) {
+        console.error(err);
+      }
+    } else if (bookUri) {
       // See https://gist.github.com/lgierth/4b2969583b3c86081a907ef5bd682137 for the
       // eventual migration steps for IPFS addressing.  We will support two versions
       // for now, ipfs://$hash and dweb:/ipfs/$hash.
@@ -347,17 +356,6 @@ class KthoomApp {
         kthoom.ipfs.loadHash(ipfshash);
       }
     }
-
-    const readingListUri = Params['readingListUri'];
-    if (readingListUri) {
-      try {
-        const readingList = await this.tryLoadAndParseReadingListFromUrl_(readingListUri);
-        this.loadBooksFromReadingList_(readingList);
-        return;
-      } catch (err) {
-        console.error(err);
-      }
-    }
   }
 
   /** @private */
@@ -373,7 +371,7 @@ class KthoomApp {
         this.viewMenu_.setMenuItemSelected('menu-view-fit-best', fitMode === FitMode.Best);
         this.viewMenu_.setMenuItemSelected('menu-view-fit-height', fitMode === FitMode.Height);
         this.viewMenu_.setMenuItemSelected('menu-view-fit-width', fitMode === FitMode.Width);
-        
+
         // We used to store the key code for the mode... check for stale settings.
         switch (fitMode) {
           case Key.B: s.fitMode = FitMode.Best; break;
@@ -393,7 +391,7 @@ class KthoomApp {
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
         }
       }
-    } catch(err) {}
+    } catch (err) { }
   }
 
   /** @private */
@@ -406,7 +404,7 @@ class KthoomApp {
       return;
     }
 
-    let isMenuOpen = this.mainMenu_.isOpen() ;
+    let isMenuOpen = this.mainMenu_.isOpen();
     let isReadingStackOpen = this.readingStack_.isOpen();
 
     if (isMenuOpen) {
@@ -470,7 +468,7 @@ class KthoomApp {
 
     if (getComputedStyle(getElem('progress')).display == 'none') return;
 
-    let canKeyNext = ((document.body.offsetWidth+document.body.scrollLeft) / document.body.scrollWidth) >= 1;
+    let canKeyNext = ((document.body.offsetWidth + document.body.scrollLeft) / document.body.scrollWidth) >= 1;
     let canKeyPrev = (window.scrollX <= 0);
 
     switch (code) {
@@ -511,16 +509,16 @@ class KthoomApp {
       case Key.L:
         this.bookViewer_.rotateCounterClockwise();
         this.saveSettings_();
-      break;
+        break;
       case Key.R:
         this.bookViewer_.rotateClockwise();
         this.saveSettings_();
         break;
       case Key.W: case Key.H: case Key.B:
         const fitMode =
-            code === Key.W ? FitMode.Width :
+          code === Key.W ? FitMode.Width :
             code === Key.H ? FitMode.Height :
-            code === Key.B ? FitMode.Best : undefined;
+              code === Key.B ? FitMode.Best : undefined;
         this.bookViewer_.setFitMode(fitMode);
         this.viewMenu_.setMenuItemSelected('menu-view-fit-best', fitMode === FitMode.Best);
         this.viewMenu_.setMenuItemSelected('menu-view-fit-height', fitMode === FitMode.Height);
@@ -593,16 +591,16 @@ class KthoomApp {
     } else if (curMimeType === WEBP) {
       if (saveMimeType === PNG) {
         fetch(page.getURI())
-            .then(blob => blob.arrayBuffer())
-            .then(ab => convertWebPtoPNG(ab))
-            .then(pngBuffer => new Blob([pngBuffer], {type: PNG}))
-            .then(pngBlob => saveFile(pageName, URL.createObjectURL(pngBlob)));
+          .then(blob => blob.arrayBuffer())
+          .then(ab => convertWebPtoPNG(ab))
+          .then(pngBuffer => new Blob([pngBuffer], { type: PNG }))
+          .then(pngBlob => saveFile(pageName, URL.createObjectURL(pngBlob)));
       } else if (saveMimeType === JPG) {
         fetch(page.getURI())
-            .then(blob => blob.arrayBuffer())
-            .then(ab => convertWebPtoJPG(ab))
-            .then(jpgBuffer => new Blob([jpgBuffer], {type: JPG}))
-            .then(jpgBlob => saveFile(pageName, URL.createObjectURL(jpgBlob)));
+          .then(blob => blob.arrayBuffer())
+          .then(ab => convertWebPtoJPG(ab))
+          .then(jpgBuffer => new Blob([jpgBuffer], { type: JPG }))
+          .then(jpgBlob => saveFile(pageName, URL.createObjectURL(jpgBlob)));
       }
     }
   }
@@ -647,8 +645,8 @@ class KthoomApp {
   toggleFullscreen_() {
     if (document.fullscreenEnabled) {
       const fsPromise = document.fullscreenElement ?
-          document.exitFullscreen() :
-          document.documentElement.requestFullscreen();
+        document.exitFullscreen() :
+        document.documentElement.requestFullscreen();
       fsPromise.then(() => this.bookViewer_.updateLayout());
     }
   }
@@ -682,7 +680,7 @@ class KthoomApp {
   showPrevPage() {
     const turnedPage = this.bookViewer_.showPrevPage();
     if (this.bookViewer_.getFitMode() === FitMode.Width) {
-      window.scrollTo(0,0);
+      window.scrollTo(0, 0);
     }
     if (!turnedPage) {
       if (this.readingStack_.getNumberOfBooks() == 1) {
@@ -696,7 +694,7 @@ class KthoomApp {
   showNextPage() {
     const turnedPage = this.bookViewer_.showNextPage();
     if (this.bookViewer_.getFitMode() === FitMode.Width) {
-      window.scrollTo(0,0);
+      window.scrollTo(0, 0);
     }
     if (!turnedPage) {
       if (this.readingStack_.getNumberOfBooks() == 1) {
@@ -757,7 +755,7 @@ class KthoomApp {
           const readingList = await this.loadAndParseReadingList_(theFile);
           this.loadBooksFromReadingList_(readingList);
           continue;
-        } catch {}
+        } catch { }
       }
 
       // Else, assume the file is a single book and try to load it.
@@ -873,14 +871,14 @@ class KthoomApp {
         try {
           const jsonContents = JSON.parse(fr.result);
           if (!jsonContents.items || !Array.isArray(jsonContents.items) ||
-              jsonContents.items.length === 0) {
+            jsonContents.items.length === 0) {
             reject(null);
           } else {
             for (const item of jsonContents.items) {
               // Each item object must at least have a uri string field and be type=book.
               if (!(item instanceof Object) ||
-                  !item.uri || !(typeof item.uri === 'string') ||
-                  !item.type || item.type !== 'book') {
+                !item.uri || !(typeof item.uri === 'string') ||
+                !item.type || item.type !== 'book') {
                 console.error('Invalid item: ');
                 console.dir(item);
                 reject('Invalid item inside JSON Reading List file');
@@ -900,18 +898,24 @@ class KthoomApp {
   /**
    * Adds all books in reading list to the stack and loads in each book in serial.
    * @param {Array<Object>} readingList An array of reading list items.
+   * @param {Number} bookNumber The book number to load.  If bookNumber is invalid or not
+   *     specified, this defaults to the first book.
    * @private
    */
-  async loadBooksFromReadingList_(readingList) {
+  async loadBooksFromReadingList_(readingList, bookNumber = 0) {
     if (readingList && readingList.length > 0) {
       const books = readingList.map(item => new Book(this.getNameForBook_(item), item.uri));
       // Add all books to the stack immediately.
       this.readingStack_.addBooks(books, true /* switchToFirst */);
 
-      // Load the first book.  The remaining books will be loaded from the ReadingStack when the
+      if (bookNumber < 0 || bookNumber > books.length - 1) {
+        bookNumber = 0;
+      }
+
+      // Load the book.  The remaining books will be loaded from the ReadingStack when the
       // user chooses a different book.
-      const firstBook = books.shift();
-      await firstBook.loadFromXhr();
+      const bookToLoad = books[bookNumber];
+      await bookToLoad.loadFromXhr();
     }
   }
 
