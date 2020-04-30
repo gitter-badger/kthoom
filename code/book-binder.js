@@ -9,6 +9,7 @@
 import { UnarchiveEventType, getUnarchiver } from './bitjs/archive/archive.js';
 import { BookProgressEvent } from './book-events.js';
 import { EventEmitter } from './event-emitter.js';
+import { Params } from './helpers.js';
 
 export const UnarchiveState = {
   UNARCHIVING_NOT_YET_STARTED: 0,
@@ -62,8 +63,13 @@ export class BookBinder extends EventEmitter {
     /** @private {UnarchiveState} */
     this.unarchiveState_ = UnarchiveState.UNARCHIVING_NOT_YET_STARTED;
 
+    const unarchiverOptions = {
+      'pathToBitJS': 'code/bitjs/',
+      'debug': (Params.debug === 'true'),
+    };
+
     /** @private {Unarchiver} */
-    this.unarchiver_ = getUnarchiver(ab, 'code/bitjs/');
+    this.unarchiver_ = getUnarchiver(ab, unarchiverOptions);
     if (!this.unarchiver_) {
       throw 'Could not determine the unarchiver to use';
     }
