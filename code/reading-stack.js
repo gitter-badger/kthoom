@@ -50,17 +50,19 @@ export class ReadingStack {
   /**
    * @param {Array<Book>} books
    * @param {boolean} switchToFirst Whether to switch to the first book in this new set.
+   * @param {Number} bookNumber The book within the books array to load.
    */
-  addBooks(books, switchToFirst) {
+  addBooks(books, bookNumber = 0) {
     if (books.length > 0) {
       const newCurrentBook = this.books_.length;
       for (const book of books) {
         this.books_.push(book);
         book.subscribe(this, () => this.renderStack_(), BookEventType.LOADING_STARTED);
       }
-      if (switchToFirst) {
-        this.changeToBook_(newCurrentBook);
+      if (bookNumber < 0 || bookNumber >= this.books_.length) {
+        bookNumber = 0;
       }
+      this.changeToBook_(newCurrentBook + bookNumber);
       this.renderStack_();
     }
   }
@@ -181,10 +183,10 @@ export class ReadingStack {
         }
         bookDiv.dataset.index = i;
         bookDiv.innerHTML =
-            '<div class="readingStackBookInner" title="' + book.getName() + '">' +
-              book.getName() +
-            '</div>' +
-            '<div class="readingStackBookCloseButton" title="Remove book from stack">x</div>';
+          '<div class="readingStackBookInner" title="' + book.getName() + '">' +
+          book.getName() +
+          '</div>' +
+          '<div class="readingStackBookCloseButton" title="Remove book from stack">x</div>';
 
         // Handle drag-drop of books.
         bookDiv.setAttribute('draggable', 'true');

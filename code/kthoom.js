@@ -328,7 +328,8 @@ class KthoomApp {
     if (readingListUri) {
       try {
         const readingList = await this.tryLoadAndParseReadingListFromUrl_(readingListUri);
-        this.loadBooksFromReadingList_(readingList);
+        const bookNum = readingList.findIndex(entry => entry.uri === bookUri);
+        this.loadBooksFromReadingList_(readingList, bookNum);
         return;
       } catch (err) {
         console.error(err);
@@ -905,17 +906,14 @@ class KthoomApp {
   async loadBooksFromReadingList_(readingList, bookNumber = 0) {
     if (readingList && readingList.length > 0) {
       const books = readingList.map(item => new Book(this.getNameForBook_(item), item.uri));
-      // Add all books to the stack immediately.
-      this.readingStack_.addBooks(books, true /* switchToFirst */);
-
       if (bookNumber < 0 || bookNumber > books.length - 1) {
         bookNumber = 0;
       }
 
-      // Load the book.  The remaining books will be loaded from the ReadingStack when the
-      // user chooses a different book.
-      const bookToLoad = books[bookNumber];
-      await bookToLoad.loadFromXhr();
+      // Add all books to the stack immediately.
+      this.readingStack_.addBooks(books, bookNumber);
+
+      // The remaining books will be loaded from the ReadingStack when the user chooses a different book.
     }
   }
 
