@@ -12,6 +12,8 @@
  * from this EventEmitter.
  * The callback functions are bound at call-time.
  * Each context object can have only one callback function per type.
+ * TODO: When EventTarget constructors are broadly supported, remove this.
+ *     https://caniuse.com/#feat=mdn-api_eventtarget_eventtarget
  */
 export class EventEmitter {
   constructor() {

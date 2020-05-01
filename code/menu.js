@@ -86,6 +86,9 @@ export class MenuItemSelectedEvent extends MenuEvent {
 /**
  * A menu owns its DOM, is constructed from a list of menu items and manages rendering and
  * interaction.  Clients create menus and add event listeners for when menu items are selected.
+ * TODO: When EventTarget constructors are broadly supported, make this extend
+ *     EventTarget and remove EventEmitter.
+ *     https://caniuse.com/#feat=mdn-api_eventtarget_eventtarget
  */
 export class Menu extends EventEmitter {
   /**
@@ -197,7 +200,7 @@ export class Menu extends EventEmitter {
     const numMenuItems = menuItems.length;
     const currentlyFocusedMenuItem = document.activeElement;
     let i = 0;
-    for ( ; i < numMenuItems; ++i) {
+    for (; i < numMenuItems; ++i) {
       const menuItem = menuItems.item(i);
       if (menuItem === currentlyFocusedMenuItem) {
         break;
