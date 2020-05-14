@@ -1,4 +1,5 @@
-const cacheName = 'kthoom';
+const CACHE_NAME = 'kthoom:v2';
+
 let urlsToCache = [
   '.',
   'code/bitjs/archive/archive.js',
@@ -35,27 +36,24 @@ let urlsToCache = [
   'index.html',
   'privacy.html',
   'kthoom.webmanifest',
-  'service-worker.js'
 ];
 
-self.addEventListener('install', async event => {
-  event.waitUntil(
-    caches.open(cacheName)
-      .then((cache) => {
-        return cache.addAll(urlsToCache);
-      })
-  );
+self.addEventListener('install', (evt) => {
+  evt.waitUntil(async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.addAll(urlsToCache);
+  });
 });
 
-self.addEventListener('fetch', async e => {
-  e.respondWith(
-    caches.match(e.request).then((r) => {
-      return r || fetch(e.request).then((response) => {
-        return caches.open(cacheName).then((cache) => {
-          cache.put(e.request, response.clone());
-          return response;
-        });
-      });
-    })
-  );
+self.addEventListener('fetch', (evt) => {
+  evt.respondWith(async function () {
+    try {
+      const networkResponse = await fetch(evt.request);
+      const cache = await caches.open(CACHE_NAME);
+      evt.waitUntil(cache.put(evt.request, networkResponse.clone()));
+      return networkResponse;
+    } catch (err) {
+      return caches.match(evt.request);
+    }
+  }());
 });
