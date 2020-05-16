@@ -20,9 +20,9 @@ let openMenu;
 
 function defineGoogleHooks() {
   const SCOPE = [
-      'https://www.googleapis.com/auth/userinfo.email',
-      'https://www.googleapis.com/auth/userinfo.profile',
-      'https://www.googleapis.com/auth/drive.readonly',
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'https://www.googleapis.com/auth/drive.readonly',
   ].join(' ');
 
   // TODO: Turn this script into a module and remove most things from window.kthoom.google.
@@ -35,7 +35,7 @@ function defineGoogleHooks() {
     oathToken: undefined,
     authInstance: undefined,
 
-    boot: async function() {
+    async boot() {
       if (typeof gapi === 'undefined') {
         // Load the Google API script.
         await new Promise((resolve, reject) => {
@@ -98,7 +98,7 @@ function defineGoogleHooks() {
       }
     },
 
-    authorize: async function() {
+    async authorize() {
       if (!kthoom.google.isBooted) {
         await kthoom.google.boot();
       }
@@ -126,7 +126,7 @@ function defineGoogleHooks() {
       }
     },
 
-    loadAPILibs: async function() {
+    async loadAPILibs() {
       if (!kthoom.google.isBooted) {
         await kthoom.google.boot();
       }
@@ -155,7 +155,7 @@ function defineGoogleHooks() {
       });
     },
 
-    doDrive: async function() {
+    async doDrive() {
       // TODO: Show "Please wait" or a spinner while things get ready.
       if (!kthoom.google.isBooted) {
         await kthoom.google.boot();
@@ -173,29 +173,29 @@ function defineGoogleHooks() {
       docsView.setMode(google.picker.DocsViewMode.LIST);
       docsView.setQuery('*.cbr|*.cbz|*.cbt');
       const picker = new google.picker.PickerBuilder().
-          addView(docsView).
-          // Enable this feature when we can efficiently get downloadUrls
-          // for each file selected (right now we'd have to do drive.get
-          // calls for each file which is annoying the way we have set up
-          // library.allBooks).
-          //enableFeature(google.picker.Feature.MULTISELECT_ENABLED).
-          enableFeature(google.picker.Feature.NAV_HIDDEN).
-          setOAuthToken(kthoom.google.oathToken).
-          setDeveloperKey(kthoom.google.apiKey).
-          setAppId(kthoom.google.clientId).
-          setCallback(kthoom.google.pickerCallback).
-          build();
+        addView(docsView).
+        // Enable this feature when we can efficiently get downloadUrls
+        // for each file selected (right now we'd have to do drive.get
+        // calls for each file which is annoying the way we have set up
+        // library.allBooks).
+        //enableFeature(google.picker.Feature.MULTISELECT_ENABLED).
+        enableFeature(google.picker.Feature.NAV_HIDDEN).
+        setOAuthToken(kthoom.google.oathToken).
+        setDeveloperKey(kthoom.google.apiKey).
+        setAppId(kthoom.google.clientId).
+        setCallback(kthoom.google.pickerCallback).
+        build();
       picker.setVisible(true);
     },
 
-    pickerCallback : function(data) {
+    pickerCallback(data) {
       if (data.action == google.picker.Action.PICKED) {
         const fullSize = data.docs[0].sizeBytes;
         const gRequest = gapi.client.drive.files.get({
-            'fileId': data.docs[0].id,
-            'fields': 'webContentLink',
+          'fileId': data.docs[0].id,
+          'fields': 'webContentLink',
         });
-        gRequest.execute(function(response) {
+        gRequest.execute(function (response) {
           const bookName = data.docs[0].name;
           const fileId = data.docs[0].id;
           // NOTE:  The CORS headers are not set properly on the webContentLink (URLs from
@@ -229,7 +229,7 @@ function defineGoogleHooks() {
   };
 }
 
-(async function() {
+(async function () {
   try {
     // Wait for everything to be loaded.
     await new Promise((resolve, reject) => {

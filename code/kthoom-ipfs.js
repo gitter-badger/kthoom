@@ -17,7 +17,7 @@ if (window.kthoom === undefined) {
 kthoom.ipfs = {
   nodePromise_: undefined,
   node_: undefined,
-  getNode: function() {
+  getNode() {
     if (!kthoom.ipfs.nodePromise_) {
       kthoom.getApp().updateProgressMeter('Loading code for IPFS...');
       kthoom.ipfs.nodePromise_ = new Promise((resolve, reject) => {
@@ -42,7 +42,7 @@ kthoom.ipfs = {
     }
     return kthoom.ipfs.nodePromise_;
   },
-  loadHash: function(ipfshash) {
+  loadHash(ipfshash) {
     kthoom.ipfs.getNode().then(node => {
       kthoom.getApp().updateProgressMeter('Fetching data from IPFS...');
       node.files.cat(ipfshash, (err, data) => {
@@ -52,10 +52,10 @@ kthoom.ipfs = {
         if (data instanceof Uint8Array) {
           kthoom.getApp().loadSingleBookFromArrayBuffer(ipfshash, data.buffer);
         }
-      });  
+      });
     });
   },
-  ipfsHashWindow: function() {
+  ipfsHashWindow() {
     const ipfshash = window.prompt("Enter the IPFS hash of the book to load");
     if (ipfshash) {
       kthoom.ipfs.loadHash(ipfshash);
