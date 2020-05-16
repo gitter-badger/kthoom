@@ -18,24 +18,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#ffff00" />
 
-  <!-- Needed for Traceur, the nomodule attribute is needed so that Traceur is only used by browsers
-         that don't support ES6 modules natively.  We can completely remove these two scripts once
-         all browsers support ES6 modules natively. -->
-  <script nomodule src="code/traceur/traceur.js"></script>
-  <script nomodule>
-    console.log('No ES module support detected:  Using traceur.');
-    var options = new traceur.util.Options();
-    options.asyncFunctions = true;
-    var pathname = document.location.pathname;
-    if (pathname.indexOf('index.html') != -1) {
-      pathname = pathname.substr(0, pathname.indexOf('index.html'));
-    }
-    // Traceur's script location is different than native browsers.  I hacked this option so that
-    // we can use either Traceur or native browser parsing of modules.
-    options.scriptBaseURL = pathname + 'code/';
-    new traceur.WebPageTranscoder(document.location.href, options).run();
-  </script>
-
   <!-- The crossorigin attribute is needed so that credentials are forwarded through UberProxy -->
   <script type="module" src="code/main.js" crossorigin="use-credentials"></script>
 
