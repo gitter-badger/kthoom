@@ -862,6 +862,19 @@ export class KthoomApp {
   }
 
   /**
+   * @param {string} name
+   * @param {string} bookUri
+   * @param {BookPump} bookPump
+   * @return {Promise<Book>}
+   */
+  loadSingleBookFromBookPump(name, bookUri, bookPump) {
+    const book = new Book(name);
+    const bookPromise = book.loadFromBookPump(bookUri, bookPump);
+    this.readingStack_.addBook(book);
+    return bookPromise;
+  }
+
+  /**
    * Loads the Reading List from the JSON blob.  The blob must contain a JSON Reading List that
    * matches this minimum format:
    * {

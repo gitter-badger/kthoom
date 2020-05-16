@@ -7,6 +7,7 @@
  */
 import { createBookBinderAsync } from './book-binder.js';
 import { BookEventType, BookLoadingStartedEvent, BookProgressEvent } from './book-events.js';
+import { BookPumpEventType } from './book-pump.js';
 import { EventEmitter } from './event-emitter.js';
 
 /**
@@ -224,6 +225,53 @@ export class Book extends EventEmitter {
 
     this.startBookBinding_(fileName, ab, ab.byteLength);
     return Promise.resolve(this);
+  }
+
+  /**
+   * @param {string} bookUri
+   * @param {BookPump} bookPump
+   */
+  loadFromBookPump(bookUri, bookPump) {
+    if (!this.needsLoading_) {
+      throw 'Cannot try to load via BookPump when the Book is already loading or loaded';
+    }
+    if (this.uri_) {
+      throw 'URI for book was set in loadFromBookPump()';
+    }
+
+    this.needsLoading_ = false;
+    let bookBinderPromise = null;
+    return new Promise((resolve, reject) => {
+      bookPump.subscribeToAllEvents(this, evt => {
+        // If we get any error, reject the promise to create a book.
+        if (evt.type === BookPumpEventType.BOOKPUMP_ERROR) {
+          reject(evt.err);
+        }
+
+        // If we do not have a book binder yet, create it and start the process.
+        if (!bookBinderPromise) {
+          try {
+            bookBinderPromise = this.startBookBinding_(bookUri, evt.ab, evt.totalExpectedSize);
+          } catch (err) {
+            const errMessage = `${err}: ${file.name}`;
+            console.error(errMessage);
+            reject(errMessage);
+          }
+        } else {
+          // Else, we wait on the book binder being finished before processing the event.
+          bookBinderPromise.then(() => {
+            switch (evt.type) {
+              case BookPumpEventType.BOOKPUMP_DATA_RECEIVED:
+                this.bookBinder_.appendBytes(evt.ab);
+                break;
+              case BookPumpEventType.BOOKPUMP_END:
+                resolve(this);
+                break;
+            }
+          });
+        }
+      });
+    });
   }
 
   /**
