@@ -26,6 +26,7 @@ let urlsToCache = [
   'code/kthoom-ipfs.js',
   'code/kthoom.css',
   'code/kthoom.js',
+  'code/main.js',
   'code/menu.js',
   'code/page.js',
   'code/reading-stack.js',

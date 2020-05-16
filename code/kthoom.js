@@ -39,7 +39,7 @@ const GOOGLE_MENU_ITEM_ID = 'menu-open-google-drive';
 /**
  * The main class for the kthoom reader.
  */
-class KthoomApp {
+export class KthoomApp {
   constructor() {
     this.bookViewer_ = new BookViewer();
     this.readingStack_ = new ReadingStack();
@@ -844,7 +844,7 @@ class KthoomApp {
    */
   loadSingleBookFromArrayBuffer(name, bookUri, ab) {
     const book = new Book(name);
-    const bookPromise = book.loadFromArrayBuffer(bookUri, ab)
+    const bookPromise = book.loadFromArrayBuffer(bookUri, ab);
     this.readingStack_.addBook(book);
     return bookPromise;
   }
@@ -943,9 +943,4 @@ class KthoomApp {
     // Show the Close All menu item.
     this.mainMenu_.showMenuItem('menu-close-all', true);
   }
-}
-
-const theApp = new KthoomApp();
-if (!window.kthoom.getApp) {
-  window.kthoom.getApp = () => theApp;
 }

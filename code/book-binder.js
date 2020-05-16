@@ -8,6 +8,7 @@
 
 import { UnarchiveEventType, getUnarchiver } from './bitjs/archive/archive.js';
 import { BookProgressEvent } from './book-events.js';
+import { config } from './config.js';
 import { EventEmitter } from './event-emitter.js';
 import { Params } from './helpers.js';
 
@@ -26,7 +27,7 @@ export class BookBinder extends EventEmitter {
   /**
    * @param {string} fileNameOrUri
    * @param {ArrayBuffer} ab The ArrayBuffer to initialize the BookBinder.
-   * @param {numbeer} totalExpectedSize The total number of bytes expected.
+   * @param {number} totalExpectedSize The total number of bytes expected.
    */
   constructor(fileNameOrUri, ab, totalExpectedSize) {
     super();
@@ -64,7 +65,7 @@ export class BookBinder extends EventEmitter {
     this.unarchiveState_ = UnarchiveState.UNARCHIVING_NOT_YET_STARTED;
 
     const unarchiverOptions = {
-      'pathToBitJS': 'code/bitjs/',
+      'pathToBitJS': config.get('PATH_TO_BITJS'),
       'debug': (Params.debug === 'true'),
     };
 
