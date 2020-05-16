@@ -26,7 +26,6 @@ function defineGoogleHooks() {
   ].join(' ');
 
   // TODO: Turn this script into a module and remove most things from window.kthoom.google.
-  // TODO: Use ES2015 method definitions when we drop IE support?
   window.kthoom.google = {
     isBooted: false,
     isSignedIn: false,

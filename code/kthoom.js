@@ -58,6 +58,9 @@ export class KthoomApp {
     /** @private {Menu} */
     this.viewerContextMenu_ = null;
 
+    /** @private {boolean} */
+    this.hasHelpOverlay_ = getElem('helpOverlay');
+
     // This Promise resolves when kthoom is ready.
     this.initializedPromise_ = new Promise((resolve, reject) => {
       // This Promise resolves when the DOM is ready.
@@ -318,7 +321,7 @@ export class KthoomApp {
    * @private
    */
   isHelpOpened_() {
-    return getElem('helpOverlay').classList.contains('opened');
+    return this.hasHelpOverlay_ && getElem('helpOverlay').classList.contains('opened');
   }
 
   /** @private */
@@ -427,7 +430,11 @@ export class KthoomApp {
         }
         break;
       case Key.I: kthoom.ipfs.ipfsHashWindow(); break;
-      case Key.QUESTION_MARK: this.toggleHelpOpen_(); break;
+      case Key.QUESTION_MARK:
+        if (this.hasHelpOverlay_) {
+          this.toggleHelpOpen_();
+        }
+        break;
       case Key.M:
         if (!isMenuOpen) {
           this.mainMenu_.open();
@@ -654,7 +661,9 @@ export class KthoomApp {
 
   /** @private */
   toggleHelpOpen_() {
-    getElem('helpOverlay').classList.toggle('opened');
+    if (this.hasHelpOverlay_) {
+      getElem('helpOverlay').classList.toggle('opened');
+    }
   }
 
   /** @private */
@@ -795,7 +804,10 @@ export class KthoomApp {
 
       this.bookViewer_.closeBook();
       this.currentBook_ = null;
-      getElem('background').setAttribute('style', 'background-image: url("images/logo.svg")');
+      const bkgndEl = getElem('background');
+      if (bkgndEl) {
+        bkgndEl.setAttribute('style', 'background-image: url("images/logo.svg")');
+      }
       this.mainMenu_.showMenuItem('menu-close-all', false);
       for (const button of ['prevBook', 'prev', 'next', 'nextBook'].map(getElem)) {
         button.setAttribute('disabled', 'true');
@@ -926,7 +938,10 @@ export class KthoomApp {
       this.bookViewer_.closeBook();
 
       // hide logo
-      getElem('background').setAttribute('style', 'display:none');
+      const bkgndEl = getElem('background');
+      if (bkgndEl) {
+        bkgndEl.setAttribute('style', 'display:none');
+      }
 
       this.currentBook_ = book;
       this.bookViewer_.setCurrentBook(book);
