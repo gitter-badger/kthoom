@@ -22,6 +22,11 @@ export const FitMode = {
 }
 
 const px = v => v + 'px';
+const THROBBER_TIMER_MS = 60;
+const NUM_THROBBERS = 4;
+const THROBBER_WIDTH = 4.2;
+const MIN_THROBBER_X = 3;
+const MAX_THROBBER_X = 86;
 
 /**
  * The BookViewer is responsible for letting the user view the current book, navigate its pages,
@@ -43,7 +48,13 @@ export class BookViewer {
     this.wheelTimer_ = null;
     this.wheelTurnedPageAt_ = 0;
 
-    this.progressBarAnimationPromise_ = Promise.resolve(true);
+    this.throbberTimerId_ = null;
+    this.throbbers_ = new Array(NUM_THROBBERS);
+    this.throbberDirections_ = new Array(NUM_THROBBERS);
+    for (let thr = 0; thr < this.throbberDirections_.length; ++thr) {
+      this.throbbers_[thr] = getElem(`throbber_${thr}`);
+      this.throbberDirections_[thr] = (thr % 2 == 0) ? 1 : -1;
+    }
 
     this.numPagesInViewer_ = 1;
 
@@ -54,14 +65,14 @@ export class BookViewer {
   initProgressMeter_() {
     const pdiv = getElem('progress');
     const svg = getElem('svgprogress');
-    svg.addEventListener('click',  (evt) => {
+    svg.addEventListener('click', (evt) => {
       let l = 0;
       const docEl = document.documentElement;
       for (let el = pdiv; el != docEl; el = el.parentNode) {
         l += el.offsetLeft;
       }
       const totalPages = this.currentBook_.getNumberOfPages();
-      const page = Math.max(1, Math.ceil(((evt.clientX - l)/pdiv.offsetWidth) * totalPages)) - 1;
+      const page = Math.max(1, Math.ceil(((evt.clientX - l) / pdiv.offsetWidth) * totalPages)) - 1;
       this.currentPageNum_ = page;
       this.updateLayout();
     });
@@ -91,7 +102,7 @@ export class BookViewer {
     }, 200);
 
     // Determine what delta is relevant based on orientation.
-    const delta = (this.rotateTimes_ %2 == 0 ? evt.deltaX : evt.deltaY);
+    const delta = (this.rotateTimes_ % 2 == 0 ? evt.deltaX : evt.deltaY);
 
     // If we turned the page, we won't let the page turn again until the delta
     // is below the hysteresis threshold (i.e. the swipe has lost its momentum).
@@ -124,6 +135,11 @@ export class BookViewer {
     if (evt.source === this.currentBook_) {
       switch (evt.type) {
         case BookEventType.PROGRESS:
+          if (this.throbberTimerId_) {
+            clearInterval(this.throbberTimerId_);
+            this.throbberTimerId_ = null;
+            this.throbbers_.forEach(el => el.style.visibility = 'hidden');
+          }
           getElem('header').classList.add('animating');
           this.updateProgressMeter();
           break;
@@ -246,7 +262,7 @@ export class BookViewer {
       if (portraitMode) {
         // Portrait, 1-page.
         if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
+          (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
           // fit-width, 1-page.
           // fit-best, 1-page, width maxed.
           pw = bv.width;
@@ -281,13 +297,13 @@ export class BookViewer {
       } else {
         // Landscape, 1-page.
         if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && par > (1/bv.ar))) {
+          (this.fitMode_ === FitMode.Best && par > (1 / bv.ar))) {
           // fit-best, 1-page, width-maxed.
           // fit-width, 1-page.
           pw = bv.height;
           ph = pw / par;
           pl = rotx - pw / 2;
-          if (par > (1/bv.ar)) { // not scrollable.
+          if (par > (1 / bv.ar)) { // not scrollable.
             pt = roty - ph / 2;
           } else { // fit-width, scrollable.
             pt = roty - bv.width / 2;
@@ -301,7 +317,7 @@ export class BookViewer {
           ph = bv.width;
           pw = ph * par;
           pt = roty - ph / 2;
-          if (par < (1/bv.ar)) { // not scrollable.
+          if (par < (1 / bv.ar)) { // not scrollable.
             pl = rotx - pw / 2;
           } else { // fit-height, scrollable.
             pl = rotx - bv.height / 2;
@@ -339,7 +355,7 @@ export class BookViewer {
 
         // Portrait, 2-page.
         if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
+          (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
           // fit-width, 2-page.
           // fit-best, 2-page, width maxed.
           pw = bv.width / 2;
@@ -376,13 +392,13 @@ export class BookViewer {
 
         // Landscape, 2-page.
         if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && par > (1/bv.ar))) {
+          (this.fitMode_ === FitMode.Best && par > (1 / bv.ar))) {
           // fit-best, 2-page, width-maxed.
           // fit-width, 2-page.
           pw = bv.height / 2;
           ph = pw / par;
           pl1 = rotx - pw;
-          if (par > (1/bv.ar)) { // not scrollable.
+          if (par > (1 / bv.ar)) { // not scrollable.
             pt1 = roty - ph / 2;
           } else { // fit-width, scrollable.
             pt1 = roty - bv.width / 2;
@@ -396,7 +412,7 @@ export class BookViewer {
           ph = bv.width;
           pw = ph * par;
           pt1 = roty - ph / 2;
-          if (par < (1/bv.ar)) { // not scrollable.
+          if (par < (1 / bv.ar)) { // not scrollable.
             pl1 = rotx - pw;
           } else { // fit-height, scrollable.
             pl1 = rotx - bv.height / 2;
@@ -428,7 +444,7 @@ export class BookViewer {
 
       this.showPageInViewer_(this.currentPageNum_, page1);
       this.showPageInViewer_((this.currentPageNum_ < this.currentBook_.getNumberOfPages() - 1) ?
-          this.currentPageNum_ + 1 : 0, page2);
+        this.currentPageNum_ + 1 : 0, page2);
     }
 
     // Rotate the book viewer viewport.
@@ -449,7 +465,7 @@ export class BookViewer {
     const numPages = this.currentBook_.getNumberOfPages();
     getElem('page').innerHTML = (pageNum + 1) + '/' + numPages;
     getElem('pagemeter').setAttribute('width',
-        100 * (numPages == 0 ? 0 : ((pageNum + this.numPagesInViewer_) / numPages)) + '%');
+      100 * (numPages == 0 ? 0 : ((pageNum + this.numPagesInViewer_) / numPages)) + '%');
   }
 
   /** @private */
@@ -469,6 +485,34 @@ export class BookViewer {
 
       this.currentBook_ = book;
       book.subscribeToAllEvents(this, evt => this.handleBookEvent_(evt));
+
+      const getX = (el) => parseFloat(el.getAttribute('x'), 10);
+      this.throbbers_.forEach(el => el.style.visibility = 'visible');
+      this.throbberTimerId_ = setInterval(() => {
+        // Animate throbbers until first byte loads.
+        const T = this.throbbers_.length;
+        for (let thr = 0; thr < T; ++thr) {
+          // Throbbers travel along the bar until they bump into another throbber or the edge.
+          const prev = thr - 1;
+          const next = thr + 1;
+          const MIN_X = (prev >= 0) ? getX(this.throbbers_[prev]) + THROBBER_WIDTH : MIN_THROBBER_X;
+          const MAX_X = (next < T) ? getX(this.throbbers_[next]) : MAX_THROBBER_X;
+
+          // Advance throbber's position.
+          let pos = getX(this.throbbers_[thr]) + this.throbberDirections_[thr] * (1 + thr * 0.25);
+          // If it hit something, reverse direction.
+          if ((pos + THROBBER_WIDTH) >= MAX_X && this.throbberDirections_[thr] > 0) {
+            pos = MAX_X;
+            this.throbberDirections_[thr] = -1;
+          } else if (pos <= MIN_X && this.throbberDirections_[thr] < 0) {
+            pos = MIN_X;
+            this.throbberDirections_[thr] = 1;
+          }
+          // Update position
+          this.throbbers_[thr].setAttribute('x', `${pos}%`);
+        }
+      }, THROBBER_TIMER_MS);
+
       this.currentPageNum_ = 0;
       this.updateProgressMeter();
       this.updateLayout();
@@ -510,7 +554,7 @@ export class BookViewer {
   showNextPage() {
     // If there is no current book, or the viewer is showing the last pages of the book, just return.
     if (!this.currentBook_ ||
-        (this.currentPageNum_ >= this.currentBook_.getNumberOfPages() - this.numPagesInViewer_)) {
+      (this.currentPageNum_ >= this.currentBook_.getNumberOfPages() - this.numPagesInViewer_)) {
       return false;
     }
 
@@ -521,7 +565,7 @@ export class BookViewer {
 
   showPage(n) {
     if (!this.currentBook_ ||
-        (n < 0 || n >= this.currentBook_.getNumberOfPages() || n == this.currentPageNum_)) {
+      (n < 0 || n >= this.currentBook_.getNumberOfPages() || n == this.currentPageNum_)) {
       return;
     }
     this.currentPageNum_ = n;
@@ -639,7 +683,7 @@ export class BookViewer {
   showPageInViewer_(pageNum, pageViewerEl) {
     assert(this.currentBook_, 'Current book not defined in setPageContents_()');
     assert(this.currentBook_.getNumberOfPages() > pageNum,
-        'Book does not have enough pages in setPageContents_()');
+      'Book does not have enough pages in setPageContents_()');
 
     const thePage = this.currentBook_.getPage(pageNum);
     // It's possible we are in a 2-page viewer, but the page is not in the book yet.
