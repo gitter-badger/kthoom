@@ -44,6 +44,8 @@ export class KthoomApp {
     this.bookViewer_ = new BookViewer();
     this.readingStack_ = new ReadingStack();
 
+    this.keysHeld_ = {};
+
     this.currentBook_ = null;
 
     /** @private {Menu} */
@@ -101,6 +103,7 @@ export class KthoomApp {
     this.initUnloadHandler_();
 
     document.addEventListener('keydown', (e) => this.keyHandler_(e), false);
+    document.addEventListener('keyup', (e) => this.keysHeld_[e.keyCode] = 0);
 
     this.loadSettings_();
     this.parseParams_();
@@ -402,6 +405,8 @@ export class KthoomApp {
   /** @private */
   keyHandler_(evt) {
     const code = evt.keyCode;
+    if (!this.keysHeld_[code]) this.keysHeld_[code] = 0;
+    this.keysHeld_[code]++;
 
     // If the overlay is shown, the only keystroke we handle is closing it.
     if (this.isHelpOpened_()) {
@@ -697,7 +702,9 @@ export class KthoomApp {
       if (this.readingStack_.getNumberOfBooks() == 1) {
         this.bookViewer_.showPage(this.currentBook_.getNumberOfPages() - 1);
       } else {
-        this.readingStack_.changeToPrevBook();
+        if (this.keysHeld_[Key.LEFT] <= 1) {
+          this.readingStack_.changeToPrevBook();
+        }
       }
     }
   }
@@ -711,7 +718,9 @@ export class KthoomApp {
       if (this.readingStack_.getNumberOfBooks() == 1) {
         this.bookViewer_.showPage(0);
       } else {
-        this.readingStack_.changeToNextBook();
+        if (this.keysHeld_[Key.RIGHT] <= 1) {
+          this.readingStack_.changeToNextBook();
+        }
       }
     }
   }
