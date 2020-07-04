@@ -171,6 +171,7 @@ export class KthoomApp {
           this.viewMenu_.setMenuItemSelected('menu-view-fit-best', fitMode === FitMode.Best);
           this.viewMenu_.setMenuItemSelected('menu-view-fit-height', fitMode === FitMode.Height);
           this.viewMenu_.setMenuItemSelected('menu-view-fit-width', fitMode === FitMode.Width);
+          closeMainMenu();
           break;
       }
     }, MenuEventType.ITEM_SELECTED);

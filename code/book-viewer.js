@@ -499,7 +499,7 @@ export class BookViewer {
           const MAX_X = (next < T) ? getX(this.throbbers_[next]) : MAX_THROBBER_X;
 
           // Advance throbber's position.
-          let pos = getX(this.throbbers_[thr]) + this.throbberDirections_[thr] * (1 + thr * 0.25);
+          let pos = getX(this.throbbers_[thr]) + this.throbberDirections_[thr];// * (1 + thr * 0.25);
           // If it hit something, reverse direction.
           if ((pos + THROBBER_WIDTH) >= MAX_X && this.throbberDirections_[thr] > 0) {
             pos = MAX_X;

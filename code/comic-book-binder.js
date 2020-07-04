@@ -115,7 +115,7 @@ export class ComicBookBinder extends BookBinder {
 
             // =====================================================================================
             // Special Case 1:  Files are incorrectly named foo8.jpg, foo9.jpg, foo10.jpg.
-            // This causes foo10.jpg to sort before foo8.jpg when listing alphbatically.
+            // This causes foo10.jpg to sort before foo8.jpg when listing alphabetically.
 
             // Strip off file extension.
             const aName = a.getPageName().replace(/\.[^/.]+$/, '');

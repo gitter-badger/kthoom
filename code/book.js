@@ -120,7 +120,7 @@ export class Book extends EventEmitter {
           }
           this.notify(new BookProgressEvent(this, this.pages_.length));
         }
-      }
+      };
       xhr.onload = (evt) => {
         const ab = evt.target.response;
         this.startBookBinding_(this.uri_, ab, expectedSize);
@@ -128,7 +128,7 @@ export class Book extends EventEmitter {
       };
       xhr.onerror = (err) => {
         reject(err);
-      }
+      };
       xhr.send(null);
     });
   }
