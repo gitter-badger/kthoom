@@ -105,7 +105,8 @@ dl.helplist dd {
   position: absolute;
   right: 0;
   top: 1px;
-  width: 10em;
+  white-space: nowrap;
+  width: 11.5em;
 }
 
 .navbutton {
@@ -115,7 +116,7 @@ dl.helplist dd {
   color: grey;
   cursor: pointer;
   font-weight: bold;
-  height: 2.5em;
+  height: 2em;
   padding: 0;
   user-select: none;
   width: 2.5em;
@@ -147,7 +148,7 @@ dl.helplist dd {
   position: absolute;
   left: 2.5em;
   height: 1.25em;
-  right: 10.5em;
+  right: 12em;
   top: 0.33em;
   text-align: right;
 }
