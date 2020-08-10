@@ -132,14 +132,15 @@ export class BookViewer {
    * @private
    */
   handleBookEvent_(evt) {
+    if (this.throbberTimerId_) {
+      clearInterval(this.throbberTimerId_);
+      this.throbberTimerId_ = null;
+      this.throbbers_.forEach(el => el.style.visibility = 'hidden');
+    }
+
     if (evt.source === this.currentBook_) {
       switch (evt.type) {
         case BookEventType.PROGRESS:
-          if (this.throbberTimerId_) {
-            clearInterval(this.throbberTimerId_);
-            this.throbberTimerId_ = null;
-            this.throbbers_.forEach(el => el.style.visibility = 'hidden');
-          }
           getElem('header').classList.add('animating');
           this.updateProgressMeter();
           break;
