@@ -23,6 +23,7 @@ export const FitMode = {
 
 const px = v => v + 'px';
 const THROBBER_TIMER_MS = 60;
+const MAX_THROBBING_TIME_MS = 10000;
 const NUM_THROBBERS = 4;
 const THROBBER_WIDTH = 4.2;
 const MIN_THROBBER_X = 3;
@@ -55,6 +56,7 @@ export class BookViewer {
       this.throbbers_[thr] = getElem(`throbber_${thr}`);
       this.throbberDirections_[thr] = (thr % 2 == 0) ? 1 : -1;
     }
+    this.throbbingTime_ = 0;
 
     this.numPagesInViewer_ = 1;
 
@@ -132,11 +134,7 @@ export class BookViewer {
    * @private
    */
   handleBookEvent_(evt) {
-    if (this.throbberTimerId_) {
-      clearInterval(this.throbberTimerId_);
-      this.throbberTimerId_ = null;
-      this.throbbers_.forEach(el => el.style.visibility = 'hidden');
-    }
+    this.killThrobbing_();
 
     if (evt.source === this.currentBook_) {
       switch (evt.type) {
@@ -189,6 +187,16 @@ export class BookViewer {
   }
 
   getNumPagesInViewer() { return this.numPagesInViewer_; }
+
+  /** @private */
+  killThrobbing_() {
+    if (this.throbberTimerId_) {
+      clearInterval(this.throbberTimerId_);
+      this.throbberTimerId_ = null;
+      this.throbbers_.forEach(el => el.style.visibility = 'hidden');
+      this.throbbingTime_ = 0;
+    }
+  }
 
   /**
    * Sets the number of pages in the viewer (1- or 2-page viewer are supported).
@@ -483,6 +491,7 @@ export class BookViewer {
   setCurrentBook(book) {
     if (book && this.currentBook_ !== book) {
       this.closeBook();
+      this.killThrobbing_();
 
       this.currentBook_ = book;
       book.subscribeToAllEvents(this, evt => this.handleBookEvent_(evt));
@@ -490,6 +499,11 @@ export class BookViewer {
       const getX = (el) => parseFloat(el.getAttribute('x'), 10);
       this.throbbers_.forEach(el => el.style.visibility = 'visible');
       this.throbberTimerId_ = setInterval(() => {
+        this.throbbingTime_ += THROBBER_TIMER_MS;
+        if (this.throbbingTime_ > MAX_THROBBING_TIME_MS) {
+          this.killThrobbing_();
+        }
+
         // Animate throbbers until first byte loads.
         const T = this.throbbers_.length;
         for (let thr = 0; thr < T; ++thr) {
