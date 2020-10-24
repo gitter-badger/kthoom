@@ -16,6 +16,60 @@ const MENU_OVERLAY_CLOSED_STYLE = 'display:none;' + MENU_OVERLAY_OPEN_STYLE;
 const MENU_CONTAINER = 'allMenus';
 
 /**
+ * Problems we are trying to solve:
+ * - basically menu is not encapsulated and re-useable... plus:
+ * - lots of markup for menus in the main html (120 lines for 4 menus with 18 menu items)
+ * - lots of duplicated markup for each menu item
+ * - lots of code to manage menus in calling code (kthoom.js, initMenus_())
+ * - non-portable component with non-portable styling
+ *
+ * New idea:
+ * - use custom elements to define app-menu-item and app-menu
+ * - the custom elements use shadow dom to hide their DOM contents, and include the style (remove from kthoom.js)
+ * - the custom elements have attributes that are observed: action-type
+ * - the app-menu-item uses a template with slots to fill in menu item text and shortcut key
+ * - the calling code instantiates an app-menu element, then creates app-menu-item objects to add to it (this can be a factory method)
+ * - the calling code establishes the relationships between menus/sub-menus.
+ * - the calling code establishes what happens when each menu item is selected/clicked
+ *
+ *  - menu items can have different properties:
+ *    - id: optional
+ *    - type: separate, toggle, file, sub-menu
+ *    - an item of type toggle gets a separate property of whether it should be checked or not (default not)
+ *    - an item of type file gets a separate property of whether the file picker should allow multiple files (default not)
+ *    - an item of type gets a reference to the AppMenu representing its sub-menu
+ *
+ *  <app-menu id="temp-openMenu" aria-label="OpenMenu">
+ *    <app-menu-item id="open-local-files" action-type="file-multiple" shorcut-key="O"></app-menu-item>
+ *    <app-menu-item id="open-url" shortcut-key="U"></app-menu-item>
+ *    <app-menu-item id="open-google-drive" shortcut-key="G" show="false"></app-menu-item>
+ *    <app-menu-item id="open-ipfs-hash" shortcut-key="I" show="false"></app-menu-item>
+ *  </app-menu>
+ *
+ * Calling code:
+ *
+ * this.openMenu_ = new AppMenu({id: 'open-menu'});
+ * this.openMenu_.appendChild(createMenuItem({
+ *   label: 'Open local file',
+ *   shortcutKey: Key.O,
+ *   type: AppMenuItemType.FILE,
+ *   mode: FileMode.MULTIPLE,
+ * }, () => this.openLocalFiles_()));
+ *
+ * this.viewMenu_ = new AppMenu({id: 'view-menu'});
+ * this.onePageMenuItem_ = createMenuItem({
+ *   label: '1-page viewer',
+ *   shorcutKey: Key.NUM_1,
+ *   type: AppMenuItemType.TOGGLE,
+ *   selected: true,
+ * }, () => this.setPageMode_(1));
+ * this.viewMenu_.appendChild(this.onePageMenuItem_);
+ *
+ * this.mainMenu_ = new AppMenu();
+ * this.mainMenu.appendChild(createMenuItem({ menu: this.openMenu_ }));
+ * this.mainMenu.appendChild(createMenuItem({ menu: this.viewMenu_ }));
+ */
+/**
  * @type {Set<Menu>}
  */
 const openMenus = new Set();
@@ -58,31 +112,6 @@ export class MenuEvent {
   }
 }
 
-export class MenuOpenEvent extends MenuEvent {
-  constructor(menu) {
-    super(menu, MenuEventType.OPEN);
-  }
-}
-
-export class MenuCloseEvent extends MenuEvent {
-  constructor(menu) {
-    super(menu, MenuEventType.CLOSE);
-  }
-}
-
-export class MenuItemSelectedEvent extends MenuEvent {
-  /**
-   * @param {Menu} menu 
-   * @param {Element} item 
-   */
-  constructor(menu, item) {
-    super(menu, MenuEventType.ITEM_SELECTED);
-    /** @type {Element} */
-    this.item = item;
-  }
-}
-
-
 /**
  * A menu owns its DOM, is constructed from a list of menu items and manages rendering and
  * interaction.  Clients create menus and add event listeners for when menu items are selected.
@@ -113,7 +142,7 @@ export class Menu extends EventEmitter {
    */
   addSubMenu(menuItemId, subMenu) {
     assert(!Array.from(this.subMenuMap_.values()).includes(subMenu), 'Submenu already part of this menu.');
-    assert(!this.subMenuMap_.has(menuItemId), `Menu already has a submenu mappeed for ${menuItemId}`);
+    assert(!this.subMenuMap_.has(menuItemId), `Menu already has a submenu mapped for ${menuItemId}`);
     const menuEl = this.dom_.firstElementChild;
     const menuItem = menuEl.querySelectorAll(`[id="${menuItemId}"][role="menuitem"]`);
     assert(!!menuItem, `Menu item "${menuItemId} not found in menu`);
@@ -135,7 +164,7 @@ export class Menu extends EventEmitter {
 
     this.dom_.style = MENU_CLOSED_STYLE;
     openMenus.delete(this);
-    this.notify(new MenuCloseEvent(this));
+    this.notify({ type: MenuEventType.CLOSE, menu: this });
 
     if (openMenus.size === 0) {
       overlay.style = MENU_OVERLAY_CLOSED_STYLE;
@@ -179,11 +208,11 @@ export class Menu extends EventEmitter {
           } else {
             menuItemEl.setAttribute('aria-expanded', 'false');
             menuItemEl.focus();
-            this.notify(new MenuItemSelectedEvent(this, menuItem));
+            this.notify({ type: MenuEventType.ITEM_SELECTED, menu: this, item: menuItem });
           }
         } else {
           this.close();
-          this.notify(new MenuItemSelectedEvent(this, menuItem));
+          this.notify({ type: MenuEventType.ITEM_SELECTED, menu: this, item: menuItem });
         }
       });
     }
@@ -307,7 +336,7 @@ export class Menu extends EventEmitter {
     const style = MENU_OPEN_STYLE + `left:${left}px;top:${top}px;`;
     this.dom_.style = style;
     openMenus.add(this);
-    this.notify(new MenuOpenEvent(this));
+    this.notify({ type: MenuEventType.OPEN, menu: this });
 
     const menuEl = this.dom_.firstElementChild;
     const firstMenuElem = menuEl.querySelector('[role="menuitem"]:not([disabled="true"])');
