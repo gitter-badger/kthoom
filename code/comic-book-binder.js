@@ -125,14 +125,20 @@ export class ComicBookBinder extends BookBinder {
             const aMatch = aName.match(/(\d+)$/g);
             const bMatch = bName.match(/(\d+)$/g);
             if (aMatch && aMatch.length === 1 && bMatch && bMatch.length === 1) {
-              // ... and the prefixes match exactly ...
+              // ... and the prefixes case-insensitive match ...
               const aPrefix = aName.substring(0, aName.length - aMatch[0].length);
               const bPrefix = aName.substring(0, bName.length - bMatch[0].length);
-              if (aPrefix === bPrefix) {
+              if (aPrefix.toLowerCase() === bPrefix.toLowerCase()) {
                 // ... then numerically evaluate the numbers for sorting purposes.
                 return parseInt(aMatch[0], 10) > parseInt(bMatch[0], 10) ? 1 : -1;
               }
             }
+
+            // Special Case 2?  I've seen this one a couple times:
+            // RobinHood12-02.jpg, RobinHood12-03.jpg, robinhood12-01.jpg, robinhood12-04.jpg.
+            // If a common prefix is used, and we find a file that has the same common prefix
+            // but not the right case, then case-insensitive lexical sort?
+
             // =====================================================================================
 
             // Default is case-sensitive lexical/alphabetical sort.
