@@ -8,6 +8,7 @@ The format is simple:
 
 ```json
 {
+  "baseURI": "https://example.com",
   "items": [
     {"type": "book", "uri": "/foo/bar.cbz", "name": "Optional name"},
     {"type": "book", "uri": "http://example.com/foo/baz.cbr"}
@@ -15,7 +16,11 @@ The format is simple:
 }
 ```
 
-  * The "uri" field must be a URI reference that points to a comic book file (.cbz, .cbr).
+  * The "baseURI" field is optional.  If present, it is used to resolve item URI references.
+  * The "uri" field must be an absolute URI or a URI reference that points to a comic book file (.cbz, .cbr).  If it is a URI reference:
+    * if baseURI is present, that is used
+    * else if the Reading List file was fetched via a URI, the Reading List file's URI base is used
+    * otherwise, behavior is undefined.
   * The "type" field must have the value "book".
   * The "name" field is optional and can be a short name for the comic book.
 

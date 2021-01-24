@@ -645,7 +645,7 @@ export class KthoomApp {
       xhr.open('GET', url, true);
       xhr.responseType = 'blob';
       xhr.onload = (evt) => {
-        resolve(this.loadAndParseReadingList_(evt.target.response));
+        resolve(this.loadAndParseReadingList_(evt.target.response, url));
       };
       xhr.onerror = (err) => {
         console.error(err);
@@ -661,7 +661,12 @@ export class KthoomApp {
       const fsPromise = document.fullscreenElement ?
         document.exitFullscreen() :
         document.documentElement.requestFullscreen();
-      fsPromise.then(() => this.bookViewer_.updateLayout());
+      fsPromise
+          .then(() => this.bookViewer_.updateLayout())
+          .catch(err => {
+            debugger;
+          })
+
     }
   }
 
@@ -893,14 +898,16 @@ export class KthoomApp {
    *     ...
    *   ]
    * }
+   * There may be a "baseURI" property, which will be used to resolve URI references.
    * Each item may also contain an optional name field.  See jrl-schema.json for the full schema.
    * TODO: Move this to a separate module for processing JSON Reading Lists?
    * @param {Blob|File} jsonBlob The JSON blob/file.
+   * @param {string=} readingListUri Optional URI of the reading list file.
    * @return {Promise<Array<Object>>} Returns a Promise that will resolve with an array of item
    *     objects (see format above), or rejects with an error string.
    * @private
    */
-  loadAndParseReadingList_(jsonBlob) {
+  loadAndParseReadingList_(jsonBlob, readingListUri) {
     return new Promise((resolve, reject) => {
       const fr = new FileReader();
       fr.onload = () => {
@@ -910,6 +917,24 @@ export class KthoomApp {
             jsonContents.items.length === 0) {
             reject(null);
           } else {
+            // Set baseURI to the JRL file's baseURI if it exists, otherwise use the reading list's
+            // base URI if it exists, otherwise fallback to kthoom's base URL (which is not
+            // standardized behavior).
+            let baseURI;
+            if (jsonContents.baseURI) {
+              baseURI = new URI(jsonContents.baseURI).origin;
+            } else if (readingListUri) {
+              try {
+                const rlURL = new URL(readingListUri);
+                baseURI = rlURL.origin;
+              } catch (e) {
+                baseURI = document.location.origin;
+              }
+            } else {
+              // Fallback to using kthoom's base URL.
+              baseURI = document.location.origin;
+            }
+
             for (const item of jsonContents.items) {
               // Each item object must at least have a uri string field and be type=book.
               if (!(item instanceof Object) ||
@@ -919,6 +944,20 @@ export class KthoomApp {
                 console.dir(item);
                 reject('Invalid item inside JSON Reading List file');
               }
+
+              // Now resolve each item URI.  First try to parse it as an absolute URI.  If that
+              // fails, try it as a URI reference with the base URI.  If that fails, reject.
+              let itemURL;
+              try {
+                itemURL = new URL(item.uri);
+              } catch (e) {
+                try {
+                  itemURL = new URL(item.uri, baseURI);
+                } catch (e) { reject(e); }
+              }
+
+              // Rewrite each item's URL as an absolute URL.
+              item.uri = itemURL.toString();
             }
             resolve(jsonContents.items);
           }
