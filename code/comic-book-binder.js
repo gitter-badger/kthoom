@@ -29,7 +29,7 @@ export class ComicBookBinder extends BookBinder {
     this.pagePromises_ = [];
 
     /** @private {boolean} */
-    this.optimizedForStreaming_ = false;
+    this.optimizedForStreaming_ = (Params.alwaysOptimizedForStreaming === 'true') || false;
   }
 
   /** @override */
