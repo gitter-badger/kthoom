@@ -42,3 +42,9 @@ NOTE: kthoom loads in local compressed files and decompresses them in the browse
 ### JSON Reading Lists
 
 kthoom supports loading lists of comic book files at once.  Think audio playlists but for comic books!  See [JSON Reading Lists](https://github.com/codedread/kthoom/tree/master/reading-lists) for more.
+
+### URL parameters
+
+  * alwaysOptimizedForStreaming=true: Tells kthoom to render pages immediately as they are de-compressed (this might not work for all comic books as some are not compressed in the order of reading)
+  * bookUri=&lt;url&gt;: Tells kthoom to open the given book (cbz/cbr file).
+  * readingListUri=&lt;url&gt;: Tells kthoom to load the given JSON Reading List (jrl) file and open the first file in that list.
