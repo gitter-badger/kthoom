@@ -1,3 +1,5 @@
+[![Node.js CI](https://github.com/codedread/kthoom/actions/workflows/node.js.yml/badge.svg)](https://github.com/codedread/kthoom/actions/workflows/node.js.yml)
+
 # kthoom
 
 kthoom is a comic book / ebook reader that runs in the browser using client-side open web technologies such as JavaScript, HTML5, the File API, Web Workers, and Typed Arrays.  It can open files from your local hard drive, the network, or Google Drive.
