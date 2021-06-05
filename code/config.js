@@ -25,7 +25,7 @@ class ConfigService {
 
   /**
    * @param {String} key
-   * @param {*} Any value that can be properly serialized to JSON.  This value is round-tripped
+   * @param {*} val Any value that can be properly serialized to JSON.  This value is round-tripped
    *     through JSON.parse(JSON.stringify(val)) before stored.  Do not attempt to store code.
    * @return {ConfigService} Returns this for chaining.
    */

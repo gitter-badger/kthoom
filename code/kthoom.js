@@ -291,6 +291,10 @@ export class KthoomApp {
 
   /** @private */
   initUnloadHandler_() {
+    if (Params['doNotPromptOnClose'] === 'true') {
+      return;
+    }
+
     window.addEventListener('beforeunload', (event) => {
       if (this.readingStack_.getNumberOfBooks() > 0) {
         // Cancel the event as stated by the standard.

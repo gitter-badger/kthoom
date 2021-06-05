@@ -68,7 +68,7 @@ export class EventEmitter {
 
   /**
    * Removes the subscriber for the event type.  If eventType is not specified, then the
-   * subscriber for all events is removeed.
+   * subscriber for all events is removed.
    * @param {Object} context
    * @param {string?} eventType
    */
