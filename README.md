@@ -1,4 +1,5 @@
 [![Node.js CI](https://github.com/codedread/kthoom/actions/workflows/node.js.yml/badge.svg)](https://github.com/codedread/kthoom/actions/workflows/node.js.yml)
+[![CodeQL](https://github.com/starnowski/posmulten/workflows/CodeQL/badge.svg)](https://github.com/codedread/kthoom/actions/workflows/codeql-analysis.yml)
 
 # kthoom
 
