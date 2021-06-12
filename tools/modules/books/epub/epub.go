@@ -1,3 +1,11 @@
+/**
+ * books/epub.go
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2021 Google Inc.
+ */
+
 // This package extracts an epub book file.
 package epub
 

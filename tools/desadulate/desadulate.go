@@ -1,3 +1,11 @@
+/**
+ * desadulate.go
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2021 Google Inc.
+ */
+
 // This pipeline makes a "better" version of a comic book or epub file.
 package main
 

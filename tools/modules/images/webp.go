@@ -1,3 +1,11 @@
+/**
+ * images/webp.go
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2021 Google Inc.
+ */
+
 // Package for dealing with images.
 package images
 

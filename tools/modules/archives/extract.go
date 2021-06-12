@@ -1,3 +1,11 @@
+/**
+ * archives/extract.go
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2021 Google Inc.
+ */
+
 // This package extracts an archive file.
 package archives
 

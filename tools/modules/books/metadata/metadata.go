@@ -1,3 +1,11 @@
+/**
+ * books/metadata.go
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2021 Google Inc.
+ */
+
 // This package deals with metadata for books.
 package metadata
 

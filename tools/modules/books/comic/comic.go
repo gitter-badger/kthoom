@@ -1,3 +1,11 @@
+/**
+ * books/comic.go
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2021 Google Inc.
+ */
+
 // This package extracts a comic book file.
 package comic
 
