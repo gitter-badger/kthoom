@@ -6,7 +6,8 @@
  * Copyright(c) 2018 Google Inc.
  */
 import { createBookBinderAsync } from './book-binder.js';
-import { BookEventType, BookLoadingStartedEvent, BookProgressEvent } from './book-events.js';
+import { BookEventType, BookLoadingStartedEvent, BookLoadingCompleteEvent,
+         BookProgressEvent } from './book-events.js';
 import { BookPumpEventType } from './book-pump.js';
 import { EventEmitter } from './event-emitter.js';
 
@@ -48,6 +49,39 @@ export class Book extends EventEmitter {
 
     /** @private {boolean} */
     this.needsLoading_ = true;
+
+    /** @private {boolean} */
+    this.finishedLoading_ = false;
+
+    /**
+     * A reference to the ArrayBuffer is kept to let the user easily download a copy.
+     * This array buffer is only valid once the book has fully loaded.
+     * @private {ArrayBuffer}
+     */
+    this.arrayBuffer_ = null;
+  }
+
+  /**
+   * Called when bytes have been appended. This creates a new ArrayBuffer.
+   * @param {ArrayBuffer} appendBuffer
+   */
+  appendBytes(appendBuffer) {
+    let newBuffer = new Uint8Array(this.arrayBuffer_.length + appendBuffer.length);
+    newBuffer.set(this.arrayBuffer_, 0);
+    newBuffer.set(appendBuffer, this.arrayBuffer_.length);
+    this.arrayBuffer_ = newBuffer;
+  }
+
+  /** @return {Promise<ArrayBuffer>} */
+  getArrayBuffer() {
+    return this.arrayBuffer_;
+  }
+
+  getMIMEType() {
+    if (!this.bookBinder_) {
+      throw 'Cannot call getMIMEType() without a BookBinder';
+    }
+    return this.bookBinder_.getMIMEType();
   }
 
   getName() { return this.name_; }
@@ -84,6 +118,11 @@ export class Book extends EventEmitter {
   /** @return {string} */
   getUri() {
     return this.uri_;
+  }
+
+  /** @return {boolean} */
+  isFinishedLoading() {
+    return this.finishedLoading_;
   }
 
   /**
@@ -124,6 +163,8 @@ export class Book extends EventEmitter {
       xhr.onload = (evt) => {
         const ab = evt.target.response;
         this.startBookBinding_(this.uri_, ab, expectedSize);
+        this.finishedLoading_ = true;
+        this.notify(new BookLoadingCompleteEvent(this));
         resolve(this);
       };
       xhr.onerror = (err) => {
@@ -162,8 +203,11 @@ export class Book extends EventEmitter {
               })
             }
             this.bookBinder_.appendBytes(value.buffer);
+            this.appendBytes(value.buffer);
             return readAndProcessNextChunk();
           } else {
+            this.finishedLoading_ = true;
+            this.notify(new BookLoadingCompleteEvent(this));
             return this;
           }
         });
@@ -196,6 +240,8 @@ export class Book extends EventEmitter {
         const ab = fr.result;
         try {
           this.startBookBinding_(file.name, ab, ab.byteLength);
+          this.finishedLoading_ = true;
+          this.notify(new BookLoadingCompleteEvent(this));
         } catch (err) {
           const errMessage = err + ': ' + file.name;
           console.error(errMessage);
@@ -222,8 +268,9 @@ export class Book extends EventEmitter {
 
     this.needsLoading_ = false;
     this.notify(new BookLoadingStartedEvent(this));
-
     this.startBookBinding_(fileName, ab, ab.byteLength);
+    this.finishedLoading_ = true;
+    this.notify(new BookLoadingCompleteEvent(this));
     return Promise.resolve(this);
   }
 
@@ -263,8 +310,11 @@ export class Book extends EventEmitter {
             switch (evt.type) {
               case BookPumpEventType.BOOKPUMP_DATA_RECEIVED:
                 this.bookBinder_.appendBytes(evt.ab);
+                this.appendBytes(value.buffer);
                 break;
               case BookPumpEventType.BOOKPUMP_END:
+                this.finishedLoading_ = true;
+                this.notify(new BookLoadingCompleteEvent(this));
                 resolve(this);
                 break;
             }
@@ -283,13 +333,16 @@ export class Book extends EventEmitter {
 
   /**
    * Creates and sets the BookBinder, subscribes to its events, and starts the book binding process.
+   * This function is called by all loadFrom... methods.
    * @param {string} fileNameOrUri
-   * @param {ArrayBuffer} ab
+   * @param {ArrayBuffer} ab Starting buffer of bytes. May be complete or may be partial depending
+   *                         on which loadFrom... method was called.
    * @param {number} totalExpectedSize
    * @return {Promise<BookBinder>}
    * @private
    */
   startBookBinding_(fileNameOrUri, ab, totalExpectedSize) {
+    this.arrayBuffer_ = ab;
     return createBookBinderAsync(fileNameOrUri, ab, totalExpectedSize).then(bookBinder => {
       this.bookBinder_ = bookBinder;
       // Extracts some state from the BookBinder events, re-sources the events, and sends them out to

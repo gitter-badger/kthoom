@@ -354,6 +354,7 @@ export class BookViewer {
       page1.style.display = '';
       page2.style.display = '';
 
+      // TODO: Test this.
       // This is the dimensions before transformation.  They can go beyond the bv dimensions.
       let pw, ph, pl1, pt1, pl2, pt2;
 
@@ -604,6 +605,7 @@ export class BookViewer {
       return;
     }
 
+    // TODO: Test this.
     let loadingPct = this.currentBook_.getLoadingPercentage();
     let unzippingPct = this.currentBook_.getUnarchivingPercentage();
     let layingOutPct = this.currentBook_.getLayoutPercentage();

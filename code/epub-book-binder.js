@@ -97,6 +97,10 @@ export class EPUBBookBinder extends BookBinder {
     });
   }
 
+  getMIMEType() {
+    return EPUB_MIMETYPE;
+  }
+
   // TODO: Proper error handling throughout.
 
   /**

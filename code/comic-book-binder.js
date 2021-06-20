@@ -23,6 +23,9 @@ export class ComicBookBinder extends BookBinder {
   constructor(filenameOrUri, ab, totalExpectedSize) {
     super(filenameOrUri, ab, totalExpectedSize);
 
+    /** @private {string} */
+    this.mimeType_ = null;
+
     // As each file becomes available from the Unarchiver, we kick off an async operation
     // to construct a Page object.  After all pages are retrieved, we sort and then extract them.
     // (Or, if the book is stream-optimized, we extract them in order immediately)
@@ -121,6 +124,23 @@ export class ComicBookBinder extends BookBinder {
 
       this.stop();
     });
+
+    switch (this.unarchiver_.getMIMEType()) {
+      case 'application/zip':
+        this.mimeType_ = 'vnd.comicbook+zip';
+        break;
+      case 'application/x-rar-compressed':
+        this.mimeType_ ='vnd.comicbook-rar';
+        break;
+      case 'application/x-tar':
+        this.mimeType_ = 'application/x-cbt';
+        break;
+      default: throw 'Unknown comic book archive type';
+    }
+  }
+
+  getMIMEType() {
+    return this.mimeType_;
   }
 
   /** @override */

@@ -22,6 +22,9 @@ export const UnarchiveState = {
 /**
  * The abstract class for a BookBinder.  Never instantiate one of these yourself.
  * Use createBookBinderAsync() to create an instance of an implementing subclass.
+ *
+ * A BookBinder manages unarchiving the relevant files from the incoming bytes and
+ * emitting useful BookEvents (like progress, page extraction) to subscribers.
  */
 export class BookBinder extends EventEmitter {
   /**
@@ -108,6 +111,14 @@ export class BookBinder extends EventEmitter {
    */
   beforeStart_() {
     throw 'Cannot call beforeStart_() in abstract BookBinder';
+  }
+
+  /**
+   * Override this in an implementing subclass.
+   * @returns {string} The MIME type of the book.
+   */
+  getMIMEType() {
+    throw 'Cannot call getMIMEType() in abstract BookBinder';
   }
 
   getLoadingPercentage() { return this.bytesLoaded_ / this.totalExpectedSize_; }

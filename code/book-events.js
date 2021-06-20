@@ -9,6 +9,7 @@ export const BookEventType = {
   UNKNOWN: 'BOOK_EVENT_UNKNOWN',
   BINDING_COMPLETE: 'BOOK_EVENT_BINDING_COMPLETE',
   LOADING_STARTED: 'BOOK_EVENT_LOADING_STARTED',
+  LOADING_COMPLETE: 'BOOK_EVENT_LOADING_COMPLETE',
   PAGE_EXTRACTED: 'BOOK_EVENT_PAGE_EXTRACTED',
   PROGRESS: 'BOOK_EVENT_PROGRESS',
   UNARCHIVE_COMPLETE: 'BOOK_EVENT_UNARCHIVE_COMPLETE',
@@ -32,6 +33,13 @@ export class BookLoadingStartedEvent extends BookEvent {
   constructor(source) {
     super(source);
     this.type = BookEventType.LOADING_STARTED;
+  }
+}
+
+export class BookLoadingCompleteEvent extends BookEvent {
+  constructor(source) {
+    super(source);
+    this.type = BookEventType.LOADING_COMPLETE;
   }
 }
 

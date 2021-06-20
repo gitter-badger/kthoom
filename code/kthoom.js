@@ -46,6 +46,7 @@ export class KthoomApp {
 
     this.keysHeld_ = {};
 
+    /** @private {Book} */
     this.currentBook_ = null;
 
     /** @private {Menu} */
@@ -94,6 +95,10 @@ export class KthoomApp {
   /** @private */
   init_() {
     this.readingStack_.whenCurrentBookChanged(book => this.handleCurrentBookChanged_(book));
+    this.readingStack_.whenCurrentBookHasLoaded(() => {
+      this.mainMenu_.showMenuItem('menu-download', true);
+    });
+
     this.initMenus_();
     this.initNav_();
     this.initDragDrop_();
@@ -182,6 +187,7 @@ export class KthoomApp {
     this.mainMenu_.subscribe(this, evt => getElem('main-menu-button').focus(), MenuEventType.CLOSE);
     this.mainMenu_.subscribe(this, evt => {
       switch (evt.item.id) {
+        case 'menu-download': this.downloadBook_(); break;
         case 'menu-close-all': this.closeAll_(); break;
         case 'menu-help': this.toggleHelpOpen_(); break;
       }
@@ -741,7 +747,7 @@ export class KthoomApp {
    * @return {string}
    */
   getNameForBook_(item) {
-    return item.name || item.uri.split('/').pop().split('.').slice(0, -1).join('.') || item.uri;
+    return item.name || item.uri.split('/').pop() || item.uri;
   }
 
   /**
@@ -827,11 +833,30 @@ export class KthoomApp {
       if (bkgndEl) {
         bkgndEl.setAttribute('style', 'background-image: url("images/logo.svg")');
       }
-      this.mainMenu_.showMenuItem('menu-close-all', false);
       for (const button of ['prevBook', 'prev', 'next', 'nextBook'].map(getElem)) {
         button.setAttribute('disabled', 'true');
       }
+
+      // Disable menu items that are not relevant when no book is opened.
+      this.mainMenu_.showMenuItem('menu-download', false);
+      this.mainMenu_.showMenuItem('menu-close-all', false);
     }
+  }
+
+  /** @private */
+  downloadBook_() {
+    const ab = this.currentBook_.getArrayBuffer();
+    if (!ab) {
+      alert('Could not download a copy of the book. Sorry!');
+      return;
+    }
+
+    const blob = new Blob([ab], {type: this.currentBook_.getMIMEType()});
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    const fileName = this.currentBook_.getName();
+    link.download = fileName;
+    link.click();
   }
 
   /**
@@ -1002,6 +1027,8 @@ export class KthoomApp {
   handleCurrentBookChanged_(book) {
     if (book !== this.currentBook_) {
       this.bookViewer_.closeBook();
+      // Download menu option is not available until the book is fully downloaded.
+      this.mainMenu_.showMenuItem('menu-download', false);
 
       // hide logo
       const bkgndEl = getElem('background');
@@ -1021,7 +1048,8 @@ export class KthoomApp {
         button.removeAttribute('disabled');
       }
     }
-    // Show the Close All menu item.
+
+    // Enable menu items that are relevant when a book is switched to.
     this.mainMenu_.showMenuItem('menu-close-all', true);
   }
 }

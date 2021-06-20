@@ -18,10 +18,17 @@ import { BookEventType } from './book-events.js';
  */
 export class ReadingStack {
   constructor() {
-    /** @typeof {Array<Book>} */
+    /** @type {Array<Book>} */
     this.books_ = [];
+
+    /** @type {number} */
     this.currentBookNum_ = -1;
+
+    /** @type {Array<Function>} */
     this.currentBookChangedCallbacks_ = [];
+
+    /** @type {Array<Function>} */
+    this.currentBookLoadedCallbacks_ = [];
   }
 
   getNumberOfBooks() { return this.books_.length; }
@@ -111,6 +118,10 @@ export class ReadingStack {
     this.currentBookChangedCallbacks_.push(callback);
   }
 
+  whenCurrentBookHasLoaded(callback) {
+    this.currentBookLoadedCallbacks_.push(callback);
+  }
+
   /** @return {boolean} */
   isOpen() {
     return getElem('readingStack').classList.contains('opened');
@@ -141,9 +152,22 @@ export class ReadingStack {
       if (book.needsLoading()) {
         book.loadFromXhr();
       }
+
       for (const callback of this.currentBookChangedCallbacks_) {
         callback(book);
       }
+
+      if (this.currentBookChangedCallbacks_.length > 0) {
+        if (book.isFinishedLoading()) {
+          this.currentBookLoadedCallbacks_.forEach(callback => callback(book));
+        } else {
+          book.subscribe(this, () => {
+            book.unsubscribe(this, BookEventType.LOADING_COMPLETE);
+            this.currentBookLoadedCallbacks_.forEach(callback => callback(book));
+          }, BookEventType.LOADING_COMPLETE);
+        }
+      }
+
       // Re-render to update selected highlight.
       this.renderStack_();
 
