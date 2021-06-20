@@ -1,5 +1,6 @@
 /**
  * File Sniffer.
+ * Makes an attempt to resolve a byte stream into a MIME type.
  *
  * Licensed under the MIT License
  *
@@ -9,10 +10,14 @@
 // A selection from https://en.wikipedia.org/wiki/List_of_file_signatures.
 // Mapping of MIME type to magic numbers.  Each file type can have multiple signatures.
 // '??' is used as a placeholder value.
-// TODO:  Add audio/video formats?
 const fileSignatures = {
   // Document formats.
   'application/pdf': [[0x25, 0x50, 0x44, 0x46, 0x2d]],
+  // Archive formats:
+  'application/x-tar': [
+    [0x75, 0x73, 0x74, 0x61, 0x72, 0x00, 0x30, 0x30],
+    [0x75, 0x73, 0x74, 0x61, 0x72, 0x20, 0x20, 0x00],
+  ],
   // Compressed archive formats.
   'application/x-7z-compressed': [[0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C]],
   'application/x-bzip2': [[0x42, 0x5A, 0x68]],
@@ -24,7 +29,14 @@ const fileSignatures = {
   'image/jpeg': [[0xFF, 0xD8, 0xFF]],
   'image/png': [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]],
   'image/webp': [[0x52, 0x49, 0x46, 0x46, '??', '??', '??', '??', 0x57, 0x45, 0x42, 0x50]],
+  // Audio/Video formats.
+  'application/ogg': [[0x4F, 0x67, 0x67, 0x53]],
+  'audio/mpeg': [[0xFF, 0xFB], [0xFF, 0xF3], [0xFF, 0xF2], [0x49, 0x44, 0x33]],
 };
+
+// TODO: Eventually add support for various container formats so that:
+//   * an OGG container can be resolved to OGG Audio, OGG Video
+//   * an HEIF container can be resolved to AVIF, HEIC
 
 class Node {
   /** @param {number} value */
@@ -88,4 +100,4 @@ export function findMimeType(ab) {
     curNode = curNode.children[byte];
     if (curNode.mimeType) return curNode.mimeType;
   }
-};
+}
