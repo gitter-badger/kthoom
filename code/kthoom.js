@@ -27,6 +27,7 @@ const PNG = 'image/png';
 const JPG = 'image/jpeg';
 const WEBP = 'image/webp';
 
+/** @enum */
 const MENU = {
   MAIN: 'mainMenu',
   OPEN: 'openMenu',

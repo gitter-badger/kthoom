@@ -12,6 +12,7 @@ import { config } from './config.js';
 import { EventEmitter } from './event-emitter.js';
 import { Params } from './helpers.js';
 
+/** @enum */
 export const UnarchiveState = {
   UNARCHIVING_NOT_YET_STARTED: 0,
   UNARCHIVING: 1,

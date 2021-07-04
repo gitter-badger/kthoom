@@ -6,7 +6,10 @@
 
 import { EventEmitter } from './event-emitter.js';
 
-/** @type {Object<String, String>} */
+/**
+ * @type {Object<String, String>}
+ * @enum
+ */
 export const BookPumpEventType = {
   BOOKPUMP_DATA_RECEIVED: 'BOOKPUMP_DATA_RECEIVED',
   BOOKPUMP_END: 'BOOKPUMP_END',

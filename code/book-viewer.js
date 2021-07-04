@@ -15,6 +15,7 @@ const ID_PAGE_1 = 'page1';
 const ID_PAGE_2 = 'page2';
 const SWIPE_THRESHOLD = 50;
 
+/** @enum */
 export const FitMode = {
   Width: 1,
   Height: 2,

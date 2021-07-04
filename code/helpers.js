@@ -6,6 +6,7 @@
  * Copyright(c) 2018 Google Inc.
  */
 
+/** @enum */
 export const Key = {
   TAB: 9,
   ENTER: 13,

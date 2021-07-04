@@ -8,7 +8,7 @@
 
 import { UnarchiveEventType, getUnarchiver } from './bitjs/archive/archive.js';
 import { BookBinder } from './book-binder.js';
-import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
+import { BookBindingCompleteEvent, BookMetadataXmlExtractedEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
 import { createPageFromFileAsync, guessMimeType } from './page.js';
 import { sortPages } from './comic-book-page-sorter.js';
 import { Params } from './helpers.js';
@@ -59,20 +59,26 @@ export class ComicBookBinder extends BookBinder {
             });
           }
         }
-        // If the first file we have is a metadata file, look at it to determine if the comic book
-        // archive file is optimized for streaming.
-        else if (this.pagePromises_.length === 0 && filename.toLowerCase() === 'comicinfo.xml') {
-          // If the book's metadata says the comic book is optimizedForStreaming, then we will emit
-          // page extracted events as they are extracted instead of upon all files being extracted
-          // to display the first page as fast as possible.
+        // Extract metadata, if found.
+        else if (filename.toLowerCase() === 'comicinfo.xml') {
           const metadataXml = new TextDecoder().decode(evt.unarchivedFile.fileData);
           if (metadataXml) {
-            const dom = new DOMParser().parseFromString(metadataXml, 'text/xml');
-            const infoEls = dom.getElementsByTagNameNS(STREAM_OPTIMIZED_NS, 'ArchiveFileInfo');
-            if (infoEls && infoEls.length > 0) {
-              const infoEl = infoEls.item(0);
-              if (infoEl.getAttribute('optimizedForStreaming') === 'true') {
-                this.optimizedForStreaming_ = true;
+            const metadataDoc = new DOMParser().parseFromString(metadataXml, 'text/xml');
+
+            // TODO: Emit event.
+            this.notify(new BookMetadataXmlExtractedEvent(this, metadataDoc));
+
+            // If this is the first file extracted and it says the archive is optimized for
+            // streaming, then we will emit page extracted events as they are extracted instead
+            // of upon all files being extracted to display the first page as fast as possible.
+            if (this.pagePromises_.length === 0) {
+              const infoEls = metadataDoc.getElementsByTagNameNS(STREAM_OPTIMIZED_NS,
+                                                                 'ArchiveFileInfo');
+              if (infoEls && infoEls.length > 0) {
+                const infoEl = infoEls.item(0);
+                if (infoEl.getAttribute('optimizedForStreaming') === 'true') {
+                  this.optimizedForStreaming_ = true;
+                }
               }
             }
           }

@@ -42,6 +42,12 @@ export class Book extends EventEmitter {
      */
     this.fileHandle_ = typeof(uriOrFileHandle) !== 'string' ? uriOrFileHandle : undefined;
 
+    /** @private {boolean} */
+    this.needsLoading_ = true;
+
+    /** @private {boolean} */
+    this.finishedLoading_ = false;
+
     /**
      * The total known number of pages.
      * @private {number}
@@ -54,11 +60,8 @@ export class Book extends EventEmitter {
     /** @private {Array<Page>} */
     this.pages_ = [];
 
-    /** @private {boolean} */
-    this.needsLoading_ = true;
-
-    /** @private {boolean} */
-    this.finishedLoading_ = false;
+    /** @private {Document} */
+    this.metadataDoc_ = null;
 
     /**
      * A reference to the ArrayBuffer is kept to let the user easily download a copy.
@@ -356,6 +359,9 @@ export class Book extends EventEmitter {
       // the subscribers to this Book.
       this.bookBinder_.subscribeToAllEvents(this, evt => {
         switch (evt.type) {
+          case BookEventType.METADATA_XML_EXTRACTED:
+            this.metadataDoc_ = evt.metadataDoc;
+            break;
           case BookEventType.PAGE_EXTRACTED:
             this.pages_.push(evt.page);
             break;
