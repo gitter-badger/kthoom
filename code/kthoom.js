@@ -790,9 +790,10 @@ export class KthoomApp {
       // The 'change' event handler was set up in initMenus_().
       this.fileInputElem_.click();
     } else {
-      const evt = { target: { files: [] }};
+      const evt = { handles: [], target: { files: [] }};
       const handles = await window.showOpenFilePicker({multiple: true});
       for (const handle of handles) {
+        evt.handles.push(handle);
         evt.target.files.push(await handle.getFile());
       }
       this.loadLocalFiles_(evt);
@@ -801,13 +802,20 @@ export class KthoomApp {
 
   /**
    * Attempts to load the files that the user has chosen.
-   * @param {Event} evt An event whose target has a files property pointing to an array of Files.
+   * @param {Event} evt An event whose 'target' object has a files property pointing to an array
+   *     of File objects. If the Native File API is supported, the event will also have a 'handles'
+   *     property pointing at an array of FileSystemHandle objects.
    * @private
    */
   async loadLocalFiles_(evt) {
     const filelist = evt.target.files;
     if (filelist.length <= 0) {
       return;
+    }
+
+    if (evt.handles) {
+      assert(evt.handles.length === filelist.length,
+          `Handles array not the same length as Files array.`);
     }
 
     for (let fileNum = 0; fileNum < filelist.length; ++fileNum) {
@@ -822,7 +830,9 @@ export class KthoomApp {
       }
 
       // Else, assume the file is a single book and try to load it.
-      const singleBook = new Book(theFile.name)
+      // NOTE: This loads all books into memory, unlike loading a Reading List, which
+      //     only loads the first book into memory.
+      const singleBook = new Book(theFile.name, evt.handles[fileNum]);
       this.loadBooksFromPromises_([singleBook.loadFromFile(theFile)]);
       this.readingStack_.addBook(singleBook);
     }

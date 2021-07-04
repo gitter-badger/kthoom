@@ -18,9 +18,10 @@ import { EventEmitter } from './event-emitter.js';
 export class Book extends EventEmitter {
   /**
    * @param {string} name
-   * @param {string} uri
+   * @param {string|FileSystemHandle} uriOrFileHandle For files loaded via URI, this param contains
+   *     the URI. For files loaded via the local file system, it contains the FileSystemHandle.
    */
-  constructor(name, uri = undefined) {
+  constructor(name, uriOrFileHandle = undefined) {
     super();
 
     /**
@@ -30,10 +31,16 @@ export class Book extends EventEmitter {
     this.name_ = name;
 
     /**
-     * The optional URI of the book (not set for a File).
+     * The optional URI of the book (not set for a book loaded from the file system).
      * @type {String}
      */
-    this.uri_ = uri;
+    this.uri_ = typeof(uriOrFileHandle) === 'string' ? uriOrFileHandle : undefined;
+
+    /**
+     * The optional FileSystemHandle of the book (not set for book loaded from a URI).
+     * @type {FileSystemHandle}
+     */
+    this.fileHandle_ = typeof(uriOrFileHandle) !== 'string' ? uriOrFileHandle : undefined;
 
     /**
      * The total known number of pages.
