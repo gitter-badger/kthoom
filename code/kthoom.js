@@ -64,6 +64,10 @@ export class KthoomApp {
     /** @private {boolean} */
     this.hasHelpOverlay_ = getElem('helpOverlay');
 
+    // TODO: Remove this once all browsers support the Native File API.
+    /** @private {HTMLInputElement} */
+    this.fileInputElem_ = null;
+
     // This Promise resolves when kthoom is ready.
     this.initializedPromise_ = new Promise((resolve, reject) => {
       // This Promise resolves when the DOM is ready.
@@ -135,8 +139,8 @@ export class KthoomApp {
 
     this.openMenu_.subscribe(this, evt => {
       switch (evt.item.id) {
-        case 'menu-open-local-files': fileInput.click(); closeMainMenu(); break;
-        case 'menu-open-url': this.loadFileViaUrl_(); closeMainMenu(); break;
+        case 'menu-open-local-files': this.openLocalFiles_(); closeMainMenu(); break;
+        case 'menu-open-url': this.openFileViaUrl_(); closeMainMenu(); break;
         case GOOGLE_MENU_ITEM_ID: kthoom.google.doDrive(); closeMainMenu(); break;
         case 'menu-open-ipfs-hash': kthoom.ipfs.ipfsHashWindow(); closeMainMenu(); break;
       }
@@ -193,8 +197,12 @@ export class KthoomApp {
       }
     }, MenuEventType.ITEM_SELECTED);
 
-    const fileInput = getElem('menu-open-local-files-input');
-    fileInput.addEventListener('change', (e) => this.loadLocalFiles_(e));
+    // If the browser does not support the Native File API, then use the File input to trigger.
+    // TODO: Remove once all browsers support the Native File API.
+    if (!window.showOpenFilePicker) {
+      this.fileInputElem_ = getElem('menu-open-local-files-input');      
+      this.fileInputElem_.addEventListener('change', (e) => this.loadLocalFiles_(e));
+    }
 
     getElem('main-menu-button').addEventListener('click', (e) => this.toggleMenuOpen_());
 
@@ -436,8 +444,8 @@ export class KthoomApp {
 
     // Handle keystrokes that do not depend on whether a book is loaded.
     switch (code) {
-      case Key.O: getElem('menu-open-local-files-input').click(); break;
-      case Key.U: this.loadFileViaUrl_(); break;
+      case Key.O: this.openLocalFiles_(); break;
+      case Key.U: this.openFileViaUrl_(); break;
       case Key.F: this.toggleFullscreen_(); break;
       case Key.G:
         const menuItem = getElem(GOOGLE_MENU_ITEM_ID);
@@ -773,7 +781,27 @@ export class KthoomApp {
   }
 
   /**
-   * Attempts to read the files that the user has chosen.
+   * Opens a file picker and then loads the file(s).
+   * @private
+   */
+  async openLocalFiles_() {
+    // TODO: Remove this once all browsers support the Native File API.
+    if (!window.showOpenFilePicker) {
+      // The 'change' event handler was set up in initMenus_().
+      this.fileInputElem_.click();
+    } else {
+      const evt = { target: { files: [] }};
+      const handles = await window.showOpenFilePicker({multiple: true});
+      for (const handle of handles) {
+        evt.target.files.push(await handle.getFile());
+      }
+      this.loadLocalFiles_(evt);
+    }
+  }
+
+  /**
+   * Attempts to load the files that the user has chosen.
+   * @param {Event} evt An event whose target has a files property pointing to an array of Files.
    * @private
    */
   async loadLocalFiles_(evt) {
@@ -803,7 +831,7 @@ export class KthoomApp {
   /**
    * Asks the user for a URL to load and then loads it.
    */
-  async loadFileViaUrl_() {
+  async openFileViaUrl_() {
     const bookUrl = window.prompt('Enter the URL of the book to load');
     if (bookUrl) {
       if (bookUrl.toLowerCase().endsWith('.jrl')) {
