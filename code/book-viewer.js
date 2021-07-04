@@ -43,9 +43,15 @@ export class BookViewer {
      */
     this.currentPageNum_ = -1;
 
+    /**
+     * The number of 90-degree clockwise rotations the viewer has. An integer from 0 to 3.
+     * @type {number}
+     */
     this.rotateTimes_ = 0;
+
     /** @type {!FitMode} */
     this.fitMode_ = FitMode.Best;
+
     this.wheelTimer_ = null;
     this.wheelTurnedPageAt_ = 0;
 
@@ -58,6 +64,11 @@ export class BookViewer {
     }
     this.throbbingTime_ = 0;
 
+    /**
+     * The number of pages visible in the viewer at one time. Defaults to 1
+     * but can be set to 2.
+     * @type {number}
+     */
     this.numPagesInViewer_ = 1;
 
     this.initProgressMeter_();
@@ -179,13 +190,16 @@ export class BookViewer {
     this.setRotateTimes(this.rotateTimes_ + 1);
   }
 
+  /** @returns {FitMode} */
   getFitMode() { return this.fitMode_; }
 
+  /** @param {FitMode} m */
   setFitMode(m) {
     this.fitMode_ = m;
     this.updateLayout();
   }
 
+  /** @returns {number} The number of pages being shown in the viewer (1 or 2). */
   getNumPagesInViewer() { return this.numPagesInViewer_; }
 
   /** @private */
@@ -200,11 +214,11 @@ export class BookViewer {
 
   /**
    * Sets the number of pages in the viewer (1- or 2-page viewer are supported).
-   * @param {Number} numPages Can be 1 or 2
+   * @param {Number} numPages Can be 1 or 2.
    */
   setNumPagesInViewer(numPages) {
     numPages = parseInt(numPages, 10);
-    if (numPages < 1 || numPages > 2) return;
+    if (numPages !== 1 && numPages !== 2) return;
 
     if (this.numPagesInViewer_ !== numPages) {
       this.numPagesInViewer_ = numPages;

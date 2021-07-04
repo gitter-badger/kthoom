@@ -31,13 +31,18 @@ export class ReadingStack {
     this.currentBookLoadedCallbacks_ = [];
   }
 
+  /** @returns {number} The number of books in the stack. */
   getNumberOfBooks() { return this.books_.length; }
 
+  /** @returns {number} The current book number, zero-based. */
   getCurrentBook() {
     return this.currentBookNum_ != -1 ? this.books_[this.currentBookNum_] : null;
   }
 
-  /** @param {number} i */
+  /**
+   * @param {number} i The book to get, zero-based.
+   * @returns {Book} The Book, or null, if i was invalid.
+   */
   getBook(i) {
     if (i < 0 || i >= this.books_.length) return null;
     return this.books_[i];

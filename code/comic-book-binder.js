@@ -58,7 +58,10 @@ export class ComicBookBinder extends BookBinder {
               });
             });
           }
-        } else if (filename.toLowerCase() === 'comicinfo.xml' && this.pagePromises_.length === 0) {
+        }
+        // If the first file we have is a metadata file, look at it to determine if the comic book
+        // archive file is optimized for streaming.
+        else if (this.pagePromises_.length === 0 && filename.toLowerCase() === 'comicinfo.xml') {
           // If the book's metadata says the comic book is optimizedForStreaming, then we will emit
           // page extracted events as they are extracted instead of upon all files being extracted
           // to display the first page as fast as possible.
