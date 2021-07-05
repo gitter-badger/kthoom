@@ -3,7 +3,9 @@
 
 # kthoom
 
-kthoom is a comic book / ebook reader that runs in the browser using client-side open web technologies such as JavaScript, HTML5, the File API, Web Workers, and Typed Arrays.  It can open files from your local hard drive, the network, or Google Drive.
+kthoom is a comic book / ebook reader that runs in the browser using modern client-side open web technologies such as JavaScript, HTML5, the File API, Web Workers, and Typed Arrays.  It can open files from your local file system, the network, or Google Drive.
+
+It is built using pure JavaScript with no external dependencies and can run out of the box (no building, compiling, packing) straight from the browser. Try it here:
 
 [OPEN KTHOOM COMIC BOOK READER](https://codedread.com/kthoom/index.html).
 
@@ -40,7 +42,8 @@ You can tell kthoom to open as many books as you like in the Choose Files dialog
 
 ### Binary File Support
 
-NOTE: kthoom loads in local compressed files and decompresses them in the browser, which means that kthoom has an implementation of unzip, unrar and untar in JavaScript. This code has been migrated to its own library: [BitJS](https://github.com/codedread/bitjs), a more general purpose library to deal with binary file data in native JavaScript.
+NOTE: kthoom loads in local compressed files and decompresses them in the browser, which means that kthoom has an implementation of unzip, unrar and untar in JavaScript. This code has been migrated to its own library: [BitJS](https://github.com/codedread/bitjs), a more general purpose library to deal with binary file data in native JavaScript. Kthoom
+keeps an up-to-date version of bitjs in its repository.
 
 ### JSON Reading Lists
 
