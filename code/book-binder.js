@@ -13,6 +13,13 @@ import { EventEmitter } from './event-emitter.js';
 import { Params } from './helpers.js';
 
 /** @enum */
+export const BookType = {
+  UNKNOWN: 0,
+  COMIC: 1,
+  EPUB: 2,
+}
+
+/** @enum */
 export const UnarchiveState = {
   UNARCHIVING_NOT_YET_STARTED: 0,
   UNARCHIVING: 1,
@@ -108,14 +115,20 @@ export class BookBinder extends EventEmitter {
   /**
    * Oveerride this in an implementing subclass to do things before the Unarchiver starts
    * (like subscribe to Unarchiver events).
-   * @protected
+   * @abstract @protected
    */
   beforeStart_() {
     throw 'Cannot call beforeStart_() in abstract BookBinder';
   }
 
+  /** @abstract @returns {BookType} */
+  getBookType() {
+    throw 'Cannot call getBookType() in abstract BookBinder';
+  }
+
   /**
    * Override this in an implementing subclass.
+   * @abstract
    * @returns {string} The MIME type of the book.
    */
   getMIMEType() {

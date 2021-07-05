@@ -18,7 +18,7 @@
  */
 
 import { UnarchiveEventType } from './bitjs/archive/archive.js';
-import { BookBinder } from './book-binder.js';
+import { BookBinder, BookType } from './book-binder.js';
 import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
 import { NodeType, walkDom } from './dom-walker.js';
 import { ATTRIBUTE_WHITELIST, BLOB_URL_ATTRIBUTES, ELEMENT_WHITELIST } from './epub-whitelists.js';
@@ -96,6 +96,8 @@ export class EPUBBookBinder extends BookBinder {
       this.inflateSpine_();
     });
   }
+
+  getBookType() { return BookType.EPUB; }
 
   getMIMEType() {
     return EPUB_MIMETYPE;

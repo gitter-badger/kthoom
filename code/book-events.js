@@ -48,10 +48,10 @@ export class BookLoadingCompleteEvent extends BookEvent {
 }
 
 export class BookMetadataXmlExtractedEvent extends BookEvent {
-  constructor(source, metadataDoc) {
+  constructor(source, bookMetadata) {
     super(source);
     this.type = BookEventType.METADATA_XML_EXTRACTED;
-    this.metadataDoc = metadataDoc;
+    this.bookMetadata = bookMetadata;
   }
 }
 

@@ -8,6 +8,7 @@
  */
 
 import { Book } from './book.js';
+import { BookEventType } from './book-events.js';
 import { BookViewer, FitMode } from './book-viewer.js';
 import { Menu, MenuEventType } from './menu.js';
 import { ReadingStack } from './reading-stack.js';
@@ -1104,6 +1105,10 @@ export class KthoomApp {
 
       this.currentBook_ = book;
       this.bookViewer_.setCurrentBook(book);
+      book.subscribe(this, evt => {
+        this.metadataViewer_.setMetadata(evt.bookMetadata);
+      }, BookEventType.METADATA_XML_EXTRACTED);
+
       document.title = book.getName();
       const bookUri = book.getUri();
       if (bookUri && Params.bookUri !== bookUri) {

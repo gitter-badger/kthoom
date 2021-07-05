@@ -6,12 +6,13 @@
  * Copyright(c) 2019 Google Inc.
  */
 
-import { UnarchiveEventType, getUnarchiver } from './bitjs/archive/archive.js';
-import { BookBinder } from './book-binder.js';
+import { UnarchiveEventType } from './bitjs/archive/archive.js';
+import { BookBinder, BookType } from './book-binder.js';
 import { BookBindingCompleteEvent, BookMetadataXmlExtractedEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
 import { createPageFromFileAsync, guessMimeType } from './page.js';
 import { sortPages } from './comic-book-page-sorter.js';
 import { Params } from './helpers.js';
+import { BookMetadata } from './book-metadata.js';
 
 const STREAM_OPTIMIZED_NS = 'http://www.codedread.com/sop';
 
@@ -65,8 +66,8 @@ export class ComicBookBinder extends BookBinder {
           if (metadataXml) {
             const metadataDoc = new DOMParser().parseFromString(metadataXml, 'text/xml');
 
-            // TODO: Emit event.
-            this.notify(new BookMetadataXmlExtractedEvent(this, metadataDoc));
+            const bookMetadata = new BookMetadata(metadataDoc, BookType.COMIC);
+            this.notify(new BookMetadataXmlExtractedEvent(this, bookMetadata));
 
             // If this is the first file extracted and it says the archive is optimized for
             // streaming, then we will emit page extracted events as they are extracted instead
@@ -147,6 +148,8 @@ export class ComicBookBinder extends BookBinder {
       default: throw 'Unknown comic book archive type';
     }
   }
+
+  getBookType() { return BookType.COMIC; }
 
   getMIMEType() {
     return this.mimeType_;

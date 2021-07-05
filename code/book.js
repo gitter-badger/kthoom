@@ -8,6 +8,7 @@
 import { createBookBinderAsync } from './book-binder.js';
 import { BookEventType, BookLoadingStartedEvent, BookLoadingCompleteEvent,
          BookProgressEvent } from './book-events.js';
+import { BookMetadata } from './book-metadata.js';
 import { BookPumpEventType } from './book-pump.js';
 import { EventEmitter } from './event-emitter.js';
 
@@ -60,20 +61,8 @@ export class Book extends EventEmitter {
     /** @private {Array<Page>} */
     this.pages_ = [];
 
-    /**
-     * Not sure where to put this yet.
-     * For comic books, we will parse and pay attention to a subset of the metadata:
-     * ComicRack:
-     * - Series, querySelector('Series').textContent
-     * - Volume, querySelector('Volume').textContent
-     * - Number, querySelector('Number').textContent
-     * - Publisher, querySelector('Publisher').textContent
-     * - Year, querySelector('Year').textContent
-     * - Month, querySelector('Month').textContent
-     * 
-     */
-    /** @private {Document} */
-    this.metadataDoc_ = null;
+    /** @private {BookMetadata} */
+    this.bookMetadata_ = null;
 
     /**
      * A reference to the ArrayBuffer is kept to let the user easily download a copy.
@@ -99,6 +88,10 @@ export class Book extends EventEmitter {
     return this.arrayBuffer_;
   }
 
+  /** @returns {BookMetadata} */
+  getMetadata() { return this.bookMetadata_; }
+
+  /** @returns {string} */
   getMIMEType() {
     if (!this.bookBinder_) {
       throw 'Cannot call getMIMEType() without a BookBinder';
@@ -367,13 +360,16 @@ export class Book extends EventEmitter {
     this.arrayBuffer_ = ab;
     return createBookBinderAsync(fileNameOrUri, ab, totalExpectedSize).then(bookBinder => {
       this.bookBinder_ = bookBinder;
-      // Extracts some state from the BookBinder events, re-sources the events, and sends them out to
-      // the subscribers to this Book.
+      // Extracts some state from the BookBinder events, re-sources the events, and re-sends the
+      // event out to the subscribers to this Book.
+      this.bookBinder_.subscribe(this, evt => {
+        this.bookMetadata_ = evt.bookMetadata;
+        evt.source = this;
+        this.notify(evt);
+      }, BookEventType.METADATA_XML_EXTRACTED);
+
       this.bookBinder_.subscribeToAllEvents(this, evt => {
         switch (evt.type) {
-          case BookEventType.METADATA_XML_EXTRACTED:
-            this.metadataDoc_ = evt.metadataDoc;
-            break;
           case BookEventType.PAGE_EXTRACTED:
             this.pages_.push(evt.page);
             break;
