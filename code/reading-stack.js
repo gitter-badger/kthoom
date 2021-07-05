@@ -127,7 +127,7 @@ export class ReadingStack {
     this.currentBookLoadedCallbacks_.push(callback);
   }
 
-  /** @return {boolean} */
+  /** @returns {boolean} */
   isOpen() {
     return getElem('readingStack').classList.contains('opened');
   }
@@ -177,12 +177,12 @@ export class ReadingStack {
       this.renderStack_();
 
       if (this.isOpen()) {
-        this.toggleReadingStackOpen();
+        this.toggleOpen();
       }
     }
   }
 
-  toggleReadingStackOpen() {
+  toggleOpen() {
     getElem('readingStack').classList.toggle('opened');
 
     if (this.isOpen()) {

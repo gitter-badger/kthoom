@@ -14,10 +14,14 @@ import { ReadingStack } from './reading-stack.js';
 import { Key, Params, assert, getElem, serializeParamsToBrowser } from './helpers.js';
 import { ImagePage, WebPShimImagePage } from './page.js';
 import { convertWebPtoJPG, convertWebPtoPNG } from './bitjs/image/webp-shim/webp-shim.js';
+import { MetadataViewer } from './metadata-viewer.js';
 
 if (window.kthoom == undefined) {
   window.kthoom = {};
 }
+
+const enableMetadataViewer = Params.enableMetadataViewer &&
+    ['on', 'true', '1', 'yes'].includes(Params.enableMetadataViewer.toLowerCase());
 
 const LOCAL_STORAGE_KEY = 'kthoom_settings';
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
@@ -44,6 +48,7 @@ export class KthoomApp {
   constructor() {
     this.bookViewer_ = new BookViewer();
     this.readingStack_ = new ReadingStack();
+    this.metadataViewer_ = new MetadataViewer();
 
     this.keysHeld_ = {};
 
@@ -103,6 +108,10 @@ export class KthoomApp {
     this.readingStack_.whenCurrentBookHasLoaded(() => {
       this.mainMenu_.showMenuItem('menu-download', true);
     });
+
+    if (enableMetadataViewer) {
+      getElem('metadataViewer').style.display = '';
+    }
 
     this.initMenus_();
     this.initNav_();
@@ -210,6 +219,11 @@ export class KthoomApp {
     getElem('readingStackButton').addEventListener('click', () => this.toggleReadingStackOpen_());
     getElem('readingStackOverlay').addEventListener('click', (e) => {
       this.toggleReadingStackOpen_();
+    });
+
+    getElem('metadataViewerButton').addEventListener('click', () => this.toggleMetadataViewerOpen_());
+    getElem('metadataViewerOverlay').addEventListener('click', (e) => {
+      this.toggleMetadataViewerOpen_();
     });
 
     this.viewerContextMenu_.subscribe(this, evt => {
@@ -434,6 +448,7 @@ export class KthoomApp {
     }
 
     let isMenuOpen = this.mainMenu_.isOpen();
+    let isMetadataViewerOpen = this.metadataViewer_.isOpen();
     let isReadingStackOpen = this.readingStack_.isOpen();
 
     if (isMenuOpen) {
@@ -484,16 +499,26 @@ export class KthoomApp {
         }
         break;
       case Key.S:
-        if (!isMenuOpen) {
+        if (!isMenuOpen && !isMetadataViewerOpen) {
           this.toggleReadingStackOpen_();
           return;
         }
         break;
+      case Key.D:
+        if (enableMetadataViewer && !isMenuOpen && !isReadingStackOpen) {
+          this.toggleMetadataViewerOpen_();
+          return;
+        }
     }
 
-    // All other key strokes below this are only valid if the menu and reading stack are closed.
+    // All other key strokes below this are only valid if the menu and trays are closed.
     if (isReadingStackOpen) {
       this.toggleReadingStackOpen_();
+      return;
+    }
+
+    if (isMetadataViewerOpen) {
+      this.toggleMetadataViewerOpen_();
       return;
     }
 
@@ -708,13 +733,15 @@ export class KthoomApp {
   }
 
   /** @private */
+  toggleMetadataViewerOpen_() {
+    this.metadataViewer_.toggleOpen();
+    getElem('metadataViewerOverlay').classList.toggle('hidden');
+  }
+
+  /** @private */
   toggleReadingStackOpen_() {
-    this.readingStack_.toggleReadingStackOpen();
-    if (this.readingStack_.isOpen()) {
-      getElem('readingStackOverlay').removeAttribute('style');
-    } else {
-      getElem('readingStackOverlay').setAttribute('style', 'display:none');
-    }
+    this.readingStack_.toggleOpen();
+    getElem('readingStackOverlay').classList.toggle('hidden');
   }
 
   showPrevPage() {

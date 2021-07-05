@@ -60,6 +60,18 @@ export class Book extends EventEmitter {
     /** @private {Array<Page>} */
     this.pages_ = [];
 
+    /**
+     * Not sure where to put this yet.
+     * For comic books, we will parse and pay attention to a subset of the metadata:
+     * ComicRack:
+     * - Series, querySelector('Series').textContent
+     * - Volume, querySelector('Volume').textContent
+     * - Number, querySelector('Number').textContent
+     * - Publisher, querySelector('Publisher').textContent
+     * - Year, querySelector('Year').textContent
+     * - Month, querySelector('Month').textContent
+     * 
+     */
     /** @private {Document} */
     this.metadataDoc_ = null;
 

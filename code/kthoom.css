@@ -213,11 +213,17 @@ span.menuCheckmark {
 }
 
 .fullScreenOverlay {
+  background-color: rgba(50, 50, 50, 0.25);
+  display: block;
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   top: 0;
+}
+
+.fullScreenOverlay.hidden {
+  display: none;
 }
 
 ul.menuItems {
@@ -312,7 +318,8 @@ button:focus {
   opacity: 0;
 }
 
-#readingStack {
+/** Trays common styling */
+.tray {
   border-color: grey;
   bottom: 1.5em;
   color: grey;
@@ -320,34 +327,56 @@ button:focus {
   display: -ms-flex;
   display: -webkit-flex;
   display: flex;
-  margin-left: -21em;
   opacity: 0.875;
   position: fixed;
-  left: 0px;
   top: 2.5em;
   user-select: none;
   transition: margin-left .2s;
 }
 
-#readingStackButton {
+.trayButton {
   -ms-align-self: center;
   -webkit-align-self: center;
   align-self: center;
   background-color: black;
   border-color: inherit;
-  border-radius: 0 5px 5px 0;
   border-style: solid;
   border-width: 1px;
-  border-left: none;
   color: inherit;
   font-family: Cambria;
   font-size: 40px;
   height: 1.25em;
-  margin-left: -1px;
   padding: 0;
   user-select: none;
   width: 0.75em;
-  z-index: 100;
+  z-index: 100;  
+}
+
+.trayContents {
+  background-color: black;
+  border-color: inherit;
+  border-radius: 5px;
+  border-style: solid;
+  border-width: 1px;
+  color: inherit;
+  height: 100%;
+  overflow: scroll;
+  padding: 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+/** Reading Stack */
+
+#readingStack {
+  margin-left: -21em;
+  left: 0px;
+}
+
+#readingStackButton {
+  border-radius: 0 5px 5px 0;
+  border-left: none;
+  margin-left: -1px;
 }
 
 #readingStackButton:disabled {
@@ -361,19 +390,7 @@ button:focus {
 }
 
 #readingStackContents {
-  background-color: black;
-  border-color: inherit;
-  border-radius: 5px;
-  border-style: solid;
-  border-width: 1px;
-  color: inherit;
-  height: 100%;
-  overflow: scroll;
-  padding: 10px;
-  text-align: left;
-  white-space: nowrap;
   width: 20em;
-  z-index: 1;
 }
 
 #readingStack.opened {
@@ -401,6 +418,28 @@ button:focus {
   background-color: #444;
   border-bottom: solid 1px yellow;
   border-top: solid 1px yellow;
+}
+
+/** Metadata Viewer */
+#metadataViewer {
+  margin-left: calc(40em - 30px);
+  left: calc(100% - 40em - 5px);
+}
+
+#metadataViewerButton {
+  border-radius: 5px 0 0 5px;
+  border-right: none;
+  margin-right: -1px;
+}
+
+#metadataViewerContents {
+  width: 40em;
+}
+
+#metadataViewer.opened {
+  border-color: yellow;
+  color: yellow;
+  margin-left: 0;
 }
 
 /* TODO: Remove current class and use focus for reading stack. */
