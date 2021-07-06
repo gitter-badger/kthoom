@@ -368,21 +368,19 @@ export class Book extends EventEmitter {
         this.notify(evt);
       }, BookEventType.METADATA_XML_EXTRACTED);
 
-      this.bookBinder_.subscribeToAllEvents(this, evt => {
-        switch (evt.type) {
-          case BookEventType.PAGE_EXTRACTED:
-            this.pages_.push(evt.page);
-            break;
-          case BookEventType.PROGRESS:
-            if (evt.totalPages) {
-              this.totalPages_ = evt.totalPages;
-            }
-            break;
-        }
-
+      this.bookBinder_.subscribe(this, evt => {
+        this.pages_.push(evt.page);
         evt.source = this;
         this.notify(evt);
-      });
+      }, BookEventType.PAGE_EXTRACTED);
+
+      this.bookBinder_.subscribe(this, evt => {
+        if (evt.totalPages) {
+          this.totalPages_ = evt.totalPages;
+        }
+        evt.source = this;
+        this.notify(evt);
+      }, BookEventType.PROGRESS);
 
       this.bookBinder_.start();
     });
