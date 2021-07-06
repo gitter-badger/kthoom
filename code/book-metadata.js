@@ -32,28 +32,42 @@ export class BookMetadata {
     this.bookType_ = bookType;
   }
 
+  /** @returns {Array<Array<>>} A list of key-value pairs, similar to Object.entries(). */
+  propertyEntries() {
+    if (this.bookType_ === BookType.COMIC) {
+      return [
+        ['Publisher', this.publisher],
+        ['Series', this.series],
+        ['Volume', this.volume],
+        ['Number', this.number],
+        ['Year', this.year],
+      ];
+    }
+    return [];
+  }
+
   /** @returns {string} */
   get series() {
-    return this.metadataDoc_.querySelector('Series').textContent;
+    return this.metadataDoc_?.querySelector('Series')?.textContent;
   }
 
   /** @returns {string} */
   get volume() {
-    return this.metadataDoc_.querySelector('Volume').textContent;
+    return this.metadataDoc_?.querySelector('Volume')?.textContent;
   }
 
   /** @returns {string} */
   get number() {
-    return this.metadataDoc_.querySelector('Number').textContent;
+    return this.metadataDoc_?.querySelector('Number')?.textContent;
   }
 
   /** @returns {string} */
   get publisher() {
-    return this.metadataDoc_.querySelector('Publisher').textContent;
+    return this.metadataDoc_?.querySelector('Publisher')?.textContent;
   }
 
   /** @returns {Number} */
   get year() {
-    return parseInt(this.metadataDoc_.querySelector('Year').textContent, 10);
+    return parseInt(this.metadataDoc_?.querySelector('Year')?.textContent, 10);
   }
 }

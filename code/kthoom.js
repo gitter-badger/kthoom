@@ -135,10 +135,10 @@ export class KthoomApp {
 
   /** @private */
   initMenus_() {
-    this.mainMenu_ = new Menu(getElem('mainMenu'));
-    this.openMenu_ = new Menu(getElem('openMenu'));
-    this.viewMenu_ = new Menu(getElem('viewMenu'));
-    this.viewerContextMenu_ = new Menu(getElem('viewerContextMenu'));
+    this.mainMenu_ = new Menu(getElem(MENU.MAIN));
+    this.openMenu_ = new Menu(getElem(MENU.OPEN));
+    this.viewMenu_ = new Menu(getElem(MENU.VIEW));
+    this.viewerContextMenu_ = new Menu(getElem(MENU.VIEWER_CONTEXT));
 
     this.mainMenu_.addSubMenu('menu-open', this.openMenu_);
     this.mainMenu_.addSubMenu('menu-view', this.viewMenu_);
@@ -217,16 +217,6 @@ export class KthoomApp {
 
     getElem('main-menu-button').addEventListener('click', (e) => this.toggleMenuOpen_());
 
-    getElem('readingStackButton').addEventListener('click', () => this.toggleReadingStackOpen_());
-    getElem('readingStackOverlay').addEventListener('click', (e) => {
-      this.toggleReadingStackOpen_();
-    });
-
-    getElem('metadataViewerButton').addEventListener('click', () => this.toggleMetadataViewerOpen_());
-    getElem('metadataViewerOverlay').addEventListener('click', (e) => {
-      this.toggleMetadataViewerOpen_();
-    });
-
     this.viewerContextMenu_.subscribe(this, evt => {
       const pageNum = evt.item.dataset.pagenum;
       switch (evt.item.id) {
@@ -274,6 +264,8 @@ export class KthoomApp {
         }
         return;
       }
+
+      // One-page viewer mode.
 
       // Calculate where the user clicked in the image.
       const mainContentBbox = firstPageElem.getBoundingClientRect();
@@ -736,13 +728,11 @@ export class KthoomApp {
   /** @private */
   toggleMetadataViewerOpen_() {
     this.metadataViewer_.toggleOpen();
-    getElem('metadataViewerOverlay').classList.toggle('hidden');
   }
 
   /** @private */
   toggleReadingStackOpen_() {
     this.readingStack_.toggleOpen();
-    getElem('readingStackOverlay').classList.toggle('hidden');
   }
 
   showPrevPage() {
@@ -863,7 +853,7 @@ export class KthoomApp {
       //     only loads the first book into memory.
       const singleBook = new Book(theFile.name, evt.handles[fileNum]);
       this.loadBooksFromPromises_([singleBook.loadFromFile(theFile)]);
-      this.readingStack_.addBook(singleBook);
+      this.readingStack_.addBook(singleBook, this.readingStack_.getNumberOfBooks() === 0);
     }
   }
 
@@ -893,6 +883,7 @@ export class KthoomApp {
   closeAll_() {
     if (this.readingStack_.getNumberOfBooks() > 0) {
       this.readingStack_.removeAll();
+      this.metadataViewer_.reset();
 
       this.bookViewer_.closeBook();
       this.currentBook_ = null;
@@ -937,7 +928,7 @@ export class KthoomApp {
   loadSingleBookFromXHR(name, uri, expectedSize, headerMap = {}) {
     const book = new Book(name, uri);
     const bookPromise = book.loadFromXhr(expectedSize, headerMap);
-    this.readingStack_.addBook(book);
+    this.readingStack_.addBook(book, true);
     return bookPromise;
   }
 
@@ -955,7 +946,7 @@ export class KthoomApp {
 
     const book = new Book(name, uri);
     const bookPromise = book.loadFromFetch(expectedSize, init);
-    this.readingStack_.addBook(book);
+    this.readingStack_.addBook(book, true);
     return bookPromise;
   }
 
@@ -968,7 +959,7 @@ export class KthoomApp {
   loadSingleBookFromArrayBuffer(name, bookUri, ab) {
     const book = new Book(name);
     const bookPromise = book.loadFromArrayBuffer(bookUri, ab);
-    this.readingStack_.addBook(book);
+    this.readingStack_.addBook(book, true);
     return bookPromise;
   }
 
@@ -981,7 +972,7 @@ export class KthoomApp {
   loadSingleBookFromBookPump(name, bookUri, bookPump) {
     const book = new Book(name);
     const bookPromise = book.loadFromBookPump(bookUri, bookPump);
-    this.readingStack_.addBook(book);
+    this.readingStack_.addBook(book, true);
     return bookPromise;
   }
 
@@ -1104,10 +1095,17 @@ export class KthoomApp {
       }
 
       this.currentBook_ = book;
+
       this.bookViewer_.setCurrentBook(book);
-      book.subscribe(this, evt => {
-        this.metadataViewer_.setMetadata(evt.bookMetadata);
-      }, BookEventType.METADATA_XML_EXTRACTED);
+      if (book.isFinishedLoading()) {
+        if (book.getMetadata()) {        
+          this.metadataViewer_.setMetadata(book.getMetadata());
+        }
+      } else {
+        book.subscribe(this, evt => {
+          this.metadataViewer_.setMetadata(evt.bookMetadata);
+        }, BookEventType.METADATA_XML_EXTRACTED);
+      }
 
       document.title = book.getName();
       const bookUri = book.getUri();

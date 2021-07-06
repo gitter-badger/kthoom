@@ -442,6 +442,16 @@ button:focus {
   margin-left: 0;
 }
 
+.metadataTable {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.metadataTable tr {
+  border-bottom: solid 2px yellow;
+}
+
 /* TODO: Remove current class and use focus for reading stack. */
 .menuItem:focus,
 .readingStackBook.current {

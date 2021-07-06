@@ -59,6 +59,8 @@ export class EventEmitter {
   /**
    * Adds a subscriber for all event types.
    * TODO:  Should I merge this with subscribe() above, like I did with unsubscribe()?
+   * @deprecated Do not use this, eventually we will remove EventEmitter in favor of
+   *             extending EventTarget instead.
    * @param {Object} context
    * @param {Function} callbackFn
    */

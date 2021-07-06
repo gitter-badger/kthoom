@@ -29,6 +29,9 @@ export class ReadingStack {
 
     /** @type {Array<Function>} */
     this.currentBookLoadedCallbacks_ = [];
+
+    getElem('readingStackButton').addEventListener('click', () => this.toggleOpen());
+    getElem('readingStackOverlay').addEventListener('click', () => this.toggleOpen());
   }
 
   /** @returns {number} The number of books in the stack. */
@@ -51,17 +54,19 @@ export class ReadingStack {
   /**
    * Always changes to the newly added book.
    * @param {Book} book
+   * @param {boolean} switchToThisBook Whether to switch to this book.
    */
-  addBook(book) {
+  addBook(book, switchToThisBook = false) {
     this.books_.push(book);
     book.subscribe(this, () => this.renderStack_(), BookEventType.LOADING_STARTED);
-    this.changeToBook_(this.books_.length - 1);
+    if (switchToThisBook) {
+      this.changeToBook_(this.books_.length - 1);
+    }
     this.renderStack_();
   }
 
   /**
    * @param {Array<Book>} books
-   * @param {boolean} switchToFirst Whether to switch to the first book in this new set.
    * @param {Number} bookNumber The book within the books array to load.
    */
   addBooks(books, bookNumber = 0) {
@@ -184,6 +189,7 @@ export class ReadingStack {
 
   toggleOpen() {
     getElem('readingStack').classList.toggle('opened');
+    getElem('readingStackOverlay').classList.toggle('hidden');
 
     if (this.isOpen()) {
       const bookElems = getElem('readingStack').querySelectorAll('.readingStackBook');
