@@ -490,7 +490,7 @@ export class KthoomApp {
           return;
         }
         break;
-      case Key.D:
+      case Key.T:
         if (!isMenuOpen && !isReadingStackOpen) {
           this.toggleMetadataViewerOpen_();
           return;
