@@ -21,9 +21,6 @@ if (window.kthoom == undefined) {
   window.kthoom = {};
 }
 
-const enableMetadataViewer = Params.enableMetadataViewer &&
-    ['on', 'true', '1', 'yes'].includes(Params.enableMetadataViewer.toLowerCase());
-
 const LOCAL_STORAGE_KEY = 'kthoom_settings';
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
 const READING_STACK_ELEM_ID = 'readingStack';
@@ -109,10 +106,6 @@ export class KthoomApp {
     this.readingStack_.whenCurrentBookHasLoaded(() => {
       this.mainMenu_.showMenuItem('menu-download', true);
     });
-
-    if (enableMetadataViewer) {
-      getElem('metadataViewer').style.display = '';
-    }
 
     this.initMenus_();
     this.initNav_();
@@ -498,7 +491,7 @@ export class KthoomApp {
         }
         break;
       case Key.D:
-        if (enableMetadataViewer && !isMenuOpen && !isReadingStackOpen) {
+        if (!isMenuOpen && !isReadingStackOpen) {
           this.toggleMetadataViewerOpen_();
           return;
         }

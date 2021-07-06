@@ -35,10 +35,11 @@ Or a [comic book reading list](https://github.com/codedread/kthoom/tree/master/r
   * R/L: Rotate right/left
   * 1/2: Show 1 or 2 pages side-by-side in the viewer.
   * F: Toggle fullscreen.
-  * S: Toggle the Reading Stack drawer open.
+  * S: Toggle the Reading Stack tray open.
+  * D: Toggle the Metadata Viewer tray open.
   * ?: Bring up Help screen
 
-You can tell kthoom to open as many books as you like in the Choose Files dialog (shift-select all the books you want to open). Then navigate between books using the square bracket keys or use the Reading Stack drawer.
+You can tell kthoom to open as many books as you like in the Choose Files dialog (shift-select all the books you want to open). Then navigate between books using the square bracket keys or use the Reading Stack tray.
 
 ### Binary File Support
 
