@@ -47,7 +47,7 @@ export class MetadataViewer {
 
   /** @private */
   rerender_() {
-    if (this.metadata_) {
+    if (this.metadata_ && this.metadata_.isPopulated()) {
       const metadataContents = document.importNode(this.tableTemplate_.content, true);
       const tableElem = metadataContents.querySelector('table.metadataTable');
       const rowTemplate = getElem('metadataTableRow');

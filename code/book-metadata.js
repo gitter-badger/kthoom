@@ -32,6 +32,11 @@ export class BookMetadata {
     this.bookType_ = bookType;
   }
 
+  /** @returns {boolean} True if any metadata property is found. */
+  isPopulated() {
+    return this.propertyEntries().map((kv) => kv[1]).some(val => !!val);
+  }
+
   /** @returns {Array<Array<>>} A list of key-value pairs, similar to Object.entries(). */
   propertyEntries() {
     if (this.bookType_ === BookType.COMIC) {
