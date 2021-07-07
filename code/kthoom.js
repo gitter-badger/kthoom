@@ -7,7 +7,7 @@
  * Copyright(c) 2011 antimatter15
  */
 
-import { Book } from './book.js';
+import { Book, BookContainer } from './book.js';
 import { BookEventType } from './book-events.js';
 import { BookViewer, FitMode } from './book-viewer.js';
 import { Menu, MenuEventType } from './menu.js';
@@ -38,6 +38,10 @@ const MENU = {
 };
 
 const GOOGLE_MENU_ITEM_ID = 'menu-open-google-drive';
+
+const enableOpenDirectory = !!window.showDirectoryPicker &&
+    !!Params.enableOpenDirectory &&
+    ['on', 'true', 'yes'].includes(Params.enableOpenDirectory.toLowerCase());
 
 /**
  * The main class for the kthoom reader.
@@ -141,9 +145,14 @@ export class KthoomApp {
       }
     };
 
+    if (enableOpenDirectory) {
+      getElem('menu-open-directory').style.display = '';
+    }
+
     this.openMenu_.subscribe(this, evt => {
       switch (evt.item.id) {
         case 'menu-open-local-files': this.openLocalFiles_(); closeMainMenu(); break;
+        case 'menu-open-directory': this.openLocalDirectory_(); closeMainMenu(); break;
         case 'menu-open-url': this.openFileViaUrl_(); closeMainMenu(); break;
         case GOOGLE_MENU_ITEM_ID: kthoom.google.doDrive(); closeMainMenu(); break;
         case 'menu-open-ipfs-hash': kthoom.ipfs.ipfsHashWindow(); closeMainMenu(); break;
@@ -447,6 +456,7 @@ export class KthoomApp {
     // Handle keystrokes that do not depend on whether a book is loaded.
     switch (code) {
       case Key.O: this.openLocalFiles_(); break;
+      case Key.D: this.openLocalDirectory_(); break;
       case Key.U: this.openFileViaUrl_(); break;
       case Key.F: this.toggleFullscreen_(); break;
       case Key.G:
@@ -841,12 +851,46 @@ export class KthoomApp {
         } catch { }
       }
 
-      // Else, assume the file is a single book and try to load it.
-      // NOTE: This loads all books into memory, unlike loading a Reading List, which
-      //     only loads the first book into memory.
+      // Else, assume the file is a single book and try to load the first one.
       const singleBook = new Book(theFile.name, evt.handles[fileNum]);
-      this.loadBooksFromPromises_([singleBook.loadFromFile(theFile)]);
-      this.readingStack_.addBook(singleBook, this.readingStack_.getNumberOfBooks() === 0);
+      if (this.readingStack_.getNumberOfBooks() === 0) {
+        this.loadBooksFromPromises_([singleBook.load()]);
+        this.readingStack_.addBook(singleBook, true);
+      } else {
+        this.readingStack_.addBook(singleBook, false);
+      }
+    }
+  }
+
+  /** Attempts to open all the files recursively? */
+  async openLocalDirectory_() {
+    if (!enableOpenDirectory) {
+      return;
+    }
+
+    const dirHandle = await window.showDirectoryPicker();
+    const topContainer = new BookContainer(dirHandle.name, dirHandle);
+    await this.scanDir_(topContainer);
+
+    // Now topContainer has the entire file system: all comic books and all their
+    // containing folders...
+  }
+
+  /**
+   * @param {BookContainer} container The current container.
+   * @private
+   */
+  async scanDir_(container) {
+    for await (let [name, handle] of container.handle.entries()) {
+      if (handle.kind === 'file' &&
+         (name.endsWith('.cbz') || name.endsWith('.cbr') || name.endsWith('.cbt'))) {
+        const singleBook = new Book(name, handle);
+        container.entries.push(singleBook);
+      } else if (handle.kind === 'directory') {
+        const dirContainer = new BookContainer(name, handle, container);
+        container.entries.push(dirContainer);
+        await this.scanDir_(dirContainer);
+      }
     }
   }
 

@@ -252,10 +252,15 @@
     <ul id="openMenuItems" class="menuItems" role="menu" aria-label="Open Menu">
       <li role="none">
         <button id="menu-open-local-files" class="menuItem" role="menuitem" tabindex="-1">
-          Open from Your Computer<span class="menuItemKey">O</span>
+          Open Files<span class="menuItemKey">O</span>
         </button>
         <!-- TODO: Remove this once all browsers support the Native File API. -->
         <input id="menu-open-local-files-input" type="file" multiple tabindex="-1">
+      </li>
+      <li role="none">
+        <button id="menu-open-directory" class="menuItem" role="menuitem" tabindex="-1"  style="display:none">
+          Open Directory<span class="menuItemKey">D</span>
+        </button>
       </li>
       <li role="none">
         <button id="menu-open-url" class="menuItem" role="menuitem" tabindex="-1">

@@ -12,17 +12,34 @@ import { BookMetadata } from './book-metadata.js';
 import { BookPumpEventType } from './book-pump.js';
 import { EventEmitter } from './event-emitter.js';
 
+export class BookContainer {
+  /**
+   * @param {string} name 
+   * @param {FileSystemDirectoryHandle} handle
+   * @param {BookContainer} parent An optional parent.
+   */
+  constructor(name, handle, parent) {
+    this.name = name;
+    this.handle = handle;
+    this.parent = parent;
+    /** @type {Array<Book|BookContainer>} */
+    this.entries = [];
+  }
+}
+
 /**
  * A Book has a name, a set of pages, and a BookBinder which handles the process of loading,
- * unarchiving, and page setting.
+ * unarchiving, and page setting. A Book may also have a container that contains it.
  */
 export class Book extends EventEmitter {
   /**
    * @param {string} name
-   * @param {string|FileSystemHandle} uriOrFileHandle For files loaded via URI, this param contains
-   *     the URI. For files loaded via the local file system, it contains the FileSystemHandle.
+   * @param {string|File|FileSystemFileHandle} uriOrFileHandle For files loaded via URI, this param
+   *    contains the URI. For files loaded via a file input element, this contains the File object,
+   *    for files loaded via the native file system, it contains the FileSystemFileHandle.
+   * @param {BookContainer} An optional BookContainer that contains this Book.
    */
-  constructor(name, uriOrFileHandle = undefined) {
+  constructor(name, uriOrFileHandle = undefined, bookContainer = undefined) {
     super();
 
     /**
@@ -38,10 +55,19 @@ export class Book extends EventEmitter {
     this.uri_ = typeof(uriOrFileHandle) === 'string' ? uriOrFileHandle : undefined;
 
     /**
-     * The optional FileSystemHandle of the book (not set for book loaded from a URI).
-     * @type {FileSystemHandle}
+     * The File object of the book.
+     * @type {File}
      */
-    this.fileHandle_ = typeof(uriOrFileHandle) !== 'string' ? uriOrFileHandle : undefined;
+    this.file_ = (uriOrFileHandle instanceof File) ? uriOrFileHandle : undefined;
+
+    /**
+     * The optional FileSystemFileHandle of the book (not set for book loaded from a URI).
+     * @type {FileSystemFileHandle}
+     */
+    this.fileHandle_ = (!this.uri_ && !this.file_) ? uriOrFileHandle : undefined;
+
+    /** @private {BookContainer} */
+    this.bookContainer_ = bookContainer;
 
     /** @private {boolean} */
     this.needsLoading_ = true;
@@ -83,7 +109,7 @@ export class Book extends EventEmitter {
     this.arrayBuffer_ = newBuffer;
   }
 
-  /** @return {Promise<ArrayBuffer>} */
+  /** @returns {Promise<ArrayBuffer>} */
   getArrayBuffer() {
     return this.arrayBuffer_;
   }
@@ -117,7 +143,7 @@ export class Book extends EventEmitter {
 
   /**
    * @param {number} i A number from 0 to (num_pages - 1).
-   * @return {Page}
+   * @returns {Page}
    */
   getPage(i) {
     // TODO: This is a bug in the unarchivers.  The only time totalPages_ is set is
@@ -130,14 +156,24 @@ export class Book extends EventEmitter {
     return this.pages_[i];
   }
 
-  /** @return {string} */
+  /** @returns {string} */
   getUri() {
     return this.uri_;
   }
 
-  /** @return {boolean} */
+  /** @returns {boolean} */
   isFinishedLoading() {
     return this.finishedLoading_;
+  }
+
+  /** @returns {Promise<Book>} */
+  async load() {
+    if (this.uri_) {
+      return this.loadFromXhr();
+    } else if (this.file_ || this.fileHandle_) {
+      return this.loadFromFile();
+    }
+    throw 'Could not load Book: no uri or File or FileHandle';
   }
 
   /**
@@ -145,7 +181,7 @@ export class Book extends EventEmitter {
    * TODO: Get rid of this and just use loadFromFetch() everywhere.
    * @param {Number} expectedSize If -1, the total field from the XHR Progress event is used.
    * @param {Object<string, string>} headerMap A map of request header keys and values.
-   * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
+   * @returns {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
   loadFromXhr(expectedSize = -1, headerMap = {}) {
     if (!this.needsLoading_) {
@@ -193,7 +229,7 @@ export class Book extends EventEmitter {
    * Starts a fetch and progressively loads in the book.
    * @param {Number} expectedSize The total number of bytes expected.
    * @param {Object<string, string>} init A map of request header keys and values.
-   * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
+   * @returns {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
   loadFromFetch(expectedSize, init) {
     if (!this.needsLoading_) {
@@ -235,16 +271,20 @@ export class Book extends EventEmitter {
   }
 
   /**
-   * @param {File} file
-   * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
+   * @returns {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
-  loadFromFile(file) {
+  async loadFromFile() {
     if (!this.needsLoading_) {
       throw 'Cannot try to load via File when the Book is already loading or loaded';
     }
     if (this.uri_) {
       throw 'URI for book was set in loadFromFile()';
     }
+    if (!this.file_ && !this.fileHandle_) {
+      throw 'Neither file nor fileHandle was set inside Book constructor.';
+    }
+
+    const file = this.file_ || await this.fileHandle_.getFile();
 
     this.needsLoading_ = false;
     this.notify(new BookLoadingStartedEvent(this));
@@ -271,7 +311,7 @@ export class Book extends EventEmitter {
   /**
    * @param {string} fileName
    * @param {ArrayBuffer} ab
-   * @return {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
+   * @returns {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
   loadFromArrayBuffer(fileName, ab) {
     if (!this.needsLoading_) {
@@ -292,6 +332,7 @@ export class Book extends EventEmitter {
   /**
    * @param {string} bookUri
    * @param {BookPump} bookPump
+   * @returns {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
   loadFromBookPump(bookUri, bookPump) {
     if (!this.needsLoading_) {
@@ -353,7 +394,7 @@ export class Book extends EventEmitter {
    * @param {ArrayBuffer} ab Starting buffer of bytes. May be complete or may be partial depending
    *                         on which loadFrom... method was called.
    * @param {number} totalExpectedSize
-   * @return {Promise<BookBinder>}
+   * @returns {Promise<BookBinder>}
    * @private
    */
   startBookBinding_(fileNameOrUri, ab, totalExpectedSize) {

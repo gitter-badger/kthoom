@@ -157,10 +157,8 @@ export class ReadingStack {
     if (i >= 0 && i < this.books_.length) {
       this.currentBookNum_ = i;
       const book = this.books_[i];
-      // The only case where the user chooses a book that has not been loaded yet is from a
-      // reading list, which means we can load it via XHR.
       if (book.needsLoading()) {
-        book.loadFromXhr();
+        book.load();
       }
 
       for (const callback of this.currentBookChangedCallbacks_) {
