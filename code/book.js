@@ -29,7 +29,9 @@ export class BookContainer {
 
 /**
  * A Book has a name, a set of pages, and a BookBinder which handles the process of loading,
- * unarchiving, and page setting. A Book may also have a container that contains it.
+ * unarchiving, and page setting. A Book will either have a URI, a File object, or a
+ * FileSystemFileHandle object from which to load the data. Books may also have a container that
+ * contains it.
  */
 export class Book extends EventEmitter {
   /**

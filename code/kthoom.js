@@ -39,6 +39,7 @@ const MENU = {
 
 const GOOGLE_MENU_ITEM_ID = 'menu-open-google-drive';
 
+// Non-Chrome browsers and non-secure contexts will not have this picker.
 const enableOpenDirectory = !!window.showDirectoryPicker &&
     !!Params.enableOpenDirectory &&
     ['on', 'true', 'yes'].includes(Params.enableOpenDirectory.toLowerCase());
@@ -807,7 +808,7 @@ export class KthoomApp {
    * @private
    */
   async openLocalFiles_() {
-    // TODO: Remove this once all browsers support the Native File API.
+    // Non-Chrome browsers and non-secure contexts will not have this picker.
     if (!window.showOpenFilePicker) {
       // The 'change' event handler was set up in initMenus_().
       this.fileInputElem_.click();
@@ -852,7 +853,8 @@ export class KthoomApp {
       }
 
       // Else, assume the file is a single book and try to load the first one.
-      const singleBook = new Book(theFile.name, evt.handles[fileNum]);
+      const handleOrFile = evt.handles ? evt.handles[fileNum] : theFile;
+      const singleBook = new Book(theFile.name, handleOrFile);
       if (this.readingStack_.getNumberOfBooks() === 0) {
         this.loadBooksFromPromises_([singleBook.load()]);
         this.readingStack_.addBook(singleBook, true);
