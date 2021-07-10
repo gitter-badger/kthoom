@@ -61,8 +61,10 @@ export class ReadingStack {
     book.subscribe(this, () => this.renderStack_(), BookEventType.LOADING_STARTED);
     if (switchToThisBook) {
       this.changeToBook_(this.books_.length - 1);
+    } else {
+      // changeToBook_() will call renderStack_() if it has not been rendered yet.
+      this.renderStack_();
     }
-    this.renderStack_();
   }
 
   /**
@@ -180,7 +182,7 @@ export class ReadingStack {
    * @private
    */
   changeToBook_(i) {
-    if (i >= 0 && i < this.books_.length) {
+    if (i >= 0 && i < this.books_.length && this.currentBookNum_ != i) {
       this.currentBookNum_ = i;
       const book = this.books_[i];
       if (book.needsLoading()) {
@@ -202,9 +204,18 @@ export class ReadingStack {
         }
       }
 
-      // Re-render to update selected highlight.
-      // TODO: Instead of completely re-rendering, just update the currently selectded book.
-      this.renderStack_();
+      // Instead of completely re-rendering, just update the currently selectded book, if we
+      // already have a DOM.
+      const contents = getElem('readingStackContents');
+      const currentlySelectedBookDiv = contents.querySelector('div.readingStackBook.current');
+      if (currentlySelectedBookDiv) {
+        currentlySelectedBookDiv.classList.remove('current');
+        const newCurrentBookDiv = contents.querySelector(`div.readingStackBook[data-index="${i}"]`);
+        newCurrentBookDiv.classList.add('current');
+      } else {
+        // Else, re-render everything to update selected highlight.
+        this.renderStack_();
+      }
 
       if (this.isOpen()) {
         this.toggleOpen();
@@ -300,6 +311,7 @@ export class ReadingStack {
           '<div class="readingStackBookCloseButton" title="Remove book from stack">x</div>';
 
         // Handle drag-drop of books.
+        // TODO: Fix this or disable it for books in containers.
         bookDiv.setAttribute('draggable', 'true');
         bookDiv.addEventListener('dragstart', evt => {
           evt.stopPropagation();
