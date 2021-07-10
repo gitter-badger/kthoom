@@ -428,6 +428,18 @@ button:focus {
   border-top: solid 1px yellow;
 }
 
+.readingStackFolder.collapsed div {
+  display: none;
+}
+
+.readingStackFolder span.zippyButton::before {
+  content: "▼ ";
+}
+
+.readingStackFolder.collapsed span.zippyButton::before {
+  content: "▶ ";
+}
+
 /** Metadata Viewer */
 #metadataViewer {
   margin-left: calc(40em - 30px);

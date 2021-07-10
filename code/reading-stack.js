@@ -212,6 +212,7 @@ export class ReadingStack {
     }
   }
 
+  /** Toggles the reading stack open or closed. */
   toggleOpen() {
     getElem('readingStack').classList.toggle('opened');
     getElem('readingStackOverlay').classList.toggle('hidden');
@@ -222,6 +223,11 @@ export class ReadingStack {
         bookElems.item(0).focus();
       }
     }
+  }
+
+  /** Toggles an individual folder expanded or collapsed. */
+  toggleFolderExpandCollapse_(folderDiv) {
+    folderDiv.classList.toggle('collapsed');
   }
 
   // TODO: Do this better so that each change of state doesn't require a complete re-render?
@@ -255,12 +261,19 @@ export class ReadingStack {
           // Now, in reverse order, render the ancestors.
           for (let i = ancestors.length - 1; i >= 0; --i) {
             const ancestor = ancestors[i];
-            // Skip already-rendered containers.
+            // Only render containers that haven't already been rendered.
             if (!renderedContainerMap.has(ancestor)) {
               const folderDiv = document.createElement('div');
               folderDiv.classList.add('readingStackFolder');
-              folderDiv.textContent = ancestor.getName();
-              folderDiv.innerHTML = '&nbsp;&nbsp;&nbsp;'.repeat(ancestors.length - 1 - i) + folderDiv.innerHTML;
+              folderDiv.innerHTML = `<span class="folderLabel">
+                  <span class="indenter">${'&nbsp;&nbsp;&nbsp;'.repeat(ancestors.length - 1 - i)}</span>
+                  <span class="zippyButton"></span>`;
+              const folderNameSpan = document.createElement('span');
+              folderNameSpan.className = 'folderName';
+              folderNameSpan.textContent = ancestor.getName();
+              folderDiv.appendChild(folderNameSpan);
+              const zippyButtonEl = folderDiv.querySelector('span.zippyButton');
+              zippyButtonEl.addEventListener('click', (evt) => this.toggleFolderExpandCollapse_(folderDiv));
               curDiv.appendChild(folderDiv);
               renderedContainerMap.set(ancestor, folderDiv);
             }
