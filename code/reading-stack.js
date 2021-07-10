@@ -86,18 +86,27 @@ export class ReadingStack {
 
   /**
    * @param {BookContainer} folder
+   * @param {boolean} recursing Whether this is a recursive call.
    */
-  addFolder(folder) {
+  addFolder(folder, recursing = false) {
     let sortedEntries = folder.entries.slice(0);
     sortedEntries.sort((a, b) => {
       return a.getName() < b.getName() ? -1 : 1;
     });
     for (const entry of sortedEntries) {
       if (entry instanceof BookContainer) {
-        this.addFolder(entry);
+        this.addFolder(entry, true);
       } else {
-        this.addBook(entry, this.books_.length === 0);
+        if (this.books_.length === 0) {
+          this.addBook(entry, true);
+        } else {
+          this.books_.push(entry);
+          entry.subscribe(this, () => this.renderStack_(), BookEventType.LOADING_STARTED);
+        }
       }
+    }
+    if (!recursing) {
+      this.renderStack_();
     }
   }
 
@@ -194,6 +203,7 @@ export class ReadingStack {
       }
 
       // Re-render to update selected highlight.
+      // TODO: Instead of completely re-rendering, just update the currently selectded book.
       this.renderStack_();
 
       if (this.isOpen()) {
@@ -217,13 +227,15 @@ export class ReadingStack {
   // TODO: Do this better so that each change of state doesn't require a complete re-render?
   /** @private */
   renderStack_() {
-    const renderedContainers = [];
+    const renderedContainerMap = new Map();
     const libDiv = getElem('readingStackContents');
     // Clear out the current reading stack HTML divs.
     libDiv.innerHTML = '';
+    const topDiv = document.createElement('div');
     // TODO: Do this out of the rendering thread and send ~200 books at a time into the DOM.
     if (this.books_.length > 0) {
       for (let i = 0; i < this.books_.length; ++i) {
+        let curDiv = topDiv;
         let indentLevel = 0;
         const book = this.books_[i];
 
@@ -244,16 +256,18 @@ export class ReadingStack {
           for (let i = ancestors.length - 1; i >= 0; --i) {
             const ancestor = ancestors[i];
             // Skip already-rendered containers.
-            if (renderedContainers.includes(ancestor)) {
-              continue;
+            if (!renderedContainerMap.has(ancestor)) {
+              const folderDiv = document.createElement('div');
+              folderDiv.classList.add('readingStackFolder');
+              folderDiv.textContent = ancestor.getName();
+              folderDiv.innerHTML = '&nbsp;&nbsp;&nbsp;'.repeat(ancestors.length - 1 - i) + folderDiv.innerHTML;
+              curDiv.appendChild(folderDiv);
+              renderedContainerMap.set(ancestor, folderDiv);
             }
-            renderedContainers.push(ancestor);
-            const folderDiv = document.createElement('div');
-            folderDiv.classList.add('readingStackFolder');
-            folderDiv.textContent = ancestor.getName();
-            folderDiv.innerHTML = '&nbsp;&nbsp;&nbsp;'.repeat(ancestors.length - 1 - i) + folderDiv.innerHTML;
-            libDiv.appendChild(folderDiv);
+            curDiv = renderedContainerMap.get(ancestor);
           }
+
+          curDiv = renderedContainerMap.get(book.getContainer());
         }
 
         const bookDiv = document.createElement('div');
@@ -322,8 +336,9 @@ export class ReadingStack {
             this.changeToBook_(i);
           }
         });
-        libDiv.appendChild(bookDiv);
+        curDiv.appendChild(bookDiv);
       }
+      libDiv.appendChild(topDiv);
     } else {
       libDiv.innerHTML = 'No books loaded';
       // TODO: Display a label indicating no books loaded again.
