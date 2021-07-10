@@ -292,6 +292,7 @@ export class KthoomApp {
         this.showNextPage();
       }
     });
+    getElem('helpOverlay').addEventListener('click', () => this.toggleHelpOpen_());
   }
 
   /** @private */

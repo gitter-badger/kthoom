@@ -36,22 +36,30 @@ body {
 }
 
 #helpOverlay {
-  background-color: rgba(50, 50, 50, 0.95);
   border-radius: 1em;
-  bottom: 25px;
+  bottom: 0;
   color: yellow;
   display: none;
   font-size: 1.2em;
-  left: 50px;
+  left: 0;
   overflow: scroll;
-  padding: 25px 50px 25px 50px;
   position: fixed;
-  right: 50px;
-  top: 25px;
+  right: 0;
+  top: 0;
 }
 
 #helpOverlay.opened {
   display: block;
+}
+
+#helpOverlayInner {
+  background-color: rgba(50, 50, 50, 0.95);
+  bottom: 25px;
+  left: 50px;
+  right: 50px;
+  top: 25px;
+  position: fixed;
+  padding: 25px 50px 25px 50px;
 }
 
 .helpSection {
