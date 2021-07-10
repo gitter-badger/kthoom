@@ -877,6 +877,7 @@ export class KthoomApp {
 
     // Now topContainer has the entire file system: all comic books and all their
     // containing folders...
+    this.readingStack_.addFolder(topContainer);
   }
 
   /**
@@ -887,7 +888,7 @@ export class KthoomApp {
     for await (let [name, handle] of container.handle.entries()) {
       if (handle.kind === 'file' &&
          (name.endsWith('.cbz') || name.endsWith('.cbr') || name.endsWith('.cbt'))) {
-        const singleBook = new Book(name, handle);
+        const singleBook = new Book(name, handle, container);
         container.entries.push(singleBook);
       } else if (handle.kind === 'directory') {
         const dirContainer = new BookContainer(name, handle, container);

@@ -6,7 +6,7 @@
  * Copyright(c) 2018 Google Inc.
  */
 import { getElem } from './helpers.js';
-import { Book } from './book.js';
+import { Book, BookContainer } from './book.js';
 import { BookEventType } from './book-events.js';
 
 // TODO: Have the ReadingStack display progress bars in the pane as books load and unarchive.
@@ -81,6 +81,23 @@ export class ReadingStack {
       }
       this.changeToBook_(newCurrentBook + bookNumber);
       this.renderStack_();
+    }
+  }
+
+  /**
+   * @param {BookContainer} folder
+   */
+  addFolder(folder) {
+    let sortedEntries = folder.entries.slice(0);
+    sortedEntries.sort((a, b) => {
+      return a.getName() < b.getName() ? -1 : 1;
+    });
+    for (const entry of sortedEntries) {
+      if (entry instanceof BookContainer) {
+        this.addFolder(entry);
+      } else {
+        this.addBook(entry, this.books_.length === 0);
+      }
     }
   }
 
@@ -200,12 +217,45 @@ export class ReadingStack {
   // TODO: Do this better so that each change of state doesn't require a complete re-render?
   /** @private */
   renderStack_() {
+    const renderedContainers = [];
     const libDiv = getElem('readingStackContents');
     // Clear out the current reading stack HTML divs.
     libDiv.innerHTML = '';
+    // TODO: Do this out of the rendering thread and send ~200 books at a time into the DOM.
     if (this.books_.length > 0) {
       for (let i = 0; i < this.books_.length; ++i) {
+        let indentLevel = 0;
         const book = this.books_[i];
+
+        // If this book's containers have not been rendered yet, go up the ancestry and render
+        // all its unrendered containers in order.
+        if (book.getContainer()) {
+          let ancestors = [];
+
+          // Find all ancestors and the indent-level of the book.
+          let cur = book.getContainer();
+          while (cur) {
+            ancestors.push(cur);
+            cur = cur.getContainer();
+          }
+          indentLevel = ancestors.length;
+
+          // Now, in reverse order, render the ancestors.
+          for (let i = ancestors.length - 1; i >= 0; --i) {
+            const ancestor = ancestors[i];
+            // Skip already-rendered containers.
+            if (renderedContainers.includes(ancestor)) {
+              continue;
+            }
+            renderedContainers.push(ancestor);
+            const folderDiv = document.createElement('div');
+            folderDiv.classList.add('readingStackFolder');
+            folderDiv.textContent = ancestor.getName();
+            folderDiv.innerHTML = '&nbsp;&nbsp;&nbsp;'.repeat(ancestors.length - 1 - i) + folderDiv.innerHTML;
+            libDiv.appendChild(folderDiv);
+          }
+        }
+
         const bookDiv = document.createElement('div');
         bookDiv.classList.add('readingStackBook');
         if (!book.needsLoading()) {
@@ -217,6 +267,7 @@ export class ReadingStack {
         bookDiv.dataset.index = i;
         bookDiv.innerHTML =
           '<div class="readingStackBookInner" title="' + book.getName() + '">' +
+          '&nbsp;&nbsp;&nbsp;'.repeat(indentLevel) +
           book.getName() +
           '</div>' +
           '<div class="readingStackBookCloseButton" title="Remove book from stack">x</div>';

@@ -12,6 +12,12 @@ import { BookMetadata } from './book-metadata.js';
 import { BookPumpEventType } from './book-pump.js';
 import { EventEmitter } from './event-emitter.js';
 
+/**
+ * Book and BookContainer share the following interface:
+ *   getContainer() - returns a BookContainer or null
+ *   getName() - returns the name of the book or folder
+ */
+
 export class BookContainer {
   /**
    * @param {string} name 
@@ -25,6 +31,8 @@ export class BookContainer {
     /** @type {Array<Book|BookContainer>} */
     this.entries = [];
   }
+  getContainer() { return this.parent; }
+  getName() { return this.name; }
 }
 
 /**
@@ -115,6 +123,9 @@ export class Book extends EventEmitter {
   getArrayBuffer() {
     return this.arrayBuffer_;
   }
+
+  /** @returns {BookContainer} */
+  getContainer() { return this.bookContainer_; }
 
   /** @returns {BookMetadata} */
   getMetadata() { return this.bookMetadata_; }
