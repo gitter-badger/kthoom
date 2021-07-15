@@ -3,7 +3,7 @@
 
 # kthoom
 
-kthoom is a comic book / ebook reader that runs in the browser using modern client-side open web technologies such as JavaScript, HTML5, the File API, Web Workers, and Typed Arrays.  It can open files from your local file system, the network, or Google Drive.
+kthoom is a comic book / ebook reader that runs in the browser using modern client-side open web technologies such as JavaScript, HTML5, the Native File API, Web Workers, Typed Arrays, and more.  It can open files and directories from your local file system, the network, or Google Drive.
 
 It is built using pure JavaScript with no external dependencies and can run out of the box (no building, compiling, packing) straight from the browser. Try it here:
 
