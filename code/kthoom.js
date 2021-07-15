@@ -40,9 +40,7 @@ const MENU = {
 const GOOGLE_MENU_ITEM_ID = 'menu-open-google-drive';
 
 // Non-Chrome browsers and non-secure contexts will not have this picker.
-const enableOpenDirectory = !!window.showDirectoryPicker &&
-    !!Params.enableOpenDirectory &&
-    ['on', 'true', 'yes'].includes(Params.enableOpenDirectory.toLowerCase());
+const enableOpenDirectory = !!window.showDirectoryPicker;
 
 /**
  * The main class for the kthoom reader.
@@ -120,6 +118,13 @@ export class KthoomApp {
     this.initWheelScroll_();
     this.initUnloadHandler_();
 
+    if (enableOpenDirectory) {
+      const enableDirectoryElems = document.querySelectorAll('.hideEnableDirectoryElem');
+      for (let i = 0; i < enableDirectoryElems.length; ++i) {
+        enableDirectoryElems.item(i).classList.remove('hideEnableDirectoryElem');
+      }
+    }
+
     document.addEventListener('keydown', (e) => this.keyHandler_(e), false);
     document.addEventListener('keyup', (e) => this.keysHeld_[e.keyCode] = 0);
 
@@ -145,10 +150,6 @@ export class KthoomApp {
         this.mainMenu_.close();
       }
     };
-
-    if (enableOpenDirectory) {
-      getElem('menu-open-directory').style.display = '';
-    }
 
     this.openMenu_.subscribe(this, evt => {
       switch (evt.item.id) {
