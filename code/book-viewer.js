@@ -145,7 +145,7 @@ export class BookViewer {
    * @param {BookEvent} evt The BookEvent.
    * @private
    */
-  handleBookEvent_(evt) {
+  handleEvent(evt) {
     this.killThrobbing_();
 
     if (evt.source === this.currentBook_) {
@@ -166,6 +166,11 @@ export class BookViewer {
           getElem('header').classList.remove('animating');
           this.updateLayout();
           this.updateProgressMeter();
+
+          this.currentBook_.removeEventListener(BookEventType.PROGRESS, this);
+          this.currentBook_.removeEventListener(BookEventType.PAGE_EXTRACTED, this);
+          this.currentBook_.removeEventListener(BookEventType.BINDING_COMPLETE, this);
+    
           break;
       }
     }
@@ -511,9 +516,9 @@ export class BookViewer {
 
       this.currentBook_ = book;
 
-      book.subscribe(this, (evt) => this.handleBookEvent_(evt), BookEventType.PROGRESS);
-      book.subscribe(this, (evt) => this.handleBookEvent_(evt), BookEventType.PAGE_EXTRACTED);
-      book.subscribe(this, (evt) => this.handleBookEvent_(evt), BookEventType.BINDING_COMPLETE);
+      book.addEventListener(BookEventType.PROGRESS, this);
+      book.addEventListener(BookEventType.PAGE_EXTRACTED, this);
+      book.addEventListener(BookEventType.BINDING_COMPLETE, this);
 
       const getX = (el) => parseFloat(el.getAttribute('x'), 10);
       this.throbbers_.forEach(el => el.style.visibility = 'visible');
@@ -558,9 +563,6 @@ export class BookViewer {
    */
   closeBook() {
     if (this.currentBook_) {
-      this.currentBook_.unsubscribe(this, BookEventType.PROGRESS);
-      this.currentBook_.unsubscribe(this, BookEventType.PAGE_EXTRACTED);
-      this.currentBook_.unsubscribe(this, BookEventType.BINDING_COMPLETE);
       this.currentBook_ = null;
       this.currentPageNum_ = -1;
     }

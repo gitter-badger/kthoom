@@ -58,7 +58,7 @@ export class ReadingStack {
    */
   addBook(book, switchToThisBook = false) {
     this.books_.push(book);
-    book.subscribe(this, () => this.renderStack_(), BookEventType.LOADING_STARTED);
+    book.addEventListener(BookEventType.LOADING_STARTED, this);
     if (switchToThisBook) {
       this.changeToBook_(this.books_.length - 1);
     } else {
@@ -76,7 +76,7 @@ export class ReadingStack {
       const newCurrentBook = this.books_.length;
       for (const book of books) {
         this.books_.push(book);
-        book.subscribe(this, () => this.renderStack_(), BookEventType.LOADING_STARTED);
+        book.addEventListener(BookEventType.LOADING_STARTED, this);
       }
       if (bookNumber < 0 || bookNumber >= this.books_.length) {
         bookNumber = 0;
@@ -103,7 +103,7 @@ export class ReadingStack {
           this.addBook(entry, true);
         } else {
           this.books_.push(entry);
-          entry.subscribe(this, () => this.renderStack_(), BookEventType.LOADING_STARTED);
+          entry.addEventListener(BookEventType.LOADING_STARTED, this);
         }
       }
     }
@@ -118,7 +118,7 @@ export class ReadingStack {
    */
   removeAll() {
     for (const book of this.books_) {
-      book.unsubscribe(this, BookEventType.LOADING_STARTED);
+      book.removeEventListener(BookEventType.LOADING_STARTED, this);
     }
     this.books_ = [];
     this.currentBookNum_ = -1;
@@ -129,7 +129,7 @@ export class ReadingStack {
   removeBook(i) {
     // Cannot remove the very last book.
     if (this.books_.length > 1 && i < this.books_.length) {
-      this.books_[i].unsubscribe(this, BookEventType.LOADING_STARTED);
+      this.books_[i].removeEventListener(BookEventType.LOADING_STARTED, this);
       this.books_.splice(i, 1);
 
       // If we are removing the book we are on, pick a new current book.
@@ -197,10 +197,7 @@ export class ReadingStack {
         if (book.isFinishedLoading()) {
           this.currentBookLoadedCallbacks_.forEach(callback => callback(book));
         } else {
-          book.subscribe(this, () => {
-            book.unsubscribe(this, BookEventType.LOADING_COMPLETE);
-            this.currentBookLoadedCallbacks_.forEach(callback => callback(book));
-          }, BookEventType.LOADING_COMPLETE);
+          book.addEventListener(BookEventType.LOADING_COMPLETE, this);
         }
       }
 
@@ -220,6 +217,21 @@ export class ReadingStack {
       if (this.isOpen()) {
         this.toggleOpen();
       }
+    }
+  }
+
+  /** @param {BookEvent} evt */
+  handleEvent(evt) {
+    const book = /** @type {Book} */ evt.source;
+    switch (evt.type) {
+      case BookEventType.LOADING_STARTED:
+        book.removeEventListener(BookEventType.LOADING_STARTED, this);
+        this.renderStack_();
+        break;
+      case BookEventType.LOADING_COMPLETE:
+        book.removeEventListener(BookEventType.LOADING_COMPLETE, this);
+        this.currentBookLoadedCallbacks_.forEach(callback => callback(book));
+        break;
     }
   }
 

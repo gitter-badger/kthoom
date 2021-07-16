@@ -1124,6 +1124,17 @@ export class KthoomApp {
     }
   }
 
+  // Handles all events subscribed to.
+  handleEvent(evt) {
+    switch (evt.type) {
+      case BookEventType.METADATA_XML_EXTRACTED:
+        this.metadataViewer_.setMetadata(evt.bookMetadata);
+        const book = evt.source;
+        book.removeEventListener(BookEventType.METADATA_XML_EXTRACTED, this);
+        break;
+    }
+  }
+
   /**
    * @param {Book} book
    * @private
@@ -1148,9 +1159,7 @@ export class KthoomApp {
           this.metadataViewer_.setMetadata(book.getMetadata());
         }
       } else {
-        book.subscribe(this, evt => {
-          this.metadataViewer_.setMetadata(evt.bookMetadata);
-        }, BookEventType.METADATA_XML_EXTRACTED);
+        book.addEventListener(BookEventType.METADATA_XML_EXTRACTED, this);
       }
 
       document.title = book.getName();

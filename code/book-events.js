@@ -20,7 +20,7 @@ export const BookEventType = {
 };
 
 /**
- * The source can be a BookBinder or a Book.
+ * The source can be a Book. Can also be a BookBinder internal to Book.
  */
 export class BookEvent extends Event {
   constructor(source, type = BookEventType.UNKNOWN) {

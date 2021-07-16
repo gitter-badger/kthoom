@@ -7,10 +7,11 @@
  */
 import { createBookBinderAsync } from './book-binder.js';
 import { BookEventType, BookLoadingStartedEvent, BookLoadingCompleteEvent,
-         BookProgressEvent } from './book-events.js';
+         BookProgressEvent, 
+         BookMetadataXmlExtractedEvent,
+         BookPageExtractedEvent} from './book-events.js';
 import { BookMetadata } from './book-metadata.js';
 import { BookPumpEventType } from './book-pump.js';
-import { EventEmitter } from './event-emitter.js';
 
 /**
  * Book and BookContainer share the following interface:
@@ -41,7 +42,7 @@ export class BookContainer {
  * FileSystemFileHandle object from which to load the data. Books may also have a container that
  * contains it.
  */
-export class Book extends EventEmitter {
+export class Book extends EventTarget {
   /**
    * @param {string} name
    * @param {string|File|FileSystemFileHandle} uriOrFileHandle For files loaded via URI, this param
@@ -205,7 +206,7 @@ export class Book extends EventEmitter {
     }
 
     this.needsLoading_ = false;
-    this.notify(new BookLoadingStartedEvent(this));
+    this.dispatchEvent(new BookLoadingStartedEvent(this));
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -221,14 +222,14 @@ export class Book extends EventEmitter {
             expectedSize = evt.total;
             this.bookBinder_.setNewExpectedSize(evt.loaded, evt.total);
           }
-          this.notify(new BookProgressEvent(this, this.pages_.length));
+          this.dispatchEvent(new BookProgressEvent(this, this.pages_.length));
         }
       };
       xhr.onload = (evt) => {
         const ab = evt.target.response;
         this.startBookBinding_(this.uri_, ab, expectedSize);
         this.finishedLoading_ = true;
-        this.notify(new BookLoadingCompleteEvent(this));
+        this.dispatchEvent(new BookLoadingCompleteEvent(this));
         resolve(this);
       };
       xhr.onerror = (err) => {
@@ -253,7 +254,7 @@ export class Book extends EventEmitter {
     }
 
     this.needsLoading_ = false;
-    this.notify(new BookLoadingStartedEvent(this));
+    this.dispatchEvent(new BookLoadingStartedEvent(this));
 
     return fetch(this.uri_, init).then(response => {
       const reader = response.body.getReader();
@@ -271,7 +272,7 @@ export class Book extends EventEmitter {
             return readAndProcessNextChunk();
           } else {
             this.finishedLoading_ = true;
-            this.notify(new BookLoadingCompleteEvent(this));
+            this.dispatchEvent(new BookLoadingCompleteEvent(this));
             return this;
           }
         });
@@ -300,7 +301,7 @@ export class Book extends EventEmitter {
     const file = this.file_ || await this.fileHandle_.getFile();
 
     this.needsLoading_ = false;
-    this.notify(new BookLoadingStartedEvent(this));
+    this.dispatchEvent(new BookLoadingStartedEvent(this));
 
     return new Promise((resolve, reject) => {
       const fr = new FileReader();
@@ -309,7 +310,7 @@ export class Book extends EventEmitter {
         try {
           this.startBookBinding_(file.name, ab, ab.byteLength);
           this.finishedLoading_ = true;
-          this.notify(new BookLoadingCompleteEvent(this));
+          this.dispatchEvent(new BookLoadingCompleteEvent(this));
         } catch (err) {
           const errMessage = err + ': ' + file.name;
           console.error(errMessage);
@@ -335,10 +336,10 @@ export class Book extends EventEmitter {
     }
 
     this.needsLoading_ = false;
-    this.notify(new BookLoadingStartedEvent(this));
+    this.dispatchEvent(new BookLoadingStartedEvent(this));
     this.startBookBinding_(fileName, ab, ab.byteLength);
     this.finishedLoading_ = true;
-    this.notify(new BookLoadingCompleteEvent(this));
+    this.dispatchEvent(new BookLoadingCompleteEvent(this));
     return Promise.resolve(this);
   }
 
@@ -358,12 +359,10 @@ export class Book extends EventEmitter {
     this.needsLoading_ = false;
     let bookBinderPromise = null;
     return new Promise((resolve, reject) => {
-      bookPump.subscribeToAllEvents(this, evt => {
-        // If we get any error, reject the promise to create a book.
-        if (evt.type === BookPumpEventType.BOOKPUMP_ERROR) {
-          reject(evt.err);
-        }
+      // If we get any error, reject the promise to create a book.
+      bookPump.addEventListener(BookPumpEventType.BOOKPUMP_ERROR, evt => reject(evt.err));
 
+      const handleBookPumpEvents = (evt) => {
         // If we do not have a book binder yet, create it and start the process.
         if (!bookBinderPromise) {
           try {
@@ -383,13 +382,16 @@ export class Book extends EventEmitter {
                 break;
               case BookPumpEventType.BOOKPUMP_END:
                 this.finishedLoading_ = true;
-                this.notify(new BookLoadingCompleteEvent(this));
+                this.dispatchEvent(new BookLoadingCompleteEvent(this));
                 resolve(this);
                 break;
             }
           });
         }
-      });
+      };
+      
+      bookPump.addEventListener(BookPumpEventType.BOOKPUMP_DATA_RECEIVED, handleBookPumpEvents);
+      bookPump.addEventListener(BookPumpEventType.BOOKPUMP_END, handleBookPumpEvents);
     });
   }
 
@@ -418,22 +420,19 @@ export class Book extends EventEmitter {
       // event out to the subscribers to this Book.
       this.bookBinder_.addEventListener(BookEventType.METADATA_XML_EXTRACTED, evt => {
         this.bookMetadata_ = evt.bookMetadata;
-        evt.source = this;
-        this.notify(evt);
+        this.dispatchEvent(new BookMetadataXmlExtractedEvent(this, evt.bookMetadata));
       });
 
       this.bookBinder_.addEventListener(BookEventType.PAGE_EXTRACTED, evt => {
         this.pages_.push(evt.page);
-        evt.source = this;
-        this.notify(evt);
+        this.dispatchEvent(new BookPageExtractedEvent(this, evt.page, evt.pageNum));
       });
 
       this.bookBinder_.addEventListener(BookEventType.PROGRESS, evt => {
         if (evt.totalPages) {
           this.totalPages_ = evt.totalPages;
         }
-        evt.source = this;
-        this.notify(evt);
+        this.dispatchEvent(new BookProgressEvent(this, evt.totalPages, evt.message));
       });
 
       this.bookBinder_.start();
