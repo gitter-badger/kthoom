@@ -134,7 +134,7 @@ export class EPUBBookBinder extends BookBinder {
         xhtmlChunks.push(htmlDoc);
       }
       this.layoutPercentage_ = (i + 1) / numSpineRefs;
-      this.notify(new BookProgressEvent(this, 1));
+      this.dispatchEvent(new BookProgressEvent(this, 1));
     }
 
     const allPages = [];
@@ -238,11 +238,11 @@ export class EPUBBookBinder extends BookBinder {
       });
 
       allPages.push(nextPage);
-      this.notify(new BookProgressEvent(this, allPages.length));
-      this.notify(new BookPageExtractedEvent(this, nextPage, allPages.length));
+      this.dispatchEvent(new BookProgressEvent(this, allPages.length));
+      this.dispatchEvent(new BookPageExtractedEvent(this, nextPage, allPages.length));
     }
 
-    this.notify(new BookBindingCompleteEvent(this));
+    this.dispatchEvent(new BookBindingCompleteEvent(this));
   }
 
   /** @private */

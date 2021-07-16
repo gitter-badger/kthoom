@@ -21,44 +21,37 @@ export const BookEventType = {
 
 /**
  * The source can be a BookBinder or a Book.
- * @type {{
- *   source: Object,
- *   type: string,
- * }}
  */
-export class BookEvent {
-  constructor(source) {
+export class BookEvent extends Event {
+  constructor(source, type = BookEventType.UNKNOWN) {
+    super(type);
+    /** @type {Book|BookBinder} */
     this.source = source;
-    this.type = BookEventType.UNKNOWN;
   }
 }
 
 export class BookLoadingStartedEvent extends BookEvent {
   constructor(source) {
-    super(source);
-    this.type = BookEventType.LOADING_STARTED;
+    super(source, BookEventType.LOADING_STARTED);
   }
 }
 
 export class BookLoadingCompleteEvent extends BookEvent {
   constructor(source) {
-    super(source);
-    this.type = BookEventType.LOADING_COMPLETE;
+    super(source, BookEventType.LOADING_COMPLETE);
   }
 }
 
 export class BookMetadataXmlExtractedEvent extends BookEvent {
   constructor(source, bookMetadata) {
-    super(source);
-    this.type = BookEventType.METADATA_XML_EXTRACTED;
+    super(source, BookEventType.METADATA_XML_EXTRACTED);
     this.bookMetadata = bookMetadata;
   }
 }
 
 export class BookPageExtractedEvent extends BookEvent {
   constructor(source, page, pageNum) {
-    super(source);
-    this.type = BookEventType.PAGE_EXTRACTED;
+    super(source, BookEventType.PAGE_EXTRACTED);
     this.page = page;
     this.pageNum = pageNum;
   }
@@ -66,8 +59,7 @@ export class BookPageExtractedEvent extends BookEvent {
 
 export class BookProgressEvent extends BookEvent {
   constructor(source, totalPages = undefined, message = undefined) {
-    super(source);
-    this.type = BookEventType.PROGRESS;
+    super(source, BookEventType.PROGRESS);
     this.totalPages = totalPages;
     this.message = message;
   }
@@ -75,7 +67,6 @@ export class BookProgressEvent extends BookEvent {
 
 export class BookBindingCompleteEvent extends BookEvent {
   constructor(source) {
-    super(source);
-    this.type = BookEventType.BINDING_COMPLETE;
+    super(source, BookEventType.BINDING_COMPLETE);
   }
 }

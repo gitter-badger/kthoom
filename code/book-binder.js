@@ -9,7 +9,6 @@
 import { UnarchiveEventType, getUnarchiver } from './bitjs/archive/archive.js';
 import { BookProgressEvent } from './book-events.js';
 import { config } from './config.js';
-import { EventEmitter } from './event-emitter.js';
 import { Params } from './helpers.js';
 
 /** @enum */
@@ -34,7 +33,7 @@ export const UnarchiveState = {
  * A BookBinder manages unarchiving the relevant files from the incoming bytes and
  * emitting useful BookEvents (like progress, page extraction) to subscribers.
  */
-export class BookBinder extends EventEmitter {
+export class BookBinder extends EventTarget {
   /**
    * @param {string} fileNameOrUri
    * @param {ArrayBuffer} ab The ArrayBuffer to initialize the BookBinder.
@@ -168,7 +167,7 @@ export class BookBinder extends EventEmitter {
     this.unarchiver_.addEventListener(UnarchiveEventType.PROGRESS, evt => {
       this.unarchivingPercentage_ = evt.totalCompressedBytesRead / this.totalExpectedSize_;
       // Total # pages is not always equal to the total # of files, so we do not report that here.
-      this.notify(new BookProgressEvent(this));
+      this.dispatchEvent(new BookProgressEvent(this));
     });
 
     this.unarchiver_.addEventListener(UnarchiveEventType.INFO,

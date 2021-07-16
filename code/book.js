@@ -416,25 +416,25 @@ export class Book extends EventEmitter {
       this.bookBinder_ = bookBinder;
       // Extracts some state from the BookBinder events, re-sources the events, and re-sends the
       // event out to the subscribers to this Book.
-      this.bookBinder_.subscribe(this, evt => {
+      this.bookBinder_.addEventListener(BookEventType.METADATA_XML_EXTRACTED, evt => {
         this.bookMetadata_ = evt.bookMetadata;
         evt.source = this;
         this.notify(evt);
-      }, BookEventType.METADATA_XML_EXTRACTED);
+      });
 
-      this.bookBinder_.subscribe(this, evt => {
+      this.bookBinder_.addEventListener(BookEventType.PAGE_EXTRACTED, evt => {
         this.pages_.push(evt.page);
         evt.source = this;
         this.notify(evt);
-      }, BookEventType.PAGE_EXTRACTED);
+      });
 
-      this.bookBinder_.subscribe(this, evt => {
+      this.bookBinder_.addEventListener(BookEventType.PROGRESS, evt => {
         if (evt.totalPages) {
           this.totalPages_ = evt.totalPages;
         }
         evt.source = this;
         this.notify(evt);
-      }, BookEventType.PROGRESS);
+      });
 
       this.bookBinder_.start();
     });

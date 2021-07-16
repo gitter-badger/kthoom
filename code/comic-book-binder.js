@@ -55,7 +55,7 @@ export class ComicBookBinder extends BookBinder {
             const numPages = this.pagePromises_.length;
             prevExtractPromise = prevExtractPromise.then(() => {
               return pagePromise.then(page => {
-                this.notify(new BookPageExtractedEvent(this, page, numPages));
+                this.dispatchEvent(new BookPageExtractedEvent(this, page, numPages));
               });
             });
           }
@@ -67,7 +67,7 @@ export class ComicBookBinder extends BookBinder {
             const metadataDoc = new DOMParser().parseFromString(metadataXml, 'text/xml');
 
             const bookMetadata = new BookMetadata(metadataDoc, BookType.COMIC);
-            this.notify(new BookMetadataXmlExtractedEvent(this, bookMetadata));
+            this.dispatchEvent(new BookMetadataXmlExtractedEvent(this, bookMetadata));
 
             // If this is the first file extracted and it says the archive is optimized for
             // streaming, then we will emit page extracted events as they are extracted instead
@@ -86,7 +86,7 @@ export class ComicBookBinder extends BookBinder {
         }
 
         // Emit a Progress event for each unarchived file.
-        this.notify(new BookProgressEvent(this, this.pagePromises_.length));
+        this.dispatchEvent(new BookProgressEvent(this, this.pagePromises_.length));
       }
     });
     this.unarchiver_.addEventListener(UnarchiveEventType.FINISH, evt => {
@@ -124,12 +124,12 @@ export class ComicBookBinder extends BookBinder {
 
           // Emit an extract event for each page in its proper order.
           for (let i = 0; i < pages.length; ++i) {
-            this.notify(new BookPageExtractedEvent(this, pages[i], i + 1));
+            this.dispatchEvent(new BookPageExtractedEvent(this, pages[i], i + 1));
           }
         }
 
         // Emit a complete event.
-        this.notify(new BookBindingCompleteEvent(this));
+        this.dispatchEvent(new BookBindingCompleteEvent(this));
       });
 
       this.stop();
