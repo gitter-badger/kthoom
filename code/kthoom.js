@@ -212,8 +212,8 @@ export class KthoomApp {
       }
     }, MenuEventType.ITEM_SELECTED);
 
-    // If the browser does not support the Native File API, then use the File input to trigger.
-    // TODO: Remove once all browsers support the Native File API.
+    // If the browser does not support the Native File API or this is not a secure context, then use
+    // the File input to trigger.
     if (!window.showOpenFilePicker) {
       this.fileInputElem_ = getElem('menu-open-local-files-input');      
       this.fileInputElem_.addEventListener('change', (e) => this.loadLocalFiles_(e));
@@ -816,12 +816,16 @@ export class KthoomApp {
       this.fileInputElem_.click();
     } else {
       const evt = { handles: [], target: { files: [] }};
-      const handles = await window.showOpenFilePicker({multiple: true});
-      for (const handle of handles) {
-        evt.handles.push(handle);
-        evt.target.files.push(await handle.getFile());
+      try {
+        const handles = await window.showOpenFilePicker({multiple: true});
+        for (const handle of handles) {
+          evt.handles.push(handle);
+          evt.target.files.push(await handle.getFile());
+        }
+        this.loadLocalFiles_(evt);
+      } catch (err) {
+        // Ignore DOM Exception for user aborting.
       }
-      this.loadLocalFiles_(evt);
     }
   }
 

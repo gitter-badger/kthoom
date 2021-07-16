@@ -23,13 +23,6 @@ export class EventEmitter {
      * @private {Map<string, Map<Object, Function>>}
      */
     this.subscriberMap_ = new Map();
-
-    /**
-     * A map of subscribers to all events from this EventEmitter.  The map of bound functions
-     * is keyed by the object context.
-     * @private {Map<Object, Function>}
-     */
-    this.allEventSubscriberMap_ = new Map();
   }
 
   /**
@@ -57,31 +50,19 @@ export class EventEmitter {
   }
 
   /**
-   * Adds a subscriber for all event types.
-   * TODO:  Should I merge this with subscribe() above, like I did with unsubscribe()?
-   * @deprecated Do not use this, eventually we will remove EventEmitter in favor of
-   *             extending EventTarget instead.
-   * @param {Object} context
-   * @param {Function} callbackFn
-   */
-  subscribeToAllEvents(context, callbackFn) {
-    this.allEventSubscriberMap_.set(context, callbackFn);
-  }
-
-  /**
    * Removes the subscriber for the event type.  If eventType is not specified, then the
    * subscriber for all events is removed.
    * @param {Object} context
    * @param {string?} eventType
    */
-  unsubscribe(context, eventType = undefined) {
-    if (eventType) {
-      const eventSubscriberMap = this.subscriberMap_.get(eventType);
-      if (eventSubscriberMap) {
-        eventSubscriberMap.delete(context);
-      }
-    } else {
-      this.allEventSubscriberMap_.delete(context);
+  unsubscribe(context, eventType) {
+    if (!eventType) {
+      throw 'Error, eventType is a required param in unsubscribe()';
+    }
+
+    const eventSubscriberMap = this.subscriberMap_.get(eventType);
+    if (eventSubscriberMap) {
+      eventSubscriberMap.delete(context);
     }
   }
 
@@ -102,12 +83,6 @@ export class EventEmitter {
         const boundCallbackFn = eventSubscriberMap.get(context).bind(context);
         boundCallbackFn(evt);
       }
-    }
-
-    // Now send to all subscribers that are subscribed to all events from this EventEmitter.
-    for (const context of this.allEventSubscriberMap_.keys()) {
-      const boundCallbackFn = this.allEventSubscriberMap_.get(context).bind(context);
-      boundCallbackFn(evt);
     }
   }
 }

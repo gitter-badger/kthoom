@@ -7,7 +7,7 @@
  */
 
 import { Book } from './book.js';
-import { BookEventType } from './book-events.js';
+import { BookEvent, BookEventType } from './book-events.js';
 import { assert, getElem } from './helpers.js';
 
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
@@ -510,7 +510,10 @@ export class BookViewer {
       this.killThrobbing_();
 
       this.currentBook_ = book;
-      book.subscribeToAllEvents(this, evt => this.handleBookEvent_(evt));
+
+      book.subscribe(this, (evt) => this.handleBookEvent_(evt), BookEventType.PROGRESS);
+      book.subscribe(this, (evt) => this.handleBookEvent_(evt), BookEventType.PAGE_EXTRACTED);
+      book.subscribe(this, (evt) => this.handleBookEvent_(evt), BookEventType.BINDING_COMPLETE);
 
       const getX = (el) => parseFloat(el.getAttribute('x'), 10);
       this.throbbers_.forEach(el => el.style.visibility = 'visible');
@@ -555,7 +558,9 @@ export class BookViewer {
    */
   closeBook() {
     if (this.currentBook_) {
-      this.currentBook_.unsubscribe(this);
+      this.currentBook_.unsubscribe(this, BookEventType.PROGRESS);
+      this.currentBook_.unsubscribe(this, BookEventType.PAGE_EXTRACTED);
+      this.currentBook_.unsubscribe(this, BookEventType.BINDING_COMPLETE);
       this.currentBook_ = null;
       this.currentPageNum_ = -1;
     }
