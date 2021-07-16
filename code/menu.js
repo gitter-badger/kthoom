@@ -6,7 +6,6 @@
  * Copyright(c) 2019 Google Inc.
  */
 
-import { EventEmitter } from './event-emitter.js';
 import { assert, getElem, Key } from './helpers.js';
 
 const MENU_OPEN_STYLE = 'position:absolute;opacity:0.875;text-align:left;'
@@ -105,10 +104,13 @@ export const MenuEventType = {
   OPEN: 'menu-open',
 };
 
-export class MenuEvent {
-  constructor(menu, type = MenuEventType.UNKNOWN) {
+export class MenuEvent extends Event {
+  constructor(menu, type = MenuEventType.UNKNOWN, item = undefined) {
+    super(type);
+    /** @type {Menu} */
     this.menu = menu;
-    this.type = type;
+    /** @type {Node?} */
+    this.item = item;
   }
 }
 
@@ -119,7 +121,7 @@ export class MenuEvent {
  *     EventTarget and remove EventEmitter.
  *     https://caniuse.com/#feat=mdn-api_eventtarget_eventtarget
  */
-export class Menu extends EventEmitter {
+export class Menu extends EventTarget {
   /**
    * @param {HTMLTemplateElement} templateEl 
    */
@@ -164,7 +166,7 @@ export class Menu extends EventEmitter {
 
     this.dom_.style = MENU_CLOSED_STYLE;
     openMenus.delete(this);
-    this.notify({ type: MenuEventType.CLOSE, menu: this });
+    this.dispatchEvent(new MenuEvent(this, MenuEventType.CLOSE));
 
     if (openMenus.size === 0) {
       overlay.style = MENU_OVERLAY_CLOSED_STYLE;
@@ -208,11 +210,11 @@ export class Menu extends EventEmitter {
           } else {
             menuItemEl.setAttribute('aria-expanded', 'false');
             menuItemEl.focus();
-            this.notify({ type: MenuEventType.ITEM_SELECTED, menu: this, item: menuItem });
+            this.dispatchEvent(new MenuEvent(this, MenuEventType.ITEM_SELECTED, menuItem));
           }
         } else {
           this.close();
-          this.notify({ type: MenuEventType.ITEM_SELECTED, menu: this, item: menuItem });
+          this.dispatchEvent(new MenuEvent(this, MenuEventType.ITEM_SELECTED, menuItem));
         }
       });
     }
@@ -336,7 +338,7 @@ export class Menu extends EventEmitter {
     const style = MENU_OPEN_STYLE + `left:${left}px;top:${top}px;`;
     this.dom_.style = style;
     openMenus.add(this);
-    this.notify({ type: MenuEventType.OPEN, menu: this });
+    this.dispatchEvent(new MenuEvent(this, MenuEventType.OPEN));
 
     const menuEl = this.dom_.firstElementChild;
     const firstMenuElem = menuEl.querySelector('[role="menuitem"]:not([disabled="true"])');

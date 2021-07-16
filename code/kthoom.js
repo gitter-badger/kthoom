@@ -151,7 +151,7 @@ export class KthoomApp {
       }
     };
 
-    this.openMenu_.subscribe(this, evt => {
+    this.openMenu_.addEventListener(MenuEventType.ITEM_SELECTED, evt => {
       switch (evt.item.id) {
         case 'menu-open-local-files': this.openLocalFiles_(); closeMainMenu(); break;
         case 'menu-open-directory': this.openLocalDirectory_(); closeMainMenu(); break;
@@ -159,9 +159,9 @@ export class KthoomApp {
         case GOOGLE_MENU_ITEM_ID: kthoom.google.doDrive(); closeMainMenu(); break;
         case 'menu-open-ipfs-hash': kthoom.ipfs.ipfsHashWindow(); closeMainMenu(); break;
       }
-    }, MenuEventType.ITEM_SELECTED);
+    });
 
-    this.viewMenu_.subscribe(this, evt => {
+    this.viewMenu_.addEventListener(MenuEventType.ITEM_SELECTED, evt => {
       const id = evt.item.id;
       switch (id) {
         case 'menu-view-rotate-left':
@@ -201,16 +201,16 @@ export class KthoomApp {
           closeMainMenu();
           break;
       }
-    }, MenuEventType.ITEM_SELECTED);
+    });
 
-    this.mainMenu_.subscribe(this, evt => getElem('main-menu-button').focus(), MenuEventType.CLOSE);
-    this.mainMenu_.subscribe(this, evt => {
+    this.mainMenu_.addEventListener(MenuEventType.CLOSE, evt => getElem('main-menu-button').focus());
+    this.mainMenu_.addEventListener(MenuEventType.ITEM_SELECTED, evt => {
       switch (evt.item.id) {
         case 'menu-download': this.downloadBook_(); break;
         case 'menu-close-all': this.closeAll_(); break;
         case 'menu-help': this.toggleHelpOpen_(); break;
       }
-    }, MenuEventType.ITEM_SELECTED);
+    });
 
     // If the browser does not support the Native File API or this is not a secure context, then use
     // the File input to trigger.
@@ -221,14 +221,14 @@ export class KthoomApp {
 
     getElem('main-menu-button').addEventListener('click', (e) => this.toggleMenuOpen_());
 
-    this.viewerContextMenu_.subscribe(this, evt => {
+    this.viewerContextMenu_.addEventListener(MenuEventType.ITEM_SELECTED, evt => {
       const pageNum = evt.item.dataset.pagenum;
       switch (evt.item.id) {
         case 'save-page-as-png': this.savePageAs_(pageNum, PNG); break;
         case 'save-page-as-jpg': this.savePageAs_(pageNum, JPG); break;
         case 'save-page-as-webp': this.savePageAs_(pageNum, WEBP); break;
       }
-    }, MenuEventType.ITEM_SELECTED);
+    });
 
     // TODO: Does this mean the book viewer images have to be focusable for keyboard accessibility?
     getElem('page1Image').addEventListener('contextmenu', evt => this.onContextMenu_(evt));
@@ -377,7 +377,7 @@ export class KthoomApp {
       // eventual migration steps for IPFS addressing.  We will support two versions
       // for now, ipfs://$hash and dweb:/ipfs/$hash.
       if (bookUri.indexOf('ipfs://') === 0) {
-        kthoom.ipfs.loadHash(bookUri.substr(7));
+        kthoom.ipfs.loadHash(bookUricrtr(7));
       } else if (bookUri.indexOf('dweb:/ipfs/') === 0) {
         kthoom.ipfs.loadHash(bookUri.substr(11));
       } else {
