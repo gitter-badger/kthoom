@@ -137,10 +137,10 @@ export class ComicBookBinder extends BookBinder {
 
     switch (this.unarchiver_.getMIMEType()) {
       case 'application/zip':
-        this.mimeType_ = 'vnd.comicbook+zip';
+        this.mimeType_ = 'application/vnd.comicbook+zip';
         break;
       case 'application/x-rar-compressed':
-        this.mimeType_ ='vnd.comicbook-rar';
+        this.mimeType_ ='application/vnd.comicbook-rar';
         break;
       case 'application/x-tar':
         this.mimeType_ = 'application/x-cbt';

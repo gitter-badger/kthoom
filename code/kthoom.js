@@ -817,7 +817,21 @@ export class KthoomApp {
     } else {
       const evt = { handles: [], target: { files: [] }};
       try {
-        const handles = await window.showOpenFilePicker({multiple: true});
+        const handles = await window.showOpenFilePicker({
+          multiple: true,
+          types: [
+            {
+              description: 'kthoom book files',
+              accept: {
+                'application/vnd.comicbook+zip': ['.cbz'],
+                'application/vnd.comicbook-rar': ['.cbr'],
+                'application/x-cbt': ['.cbt'],
+                'application/x-json.reading.lists': ['.jrl'],
+                'application/epub+zip': ['.epub'],
+              }
+            },
+          ],
+        });
         for (const handle of handles) {
           evt.handles.push(handle);
           evt.target.files.push(await handle.getFile());
