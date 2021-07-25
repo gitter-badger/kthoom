@@ -18,7 +18,6 @@ import { BookPumpEventType } from './book-pump.js';
  *   getContainer() - returns a BookContainer or null
  *   getName() - returns the name of the book or folder
  */
-
 export class BookContainer {
   /**
    * @param {string} name 
