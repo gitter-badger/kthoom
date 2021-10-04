@@ -370,8 +370,17 @@ button:focus {
   height: 100%;
   overflow: scroll;
   padding: 10px;
+  scrollbar-color: yellow #444;
   text-align: left;
   white-space: nowrap;
+}
+
+.trayContents::-webkit-scrollbar-track {
+  background-color: #444;
+}
+
+.trayContents::-webkit-scrollbar-thumb {
+  background-color: yellow;
 }
 
 /** Reading Stack */
