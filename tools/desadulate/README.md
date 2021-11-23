@@ -28,8 +28,16 @@ the zip are in order so that the archive can be streamed and unopened on the fly
 
 To convert /old/path/to/comics/foo/bar/book.cbz into /new/path/to/comics/foo/bar/book.cbz:
 
-  * desadulate -i /old/path/to/comics -o /new/path/to/comics -f foo/bar/book.cbz
+  ```bash
+    desadulate -i /old/path/to/comics -o /new/path/to/comics -f foo/bar/book.cbz
+  ```
 
-To convert all comic books in /old/path/to/comics/ and put into /new/path/to/comics/:
+To convert all comic books in /old/path/to/comics/ and put into /new/path/to/comics/ (assumes globstar or zsh):
 
-  * shopt -s globstar ; ls /old/path/to/comics/**/*.cb? | cut -c20- | parallel desadulate -i /old/path/to/comics -o /new/path/to/comics -f {}
+  ```zsh
+    for F in /Volumes/data/media/incoming/dc-1960-1969/1960/**/*.cb?
+    do
+      B=`echo $F | cut -c43-`;
+      desadulate -i /Volumes/data/media/incoming/dc-1960-1969 -o /Users/jeffschiller/Documents/data/media/comics/dc -f "$B";
+    done
+  ```
