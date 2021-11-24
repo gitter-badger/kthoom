@@ -80,13 +80,18 @@ func ExtractArchive(path string, outWriter io.Writer, errWriter io.Writer) (*Arc
 	cmd.Stderr = errWriter
 
 	if err = cmd.Run(); err != nil {
-		err = fmt.Errorf("%s had an error: %v", path, err)
-		return nil, err
+		exitErr, ok := err.(*exec.ExitError)
+		// If the error was not an ExitError, or the error code was not 3 (unrar CRC error code),
+		// we bail. Otherwise we continue trying to process the unarchived files.
+		if !ok || exitErr.ExitCode() != 3 {
+			err = fmt.Errorf("%s had an error: %v", path, err)
+			return nil, err
+		}
 	}
 
 	theArchive := &Archive{ArchiveFilename: path, TmpDir: tmpdir}
 
-	err = filepath.Walk(theArchive.TmpDir, func(f string, info os.FileInfo, err error) error {
+	filepath.Walk(theArchive.TmpDir, func(f string, info os.FileInfo, err error) error {
 		if err != nil {
 			err = fmt.Errorf("%s had an error: %v", theArchive.ArchiveFilename, err)
 			return err
