@@ -12,16 +12,15 @@ import { findMimeType } from './bitjs/file/sniffer.js';
 const DEFAULT_ASPECT_RATIO = 6.625 / 10.25;
 
 /**
- * @param {ArrayBuffer} ab
+ * @param {Uint8Array} typedArray
  * @param {string} mimeType
  * @return {string} A URL representing the ArrayBuffer.
  */
-function createURLFromArray(ab, mimeType) {
+function createURLFromArray(typedArray, mimeType) {
   if (mimeType === 'image/xml+svg') {
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(new TextDecoder('utf-8').decode(ab));
   }
-  const offset = ab.byteOffset;
-  let blob = new Blob([ab], { type: mimeType }).slice(offset, offset + ab.byteLength, mimeType);
+  let blob = new Blob([typedArray], { type: mimeType });
   return URL.createObjectURL(blob);
 };
 
@@ -270,13 +269,13 @@ export const createPageFromFileAsync = function (file) {
       console.error(`mime type mismatch: ${sniffedMimeType} vs ${mimeType}`);
     }
 
-    const ab = file.fileData;
+    const typedArray = file.fileData;
     if (mimeType === 'image/webp' && isSafari()) {
-      resolve(new WebPShimImagePage(filename, ab));
+      resolve(new WebPShimImagePage(filename, typedArray));
       return;
     }
 
-    const dataURI = createURLFromArray(ab, mimeType);
+    const dataURI = createURLFromArray(typedArray, mimeType);
 
     if (mimeType.indexOf('image/') === 0) {
       const img = new Image();
