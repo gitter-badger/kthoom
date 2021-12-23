@@ -1,5 +1,5 @@
 import { BookMetadata } from './book-metadata.js';
-import { getElem } from './helpers.js';
+import { Key, Params, getElem } from './helpers.js';
 
 export class MetadataViewer {
   constructor() {
@@ -8,15 +8,32 @@ export class MetadataViewer {
 
     /** @private {HTMLDivElement} */
     this.contentDiv_ = getElem('metadataViewerContents');
-    this.contentDiv_.addEventListener('click', () => {
-      this.toggleOpen();
-    });
+
+    if (Params['editMetadata']) {
+      const toolbarDiv = getElem('metadataToolbar');
+      toolbarDiv.style.display = 'block';
+    }
 
     /** @private {HTMLTemplateElement} */
     this.tableTemplate_ = getElem('metadataTable');
 
     getElem('metadataViewerButton').addEventListener('click', () => this.toggleOpen());
     getElem('metadataViewerOverlay').addEventListener('click', (e) => this.toggleOpen());
+  }
+
+  /**
+   * @param {KeyboardEvent} evt
+   * @return {boolean} True if the event was handled.
+   */
+  handleKeyEvent(evt) {
+    if (!this.isOpen()) {
+      return false;
+    }
+    const code = evt.keyCode;
+    if (code === Key.ESCAPE) {
+      this.toggleOpen();
+    }
+    return true;
   }
 
   /** @returns {boolean} */
@@ -47,15 +64,15 @@ export class MetadataViewer {
 
   /** @private */
   rerender_() {
-    if (this.metadata_ && this.metadata_.isPopulated()) {
+    if (this.metadata_) {
       const metadataContents = document.importNode(this.tableTemplate_.content, true);
       const tableElem = metadataContents.querySelector('table.metadataTable');
       const rowTemplate = getElem('metadataTableRow');
       for (const [key, value] of this.metadata_.propertyEntries()) {
         if (key && value) {
           const rowElem = document.importNode(rowTemplate.content, true);
-          rowElem.querySelector('td.propName').textContent = key;
-          rowElem.querySelector('td.propValue').textContent = value;
+          rowElem.querySelector('td.metadataPropName').textContent = key;
+          rowElem.querySelector('td.metadataPropValue').textContent = value;
           tableElem.appendChild(rowElem);
         }
       }

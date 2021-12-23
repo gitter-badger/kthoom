@@ -12,7 +12,7 @@ import { BookBindingCompleteEvent, BookMetadataXmlExtractedEvent, BookPageExtrac
 import { createPageFromFileAsync, guessMimeType } from './page.js';
 import { sortPages } from './comic-book-page-sorter.js';
 import { Params } from './helpers.js';
-import { BookMetadata } from './book-metadata.js';
+import { createMetadataFromComicBookXml } from './book-metadata.js';
 
 const STREAM_OPTIMIZED_NS = 'http://www.codedread.com/sop';
 
@@ -64,23 +64,14 @@ export class ComicBookBinder extends BookBinder {
         else if (filename.toLowerCase() === 'comicinfo.xml') {
           const metadataXml = new TextDecoder().decode(evt.unarchivedFile.fileData);
           if (metadataXml) {
-            const metadataDoc = new DOMParser().parseFromString(metadataXml, 'text/xml');
-
-            const bookMetadata = new BookMetadata(metadataDoc, BookType.COMIC);
+            const bookMetadata = createMetadataFromComicBookXml(metadataXml);
             this.dispatchEvent(new BookMetadataXmlExtractedEvent(this, bookMetadata));
 
             // If this is the first file extracted and it says the archive is optimized for
             // streaming, then we will emit page extracted events as they are extracted instead
             // of upon all files being extracted to display the first page as fast as possible.
-            if (this.pagePromises_.length === 0) {
-              const infoEls = metadataDoc.getElementsByTagNameNS(STREAM_OPTIMIZED_NS,
-                                                                 'ArchiveFileInfo');
-              if (infoEls && infoEls.length > 0) {
-                const infoEl = infoEls.item(0);
-                if (infoEl.getAttribute('optimizedForStreaming') === 'true') {
-                  this.optimizedForStreaming_ = true;
-                }
-              }
+            if (this.pagePromises_.length === 0 && bookMetadata.isOptimizedForStreaming()) {
+              this.optimizedForStreaming_ = true;
             }
           }
         }

@@ -1,5 +1,7 @@
 import { BookType } from "./book-binder.js";
 
+const STREAM_OPTIMIZED_NS = 'http://www.codedread.com/sop';
+
 /** @enum */
 const ComicBookMetadataType = {
   UNKNOWN: 0,
@@ -7,7 +9,7 @@ const ComicBookMetadataType = {
 };
 
 /**
- * ComicRack:
+ * ComicRack. Let's start with these five fields:
  * - Series, querySelector('Series').textContent
  * - Volume, querySelector('Volume').textContent
  * - Number, querySelector('Number').textContent
@@ -15,64 +17,94 @@ const ComicBookMetadataType = {
  * - Year, querySelector('Year').textContent
  */
 
+ const COMICRACK_KEYS = ['Series', 'Volume', 'Number', 'Publisher', 'Year'];
+
 /**
  * A lightweight class to encapsulate metadata of a book. This will
  * hide the differences between metadata formats from kthoom.
  */
 export class BookMetadata {
   /**
-   * @param {Document} metadataDoc The XML document of the metadata.
    * @param {BookType} bookType The type of the book.
+   * @param {Map<string, string>} tagMap The key-value metadata tags.
+   * @param {boolean} optimizedForStreaming Whether this book is optimized for streaming, meaning
+   *     files in the archive are in read order.
    */
-  constructor(metadataDoc, bookType) {
-    /** @private {Document} */
-    this.metadataDoc_ = metadataDoc;
-
+  constructor(bookType, tagMap, optimizedForStreaming) {
     /** @private {BookType} */
     this.bookType_ = bookType;
+
+    /** @private {Map<string, string>} */
+    this.tags_ = new Map(tagMap);
+
+    /** @private {boolean} */
+    this.optimizedForStreaming_ = optimizedForStreaming;
   }
 
-  /** @returns {boolean} True if any metadata property is found. */
-  isPopulated() {
-    return this.propertyEntries().map((kv) => kv[1]).some(val => !!val);
-  }
+  isOptimizedForStreaming() { return this.optimizedForStreaming_; }
 
-  /** @returns {Array<Array<>>} A list of key-value pairs, similar to Object.entries(). */
+  /** @returns {Array<Array<string>>} A list of key-value pairs, similar to Object.entries(). */
   propertyEntries() {
-    if (this.bookType_ === BookType.COMIC) {
-      return [
-        ['Publisher', this.publisher],
-        ['Series', this.series],
-        ['Volume', this.volume],
-        ['Number', this.number],
-        ['Year', this.year],
-      ];
+    return this.tags_.entries();
+  }
+
+  /**
+   * @param {string} key
+   * @param {string} value
+   */
+  set(key, value) {
+    this.tags_.set(key, value);
+  }
+}
+
+/**
+ * @param {string} metadataXml The text contents of the ComicInfo.xml file.
+ * @returns {BookMetadata}
+ */
+ export function createMetadataFromComicBookXml(metadataXml) {
+  const metadataDoc = new DOMParser().parseFromString(metadataXml, 'text/xml');
+
+  // Figure out if this XML file indicates the archive is optimized for streaming.
+  let optimizedForStreaming = false;
+  const infoEls = metadataDoc.getElementsByTagNameNS(STREAM_OPTIMIZED_NS,
+    'ArchiveFileInfo');
+  if (infoEls && infoEls.length > 0) {
+    const infoEl = infoEls.item(0);
+    if (infoEl.getAttribute('optimizedForStreaming') === 'true') {
+      optimizedForStreaming = true;
     }
-    return [];
   }
 
-  /** @returns {string} */
-  get series() {
-    return this.metadataDoc_?.querySelector('Series')?.textContent;
+  // Extract all known key-value pairs.
+  const tagMap = new Map();
+  for (const key of COMICRACK_KEYS) {
+    let val = metadataDoc?.querySelector(key)?.textContent;
+    if (val) {
+      tagMap.set(key, val);
+    }
+  }
+  
+  return new BookMetadata(BookType.COMIC, tagMap, optimizedForStreaming);
+}
+
+/**
+ * @param {BookMetadata} metadata 
+ * @returns {string} The XML text of the metadata for ComicInfo.xml.
+ */
+export function createComicBookXmlFromMetadata(metadata) {
+  let xmlStr = `<ComicInfo>\n`;
+
+  if (metadata.isOptimizedForStreaming()) {
+    xmlStr += `  <ArchiveFileInfo xmlns="http://www.codedread.com/sop" optimizedForStreaming="true"></ArchiveFileInfo>\n`;
   }
 
-  /** @returns {string} */
-  get volume() {
-    return this.metadataDoc_?.querySelector('Volume')?.textContent;
+  for (const [key, val] of this.tagMap.entries()) {
+    if (COMICRACK_KEYS.includes(key)) {
+      // TODO: Sanitize these values?
+      xmlStr += `  <${key}>${val}</${key}>\n`;
+    }
   }
 
-  /** @returns {string} */
-  get number() {
-    return this.metadataDoc_?.querySelector('Number')?.textContent;
-  }
-
-  /** @returns {string} */
-  get publisher() {
-    return this.metadataDoc_?.querySelector('Publisher')?.textContent;
-  }
-
-  /** @returns {Number} */
-  get year() {
-    return parseInt(this.metadataDoc_?.querySelector('Year')?.textContent, 10);
-  }
+  xmlStr += `</ComicInfo>\n`;
+  return xmlStr;
 }

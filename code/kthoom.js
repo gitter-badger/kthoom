@@ -71,7 +71,7 @@ export class KthoomApp {
     /** @private {boolean} */
     this.hasHelpOverlay_ = getElem('helpOverlay');
 
-    // TODO: Remove this once all browsers support the Native File API.
+    // TODO: Remove this once all browsers support the File System Access API.
     /** @private {HTMLInputElement} */
     this.fileInputElem_ = null;
 
@@ -213,8 +213,8 @@ export class KthoomApp {
       }
     });
 
-    // If the browser does not support the Native File API or this is not a secure context, then use
-    // the File input to trigger.
+    // If the browser does not support the File System Access API or this is not a secure context,
+    // then use the File input to trigger.
     if (!window.showOpenFilePicker) {
       this.fileInputElem_ = getElem('menu-open-local-files-input');      
       this.fileInputElem_.addEventListener('change', (e) => this.loadLocalFiles_(e));
@@ -453,6 +453,12 @@ export class KthoomApp {
     if (isMenuOpen) {
       // If the menu handled the key, then we are done.
       if (this.mainMenu_.handleKeyEvent(evt)) {
+        return;
+      }
+    }
+
+    if (isMetadataViewerOpen) {
+      if (this.metadataViewer_.handleKeyEvent(evt)) {
         return;
       }
     }
@@ -847,8 +853,8 @@ export class KthoomApp {
   /**
    * Attempts to load the files that the user has chosen.
    * @param {Event} evt An event whose 'target' object has a files property pointing to an array
-   *     of File objects. If the Native File API is supported, the event will also have a 'handles'
-   *     property pointing at an array of FileSystemHandle objects.
+   *     of File objects. If the File System Access API is supported, the event will also have a
+   *     'handles' property pointing at an array of FileSystemHandle objects.
    * @private
    */
   async loadLocalFiles_(evt) {

@@ -369,7 +369,9 @@ button:focus {
   color: inherit;
   height: 100%;
   overflow: scroll;
+  overflow-x: hidden;
   padding: 10px;
+  padding-bottom: 0;
   scrollbar-color: yellow #444;
   text-align: left;
   white-space: nowrap;
@@ -479,6 +481,33 @@ button:focus {
 
 .metadataTable tr {
   border-bottom: solid 2px yellow;
+}
+
+.metadataPropKey, .metadataPropValue {
+  white-space: nowrap;
+}
+
+#metadataToolbar {
+  position: absolute;
+  left: 2.5em;
+  bottom: 0;
+  height: 2em;
+}
+
+.metadataButton {
+  background-color: black;
+  border: solid 1px grey;
+  border-radius: 5px;
+  color: grey;
+  height: 2em;
+  width: 2em;
+  padding: 0;
+}
+
+.metadataButton:hover {
+  border-color: yellow;
+  color: yellow;
+  cursor: pointer;
 }
 
 /* TODO: Remove current class and use focus for reading stack. */
