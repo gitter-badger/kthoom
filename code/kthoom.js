@@ -12,10 +12,10 @@ import { BookEventType } from './book-events.js';
 import { BookViewer, FitMode } from './book-viewer.js';
 import { Menu, MenuEventType } from './menu.js';
 import { ReadingStack } from './reading-stack.js';
-import { Key, Params, assert, getElem, serializeParamsToBrowser } from './helpers.js';
+import { Key, Params, assert, getElem, serializeParamsToBrowser } from './common/helpers.js';
 import { ImagePage, WebPShimImagePage } from './page.js';
 import { convertWebPtoJPG, convertWebPtoPNG } from './bitjs/image/webp-shim/webp-shim.js';
-import { MetadataViewer } from './metadata-viewer.js';
+import { MetadataViewer } from './metadata/metadata-viewer.js';
 
 if (window.kthoom == undefined) {
   window.kthoom = {};

@@ -8,7 +8,7 @@
 
 import { Book } from './book.js';
 import { BookEvent, BookEventType } from './book-events.js';
-import { assert, getElem } from './helpers.js';
+import { assert, getElem } from './common/helpers.js';
 
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
 const ID_PAGE_1 = 'page1';

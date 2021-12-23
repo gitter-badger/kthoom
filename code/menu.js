@@ -6,7 +6,7 @@
  * Copyright(c) 2019 Google Inc.
  */
 
-import { assert, getElem, Key } from './helpers.js';
+import { assert, getElem, Key } from './common/helpers.js';
 
 const MENU_OPEN_STYLE = 'position:absolute;opacity:0.875;text-align:left;'
 const MENU_CLOSED_STYLE = 'display:none;' + MENU_OPEN_STYLE;

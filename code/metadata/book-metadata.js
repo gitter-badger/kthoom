@@ -1,4 +1,4 @@
-import { BookType } from "./book-binder.js";
+import { BookType } from "../book-binder.js";
 
 const STREAM_OPTIMIZED_NS = 'http://www.codedread.com/sop';
 

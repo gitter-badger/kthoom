@@ -9,7 +9,7 @@
 import { UnarchiveEventType, getUnarchiver } from './bitjs/archive/archive.js';
 import { BookProgressEvent } from './book-events.js';
 import { config } from './config.js';
-import { Params } from './helpers.js';
+import { Params } from './common/helpers.js';
 
 /** @enum */
 export const BookType = {

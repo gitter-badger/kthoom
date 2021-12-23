@@ -1,5 +1,5 @@
 import { BookMetadata } from './book-metadata.js';
-import { Key, Params, getElem } from './helpers.js';
+import { Key, Params, getElem } from '../common/helpers.js';
 
 export class MetadataViewer {
   constructor() {

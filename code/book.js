@@ -10,7 +10,7 @@ import { BookEventType, BookLoadingStartedEvent, BookLoadingCompleteEvent,
          BookProgressEvent, 
          BookMetadataXmlExtractedEvent,
          BookPageExtractedEvent} from './book-events.js';
-import { BookMetadata } from './book-metadata.js';
+import { BookMetadata } from './metadata/book-metadata.js';
 import { BookPumpEventType } from './book-pump.js';
 
 /**

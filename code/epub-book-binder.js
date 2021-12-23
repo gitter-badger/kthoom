@@ -20,11 +20,11 @@
 import { UnarchiveEventType } from './bitjs/archive/archive.js';
 import { BookBinder, BookType } from './book-binder.js';
 import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
-import { NodeType, walkDom } from './dom-walker.js';
+import { NodeType, walkDom } from './common/dom-walker.js';
 import { ATTRIBUTE_WHITELIST, BLOB_URL_ATTRIBUTES, ELEMENT_WHITELIST } from './epub-whitelists.js';
 import { FileRef } from './file-ref.js';
 import { XhtmlPage } from './page.js';
-import { assert } from './helpers.js';
+import { assert } from './common/helpers.js';
 
 const ATTR_PREFIX = 'data-kthoom-';
 const CONTAINER_FILE = 'META-INF/container.xml';

@@ -5,7 +5,7 @@
  *
  * Copyright(c) 2018 Google Inc.
  */
-import { getElem } from './helpers.js';
+import { getElem } from './common/helpers.js';
 import { Book, BookContainer } from './book.js';
 import { BookEventType } from './book-events.js';
 
