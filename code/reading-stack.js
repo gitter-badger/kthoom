@@ -24,10 +24,18 @@ export class ReadingStack {
     /** @type {number} */
     this.currentBookNum_ = -1;
 
-    /** @type {Array<Function>} */
+    /**
+     * A list of callbacks that are called when the book is changed to in the stack.
+     * @type {Array<Function>}
+     * @private
+     */
     this.currentBookChangedCallbacks_ = [];
 
-    /** @type {Array<Function>} */
+    /**
+     * A list of callbacks that are called when the book has loaded after being changed in the stack.
+     * @type {Array<Function>}
+     * @private
+     */
     this.currentBookLoadedCallbacks_ = [];
 
     getElem('readingStackButton').addEventListener('click', () => this.toggleOpen());
@@ -156,6 +164,10 @@ export class ReadingStack {
     this.currentBookChangedCallbacks_.push(callback);
   }
 
+  /**
+   * Subscribe to the ReadingStack to know when the book has been loaded.
+   * @param {function} callback A callback function that will receive the book.
+   */
   whenCurrentBookHasLoaded(callback) {
     this.currentBookLoadedCallbacks_.push(callback);
   }

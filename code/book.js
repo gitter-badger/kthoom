@@ -9,7 +9,8 @@ import { createBookBinderAsync } from './book-binder.js';
 import { BookEventType, BookLoadingStartedEvent, BookLoadingCompleteEvent,
          BookProgressEvent, 
          BookMetadataXmlExtractedEvent,
-         BookPageExtractedEvent} from './book-events.js';
+         BookPageExtractedEvent,
+         BookBindingCompleteEvent} from './book-events.js';
 import { BookMetadata } from './metadata/book-metadata.js';
 import { BookPumpEventType } from './book-pump.js';
 
@@ -179,7 +180,10 @@ export class Book extends EventTarget {
     return this.finishedLoading_;
   }
 
-  /** @returns {Promise<Book>} */
+  /**
+   * Loads the file from its source (either XHR or File).
+   * @returns {Promise<Book>}
+   */
   async load() {
     if (this.uri_) {
       return this.loadFromXhr();
@@ -297,9 +301,10 @@ export class Book extends EventTarget {
       throw 'Neither file nor fileHandle was set inside Book constructor.';
     }
 
-    const file = this.file_ || await this.fileHandle_.getFile();
-
+    // Set this immediately (before awaiting the file handle) so the ReadingStack does not try
+    // to also load it.
     this.needsLoading_ = false;
+    const file = this.file_ || await this.fileHandle_.getFile();
     this.dispatchEvent(new BookLoadingStartedEvent(this));
 
     return new Promise((resolve, reject) => {
@@ -415,8 +420,14 @@ export class Book extends EventTarget {
     this.arrayBuffer_ = ab;
     return createBookBinderAsync(fileNameOrUri, ab, totalExpectedSize).then(bookBinder => {
       this.bookBinder_ = bookBinder;
+
       // Extracts some state from the BookBinder events, re-sources the events, and re-sends the
       // event out to the subscribers to this Book.
+
+      this.bookBinder_.addEventListener(BookEventType.BINDING_COMPLETE, evt => {
+        this.dispatchEvent(new BookBindingCompleteEvent(this));
+      });
+
       this.bookBinder_.addEventListener(BookEventType.METADATA_XML_EXTRACTED, evt => {
         this.bookMetadata_ = evt.bookMetadata;
         this.dispatchEvent(new BookMetadataXmlExtractedEvent(this, evt.bookMetadata));
