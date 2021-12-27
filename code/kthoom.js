@@ -47,32 +47,65 @@ const enableOpenDirectory = !!window.showDirectoryPicker;
  */
 export class KthoomApp {
   constructor() {
+    /**
+     * @private
+     * @type {BookViewer}
+     */
     this.bookViewer_ = new BookViewer();
+    /**
+     * @private
+     * @type {ReadingStack}
+     */
     this.readingStack_ = new ReadingStack();
+    /**
+     * @private
+     * @type {MetadataViewer}
+     */
     this.metadataViewer_ = new MetadataViewer();
 
     this.keysHeld_ = {};
 
-    /** @private {Book} */
+    /**
+     * @private
+     * @type {Book}
+     */
     this.currentBook_ = null;
 
-    /** @private {Menu} */
+    /**
+     * @private
+     * @type {Menu}
+     */
     this.mainMenu_ = null;
 
-    /** @private {Menu} */
+    /**
+     * @private
+     * @type {Menu}
+     */
     this.openMenu_ = null;
 
-    /** @private {Menu} */
+    /**
+     * @private
+     * @type {Menu}
+     */
     this.viewMenu_ = null;
 
-    /** @private {Menu} */
+    /**
+     * @private
+     * @type {Menu}
+     */
     this.viewerContextMenu_ = null;
 
-    /** @private {boolean} */
+    /**
+     * @private
+     * @type {boolean}
+     */
     this.hasHelpOverlay_ = getElem('helpOverlay');
 
     // TODO: Remove this once all browsers support the File System Access API.
-    /** @private {HTMLInputElement} */
+    /**
+     * @private
+     * @type {HTMLInputElement}
+     */
     this.fileInputElem_ = null;
 
     // This Promise resolves when kthoom is ready.
@@ -106,6 +139,7 @@ export class KthoomApp {
   /** @private */
   init_() {
     this.readingStack_.whenCurrentBookChanged(book => this.handleCurrentBookChanged_(book));
+    // When the book has loaded (not unarchived), show the download menu option.
     this.readingStack_.whenCurrentBookHasLoaded(() => {
       this.mainMenu_.showMenuItem('menu-download', true);
     });
@@ -434,7 +468,10 @@ export class KthoomApp {
     } catch (err) { }
   }
 
-  /** @private */
+  /**
+   * @param {KeyboardEvent} evt
+   * @private
+   */
   keyHandler_(evt) {
     const code = evt.keyCode;
     if (!this.keysHeld_[code]) this.keysHeld_[code] = 0;
@@ -505,13 +542,15 @@ export class KthoomApp {
         }
         break;
       case Key.S:
+        // Only open the reading stack if the menu or metadata viewer are not open.
         if (!isMenuOpen && !isMetadataViewerOpen) {
           this.toggleReadingStackOpen_();
           return;
         }
         break;
       case Key.T:
-        if (!isMenuOpen && !isReadingStackOpen) {
+        // Only open the metadata if the menu or reading stack are not open.
+        if (this.currentBook_ && !isMenuOpen && !isReadingStackOpen) {
           this.toggleMetadataViewerOpen_();
           return;
         }
@@ -1148,10 +1187,10 @@ export class KthoomApp {
   // Handles all events subscribed to.
   handleEvent(evt) {
     switch (evt.type) {
-      case BookEventType.METADATA_XML_EXTRACTED:
-        this.metadataViewer_.setMetadata(evt.bookMetadata);
+      case BookEventType.BINDING_COMPLETE:
+        /** @type {Book} */
         const book = evt.source;
-        book.removeEventListener(BookEventType.METADATA_XML_EXTRACTED, this);
+        this.metadataViewer_.setBook(book);
         break;
     }
   }
@@ -1175,12 +1214,10 @@ export class KthoomApp {
       this.currentBook_ = book;
 
       this.bookViewer_.setCurrentBook(book);
-      if (book.isFinishedLoading()) {
-        if (book.getMetadata()) {        
-          this.metadataViewer_.setMetadata(book.getMetadata());
-        }
+      if (!book.isFinishedBinding()) {
+        book.addEventListener(BookEventType.BINDING_COMPLETE, this);
       } else {
-        book.addEventListener(BookEventType.METADATA_XML_EXTRACTED, this);
+        this.metadataViewer_.setBook(book);
       }
 
       document.title = book.getName();

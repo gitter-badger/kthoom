@@ -17,6 +17,7 @@ let urlsToCache = [
   'code/common/helpers.js',
   'code/common/dom-walker.js',
   'code/metadata/book-metadata.js',
+  'code/metadata/metadata-editor.js',
   'code/metadata/metadata-viewer.js',
   'code/book-binder.js',
   'code/book-events.js',

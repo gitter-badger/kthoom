@@ -8,10 +8,9 @@
 import { createBookBinderAsync } from './book-binder.js';
 import { BookEventType, BookLoadingStartedEvent, BookLoadingCompleteEvent,
          BookProgressEvent, 
-         BookMetadataXmlExtractedEvent,
          BookPageExtractedEvent,
          BookBindingCompleteEvent} from './book-events.js';
-import { BookMetadata } from './metadata/book-metadata.js';
+import { BookMetadata, createEmptyMetadata } from './metadata/book-metadata.js';
 import { BookPumpEventType } from './book-pump.js';
 
 /**
@@ -55,50 +54,79 @@ export class Book extends EventTarget {
 
     /**
      * The name of the book (shown in the Reading Stack).
+     * @private
      * @type {String}
      */
     this.name_ = name;
 
     /**
      * The optional URI of the book (not set for a book loaded from the file system).
+     * @private
      * @type {String}
      */
     this.uri_ = typeof(uriOrFileHandle) === 'string' ? uriOrFileHandle : undefined;
 
     /**
      * The File object of the book.
+     * @private
      * @type {File}
      */
     this.file_ = (uriOrFileHandle instanceof File) ? uriOrFileHandle : undefined;
 
     /**
      * The optional FileSystemFileHandle of the book (not set for book loaded from a URI).
+     * @private
      * @type {FileSystemFileHandle}
      */
     this.fileHandle_ = (!this.uri_ && !this.file_) ? uriOrFileHandle : undefined;
 
-    /** @private {BookContainer} */
+    /**
+     * @private
+     * @type {BookContainer}
+     */
     this.bookContainer_ = bookContainer;
 
-    /** @private {boolean} */
+    /**
+     * @private
+     * @type {boolean}
+     */
     this.needsLoading_ = true;
 
-    /** @private {boolean} */
+    /**
+     * @private
+     * @type {boolean}
+     */
+     this.finishedBinding_ = false;
+
+    /**
+     * @private
+     * @type {boolean}
+     */
     this.finishedLoading_ = false;
 
     /**
      * The total known number of pages.
-     * @private {number}
+     * @private
+     * @type {number}
      */
     this.totalPages_ = 0;
 
-    /** @private {BookBinder} */
+    /**
+     * @private
+     * @type {BookBinder}
+     */
     this.bookBinder_ = null;
 
-    /** @private {Array<Page>} */
+    /**
+     * @private
+     * @type {Array<Page>}
+     */
     this.pages_ = [];
 
-    /** @private {BookMetadata} */
+    /**
+     * @private
+     * @type {BookMetadata}
+     */
     this.bookMetadata_ = null;
 
     /**
@@ -175,7 +203,19 @@ export class Book extends EventTarget {
     return this.uri_;
   }
 
-  /** @returns {boolean} */
+  /**
+   * Whether the book has finished binding. Binding means the book is fully loaded, has been
+   * unarchived, paginated, its metadata inflated, etc.
+   * @returns {boolean}
+   */
+  isFinishedBinding() {
+    return this.finishedBinding_;
+  }
+
+  /**
+   * Whether the book has finished loading (from disk, network, etc).
+   * @returns {boolean}
+   */
   isFinishedLoading() {
     return this.finishedLoading_;
   }
@@ -407,6 +447,13 @@ export class Book extends EventTarget {
   }
 
   /**
+   * @param {BookMetata} metadata 
+   */
+  setMetadata(metadata) {
+    this.bookMetadata_ = metadata;
+  }
+
+  /**
    * Creates and sets the BookBinder, subscribes to its events, and starts the book binding process.
    * This function is called by all loadFrom... methods.
    * @param {string} fileNameOrUri
@@ -420,17 +467,19 @@ export class Book extends EventTarget {
     this.arrayBuffer_ = ab;
     return createBookBinderAsync(fileNameOrUri, ab, totalExpectedSize).then(bookBinder => {
       this.bookBinder_ = bookBinder;
+      this.bookMetadata_ = createEmptyMetadata(bookBinder.getBookType());
 
-      // Extracts some state from the BookBinder events, re-sources the events, and re-sends the
-      // event out to the subscribers to this Book.
+      // Extracts state from some BookBinder events and update the Book. Re-source some of those
+      // events, and dispatch them out to the subscribers of this Book. Only some events are
+      // propagated from the BookBinder events (those that affect the UI, essentially).
 
       this.bookBinder_.addEventListener(BookEventType.BINDING_COMPLETE, evt => {
+        this.finishedBinding_ = true;
         this.dispatchEvent(new BookBindingCompleteEvent(this));
       });
 
       this.bookBinder_.addEventListener(BookEventType.METADATA_XML_EXTRACTED, evt => {
         this.bookMetadata_ = evt.bookMetadata;
-        this.dispatchEvent(new BookMetadataXmlExtractedEvent(this, evt.bookMetadata));
       });
 
       this.bookBinder_.addEventListener(BookEventType.PAGE_EXTRACTED, evt => {

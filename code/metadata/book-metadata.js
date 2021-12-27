@@ -30,7 +30,7 @@ export class BookMetadata {
    * @param {boolean} optimizedForStreaming Whether this book is optimized for streaming, meaning
    *     files in the archive are in read order.
    */
-  constructor(bookType, tagMap, optimizedForStreaming) {
+  constructor(bookType, tagMap = new Map(), optimizedForStreaming = false) {
     /** @private {BookType} */
     this.bookType_ = bookType;
 
@@ -55,6 +55,14 @@ export class BookMetadata {
   set(key, value) {
     this.tags_.set(key, value);
   }
+}
+
+/**
+ * @param {BookType} bookType Defaults to COMIC.
+ * @returns {BookMetadata}
+ */
+export function createEmptyMetadata(bookType = BookType.COMIC) {
+  return new BookMetadata(bookType);
 }
 
 /**

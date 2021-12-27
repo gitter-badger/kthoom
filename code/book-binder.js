@@ -114,13 +114,17 @@ export class BookBinder extends EventTarget {
   /**
    * Oveerride this in an implementing subclass to do things before the Unarchiver starts
    * (like subscribe to Unarchiver events).
-   * @abstract @protected
+   * @abstract
+   * @protected
    */
   beforeStart_() {
     throw 'Cannot call beforeStart_() in abstract BookBinder';
   }
 
-  /** @abstract @returns {BookType} */
+  /**
+   * @abstract
+   * @returns {BookType}
+   */
   getBookType() {
     throw 'Cannot call getBookType() in abstract BookBinder';
   }
