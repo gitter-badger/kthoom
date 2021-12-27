@@ -3,7 +3,7 @@ import { BookType } from "../book-binder.js";
 const STREAM_OPTIMIZED_NS = 'http://www.codedread.com/sop';
 
 /** @enum */
-const ComicBookMetadataType = {
+export const ComicBookMetadataType = {
   UNKNOWN: 0,
   COMIC_RACK: 1,
 };
@@ -25,7 +25,7 @@ const COMICRACK_KEYS = ['Series', 'Volume', 'Number', 'Publisher', 'Year'];
 export class BookMetadata {
   /**
    * @param {BookType} bookType The type of the book.
-   * @param {Map<string, string>} tagMap The key-value metadata tags.
+   * @param {Iterable<string, string>} tagMap The key-value metadata tags.
    * @param {boolean} optimizedForStreaming Whether this book is optimized for streaming, meaning
    *     files in the archive are in read order.
    */
@@ -45,6 +45,29 @@ export class BookMetadata {
     return new BookMetadata(this.bookType_, this.tags_, this.optimizedForStreaming_);
   }
 
+  /**
+   * @param {BookMetadata} o
+   * @returns {boolean} Whether o is equivalent to this metadata object.
+   */
+  equals(o) {
+    if (this.bookType_ !== o.bookType_) {
+      return false;
+    }
+    if (this.optimizedForStreaming_ !== o.isOptimizedForStreaming()) {
+      return false;
+    }
+    const otherEntries = o.propertyEntries();
+    if (otherEntries.length !== this.tags_.keys().length) {
+      return false;
+    }
+    for (const [key, val] of otherEntries) {
+      if (!this.tags_.has(key) || this.tags_.get(key) !== val) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /** @returns {string[]} */
   getAllowedPropertyKeys() {
     if (this.bookType_ === ComicBookMetadataType.COMIC_RACK) {
@@ -53,10 +76,15 @@ export class BookMetadata {
     return [];
   }
 
+  /** @returns {ComicBookMetadataType} */
+  getBookType() {
+    return this.bookType_;
+  }
+
   /** @returns {boolean} */
   isOptimizedForStreaming() { return this.optimizedForStreaming_; }
 
-  /** @returns {Array<Array<string>>} A list of key-value pairs, similar to Object.entries(). */
+  /** @returns {Iterable<string,string>} A list of key-value pairs, similar to Object.entries(). */
   propertyEntries() {
     return this.tags_.entries();
   }

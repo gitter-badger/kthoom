@@ -24,13 +24,17 @@ export const Key = {
   RIGHT_SQUARE_BRACKET: 221,
 };
 
+// Get the document (or an empty object in the case of this module being pulled into tests).
+let document = {};
+try { document = window.document; } catch (e) {};
+
 export const getElem = function (id) {
   return document.body.querySelector('#' + id);
 };
 
 // Parse the URL parameters the first time this module is loaded.
 export const Params = {};
-const search = document.location.search;
+const search = document?.location?.search;
 if (search && search[0] === '?') {
   const args = search.substring(1).split('&');
   for (let arg of args) {
