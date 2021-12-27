@@ -26,6 +26,9 @@ export const UnarchiveState = {
   UNARCHIVING_ERROR: 3,
 };
 
+let EventTarget = Object;
+try { EventTarget = window.EventTarget } catch(e) {}
+
 /**
  * The abstract class for a BookBinder.  Never instantiate one of these yourself.
  * Use createBookBinderAsync() to create an instance of an implementing subclass.
