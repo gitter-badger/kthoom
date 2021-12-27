@@ -499,9 +499,10 @@ button:focus {
   border: solid 1px grey;
   border-radius: 5px;
   color: grey;
+  padding: 0;
   height: 2em;
   width: 2em;
-  padding: 0;
+  vertical-align: bottom;
 }
 
 .metadataButton:hover {

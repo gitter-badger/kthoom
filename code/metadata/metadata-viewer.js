@@ -9,14 +9,41 @@ export class MetadataViewer {
      */
     this.book_ = null;
 
-    /** @private {HTMLDivElement} */
+    /**
+     * @private
+     * @type {HTMLDivElement}
+     */
     this.contentDiv_ = getElem('metadataTrayContents');
 
-    /** @private {HTMLTemplateElement} */
+    /**
+     * @private
+     * @type {HTMLTemplateElement}
+     */
     this.tableTemplate_ = getElem('metadataTable');
+
+    /**
+     * @private
+     * @type {MetadataEditor}
+     */
+    this.editor_ = null;
 
     getElem('metadataViewerButton').addEventListener('click', () => this.toggleOpen());
     getElem('metadataViewerOverlay').addEventListener('click', (e) => this.toggleOpen());
+    getElem('closeMetadataButton').addEventListener('click', () => this.doClose());
+  }
+
+  doClose() {
+    if (!this.isOpen()) {
+      return;
+    }
+
+    if (this.editor_) {
+      // TODO: Call editor_.close() or something.
+      this.editor_ = null;
+      this.rerender_();
+    } else {
+      this.toggleOpen();
+    }
   }
 
   /**
@@ -27,10 +54,11 @@ export class MetadataViewer {
     if (!this.isOpen()) {
       return false;
     }
-    const code = evt.keyCode;
-    if (code === Key.ESCAPE) {
-      this.toggleOpen();
+
+    switch (evt.keyCode) {
+      case Key.ESCAPE: this.doClose(); break;
     }
+
     return true;
   }
 
@@ -85,7 +113,7 @@ export class MetadataViewer {
         // Dynamically load Metadata Editor when the edit button is clicked.
         editButton.addEventListener('click', evt => {
           import('./metadata-editor.js').then(module => {
-            const editor = new module.MetadataEditor();
+            this.editor_ = new module.MetadataEditor(this.book_);
           });
         });
       }

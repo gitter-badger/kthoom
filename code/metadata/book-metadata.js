@@ -16,8 +16,7 @@ const ComicBookMetadataType = {
  * - Publisher, querySelector('Publisher').textContent
  * - Year, querySelector('Year').textContent
  */
-
- const COMICRACK_KEYS = ['Series', 'Volume', 'Number', 'Publisher', 'Year'];
+const COMICRACK_KEYS = ['Series', 'Volume', 'Number', 'Publisher', 'Year'];
 
 /**
  * A lightweight class to encapsulate metadata of a book. This will
@@ -41,6 +40,20 @@ export class BookMetadata {
     this.optimizedForStreaming_ = optimizedForStreaming;
   }
 
+  /** @returns {BookMetadata} */
+  clone() {
+    return new BookMetadata(this.bookType_, this.tags_, this.optimizedForStreaming_);
+  }
+
+  /** @returns {string[]} */
+  getAllowedPropertyKeys() {
+    if (this.bookType_ === ComicBookMetadataType.COMIC_RACK) {
+      return COMICRACK_KEYS;
+    }
+    return [];
+  }
+
+  /** @returns {boolean} */
   isOptimizedForStreaming() { return this.optimizedForStreaming_; }
 
   /** @returns {Array<Array<string>>} A list of key-value pairs, similar to Object.entries(). */
