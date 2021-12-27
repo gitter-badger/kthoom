@@ -2,7 +2,6 @@ import { Book } from '../book.js';
 import { BookMetadata } from './book-metadata.js';
 import { getElem } from '../common/helpers.js';
 
-// TODO: Add an equals() method to metadata that compares key-value pairs.
 // TODO: Attach event listeners when the text field contents changes to update metadata.
 // TODO: Attach event listeners when the option key changes to update metadata.
 // TODO: Style the form fields appropriately.

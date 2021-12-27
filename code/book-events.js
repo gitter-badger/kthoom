@@ -19,6 +19,10 @@ export const BookEventType = {
   UNARCHIVE_COMPLETE: 'BOOK_EVENT_UNARCHIVE_COMPLETE',
 };
 
+// For node environments, window.Event does not exist.
+let Event = Object;
+try { Event = window.Event } catch(e) {}
+
 /**
  * The source can be a Book. Can also be a BookBinder internal to Book.
  */
