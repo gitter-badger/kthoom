@@ -81,6 +81,14 @@ export class BookMetadata {
     return this.bookType_;
   }
 
+  /**
+   * @param {string} key
+   * @returns {string}
+   */
+  getProperty(key) {
+    return this.tags_.get(key);
+  }
+
   /** @returns {boolean} */
   isOptimizedForStreaming() { return this.optimizedForStreaming_; }
 
@@ -89,11 +97,16 @@ export class BookMetadata {
     return this.tags_.entries();
   }
 
+  /** @param {string} key */
+  removeProperty(key) {
+    this.tags_.delete(key);
+  }
+
   /**
    * @param {string} key
    * @param {string} value
    */
-  set(key, value) {
+  setProperty(key, value) {
     this.tags_.set(key, value);
   }
 }
