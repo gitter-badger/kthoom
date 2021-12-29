@@ -1,18 +1,18 @@
 import { Book } from '../book.js';
 import { BookMetadata } from './book-metadata.js';
-import { getElem } from '../common/helpers.js';
+import { Key, getElem } from '../common/helpers.js';
 
-// TODO: Style the form fields appropriately.
-// TODO: Add a button to remove a row.
 // TODO: Add a button to add a row.
 // TODO: If save is clicked, ask to get save handle access.
 // TODO: When save handle is obtained, do a zip (optimized for streaming).
 // TODO: Once zip is done, save to file system.
+// TODO: Style the form fields appropriately.
 
 /**
  * @typedef MetadataRow
  * @property {HTMLSelectElement} select
  * @property {HTMLInputElement} input
+ * @property {HTMLButtonElement} deleteRowButton
  */
 
 /**
@@ -61,7 +61,7 @@ export class MetadataEditor {
     // If we are allowed to close, abandon all metadata changes and update UI.
     if (allowClose) {
       this.editorMetadata_ = this.book_.getMetadata().clone();
-      this.setupUI_();
+      this.rerender_();
     }
     return allowClose;
   }
@@ -79,6 +79,28 @@ export class MetadataEditor {
     return true;
   }
 
+  /**
+   * @private
+   * @param {number} i The row #.
+   */
+  deleteRow_(i) {
+    /** @type {MetadataRow} */
+    const deletedRow = this.rows_[i];
+    const rowEl = deletedRow.select.parentElement.parentElement;
+    if (rowEl instanceof HTMLTableRowElement) {
+      const key = deletedRow.select.dataset['key'];
+      if (key) {
+        this.editorMetadata_.removeProperty(key);
+        this.rows_.splice(i, 1);
+        this.rerender_();
+      } else {
+        throw `The select element on the row did not have a data-key property`;
+      }
+    } else {
+      throw `deleteRow_() did not resolve the <tr> properly`;
+    }
+  }
+
   /** @private */
   doSave_() {
   }
@@ -90,34 +112,39 @@ export class MetadataEditor {
     const tableElem = metadataContents.querySelector('table.metadataTable');
     for (const [key, value] of this.editorMetadata_.propertyEntries()) {
       if (key && value) {
-        let keyCellContent = `<td>
+        let rowContent = `<td>
           <select id="property-select" data-key="${key}">
             <option value="${key}">${key}</option>`;
         for (const otherKey of this.editorMetadata_.getAllowedPropertyKeys()) {
           if (key === otherKey) continue;
-          keyCellContent += `<option value="${otherKey}">${otherKey}</option>`;
+          rowContent += `<option value="${otherKey}">${otherKey}</option>`;
         }
-        keyCellContent += `</select>
+        rowContent += `</select>
           </td>
           <td>
             <input id="property-value" type="text" data-key="${key}" value="${value}">
+          </td>
+          <td>
+            <button id="deleteRowButton">x</button>
           </td>`;
 
         const rowElem = document.createElement('tr');
-        rowElem.innerHTML = keyCellContent;
+        rowElem.innerHTML = rowContent;
 
         this.rows_.push({
           select: rowElem.querySelector('select'),
           input: rowElem.querySelector('input'),
+          deleteRowButton: rowElem.querySelector('#deleteRowButton'),
         });
         tableElem.append(rowElem);
       }
     }
 
-    for (const row of this.rows_) {
+    for (let i = 0, L = this.rows_.length; i < L; ++i) {
+      const row = this.rows_[i];
       row.input.addEventListener('change', evt => {
         this.editorMetadata_.setProperty(evt.target.dataset['key'], evt.target.value);
-        this.setupUI_();
+        this.updateUI_();
       });
       row.input.addEventListener('keydown', evt => { evt.stopPropagation(); });
       row.select.addEventListener('change', evt => {
@@ -129,11 +156,12 @@ export class MetadataEditor {
           this.editorMetadata_.setProperty(newKey, row.input.value);
           select.dataset['key'] = newKey;
         }
-        this.setupUI_();
+        this.updateUI_();
       });
+      row.deleteRowButton.addEventListener('click', evt => { this.deleteRow_(i); });
     }
 
-    this.setupUI_();
+    this.updateUI_();
 
     this.contentDiv_.innerHTML = '';
     this.contentDiv_.appendChild(tableElem);
@@ -144,7 +172,7 @@ export class MetadataEditor {
    * the Save button.
    * @private
    */
-  setupUI_() {
+  updateUI_() {
     const selectedValues = this.rows_.map(row => row.select.value);
     for (const row of this.rows_) {
       for (const optionEl of row.select.querySelectorAll('option')) {
