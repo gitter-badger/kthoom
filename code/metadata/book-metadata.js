@@ -57,7 +57,7 @@ export class BookMetadata {
       return false;
     }
     const otherEntries = o.propertyEntries();
-    if (otherEntries.length !== this.tags_.keys().length) {
+    if (Array.from(otherEntries).length !== Array.from(this.tags_.keys()).length) {
       return false;
     }
     for (const [key, val] of otherEntries) {

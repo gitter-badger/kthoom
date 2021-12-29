@@ -1,8 +1,7 @@
 import { Book } from '../book.js';
 import { BookMetadata } from './book-metadata.js';
-import { Key, getElem } from '../common/helpers.js';
+import { Key, assert, getElem } from '../common/helpers.js';
 
-// TODO: Add a button to add a row.
 // TODO: If save is clicked, ask to get save handle access.
 // TODO: When save handle is obtained, do a zip (optimized for streaming).
 // TODO: Once zip is done, save to file system.
@@ -47,6 +46,8 @@ export class MetadataEditor {
      */
     this.rows_ = [];
 
+    getElem('addRowMetadataButton').addEventListener('click', evt => { this.doAddRow_(); })
+
     this.rerender_();
   }
 
@@ -62,6 +63,8 @@ export class MetadataEditor {
     if (allowClose) {
       this.editorMetadata_ = this.book_.getMetadata().clone();
       this.rerender_();
+      // Rendering the editor can show the Add Row button, and we are closing, so hide it.
+      getElem('addRowMetadataButton').style.display = 'none';
     }
     return allowClose;
   }
@@ -72,6 +75,7 @@ export class MetadataEditor {
    */
   handleKeyEvent(evt) {
     switch (evt.keyCode) {
+      case Key.R: this.doAddRow_(); break;
       case Key.S: this.doSave_(); break;
       case Key.T: this.doClose(); break;
     }
@@ -79,26 +83,39 @@ export class MetadataEditor {
     return true;
   }
 
+  /** @private */
+  doAddRow_() {
+    const allowedKeys = this.editorMetadata_.getAllowedPropertyKeys();
+    const currentKeys = this.rows_.map(row => row.select.dataset['key']);
+    let nextKey;
+    for (const key of allowedKeys) {
+      if (!currentKeys.includes(key)) {
+        nextKey = key;
+        break;
+      }
+    }
+
+    if (nextKey) {
+      this.editorMetadata_.setProperty(nextKey, '');
+      this.rerender_();
+    }
+  }
+
   /**
    * @private
    * @param {number} i The row #.
    */
-  deleteRow_(i) {
+   doDeleteRow_(i) {
     /** @type {MetadataRow} */
     const deletedRow = this.rows_[i];
     const rowEl = deletedRow.select.parentElement.parentElement;
-    if (rowEl instanceof HTMLTableRowElement) {
-      const key = deletedRow.select.dataset['key'];
-      if (key) {
-        this.editorMetadata_.removeProperty(key);
-        this.rows_.splice(i, 1);
-        this.rerender_();
-      } else {
-        throw `The select element on the row did not have a data-key property`;
-      }
-    } else {
-      throw `deleteRow_() did not resolve the <tr> properly`;
-    }
+    assert(rowEl instanceof HTMLTableRowElement, `deleteRow_() did not resolve the <tr> properly`);
+
+    const key = deletedRow.select.dataset['key'];
+    assert(!!key, `The select element on the row did not have a data-key property`);
+
+    this.editorMetadata_.removeProperty(key);
+    this.rerender_();
   }
 
   /** @private */
@@ -107,11 +124,12 @@ export class MetadataEditor {
 
   /** @private */
   rerender_() {
+    this.rows_ = [];
     const tableTemplate = getElem('metadataTable');
     const metadataContents = document.importNode(tableTemplate.content, true);
     const tableElem = metadataContents.querySelector('table.metadataTable');
     for (const [key, value] of this.editorMetadata_.propertyEntries()) {
-      if (key && value) {
+      if (key) {
         let rowContent = `<td>
           <select id="property-select" data-key="${key}">
             <option value="${key}">${key}</option>`;
@@ -158,7 +176,7 @@ export class MetadataEditor {
         }
         this.updateUI_();
       });
-      row.deleteRowButton.addEventListener('click', evt => { this.deleteRow_(i); });
+      row.deleteRowButton.addEventListener('click', evt => { this.doDeleteRow_(i); });
     }
 
     this.updateUI_();
@@ -182,5 +200,9 @@ export class MetadataEditor {
     }
     getElem('saveMetadataButton').style.display =
         this.editorMetadata_.equals(this.book_.getMetadata()) ? 'none' : '';
+    const allowedKeys = this.editorMetadata_.getAllowedPropertyKeys();
+    const currentKeys = this.rows_.map(row => row.select.dataset['key']);
+    getElem('addRowMetadataButton').style.display =
+        allowedKeys.length > currentKeys.length ? '' : 'none';
   }
 }

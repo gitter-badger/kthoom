@@ -103,7 +103,10 @@ export class MetadataViewer {
     this.rerender_();
   }
 
-  /** @param {Book} book */
+  /**
+   * Called to set the state of the metadata viewer and render it.
+   * @param {Book} book
+   */
   setBook(book) {
     this.book_ = book;
     this.rerender_();
