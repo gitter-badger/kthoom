@@ -494,6 +494,7 @@ export class KthoomApp {
       }
     }
 
+    // If the metadata tray is open, forward all key events to it.
     if (isMetadataViewerOpen) {
       if (this.metadataViewer_.handleKeyEvent(evt)) {
         return;

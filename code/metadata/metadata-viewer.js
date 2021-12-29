@@ -28,22 +28,48 @@ export class MetadataViewer {
     this.editor_ = null;
 
     getElem('metadataViewerButton').addEventListener('click', () => this.toggleOpen());
-    getElem('metadataViewerOverlay').addEventListener('click', (e) => this.toggleOpen());
+    getElem('metadataViewerOverlay').addEventListener('click', () => this.toggleOpen());
     getElem('closeMetadataButton').addEventListener('click', () => this.doClose());
+
+    if (Params['editMetadata']) {
+      const toolbarDiv = getElem('metadataToolbar');
+      toolbarDiv.style.display = '';
+      getElem('editMetadataButton').addEventListener('click', () => this.doEdit());
+    }
   }
 
+  /**
+   * If the editor is open, close that and release the editor. Otherwise, close the MetadataViewer
+   * tray.
+   */
   doClose() {
     if (!this.isOpen()) {
       return;
     }
 
-    if (this.editor_) {
-      // TODO: Call editor_.close() or something.
-      this.editor_ = null;
-      this.rerender_();
+    if (Params['editMetadata'] && this.editor_) {
+      // doClose() returning true means the editor should be released.
+      if (this.editor_.doClose()) {
+        this.editor_ = null;
+        const editButton = getElem('editMetadataButton');
+        editButton.style.display = '';
+        this.rerender_();
+      }
     } else {
       this.toggleOpen();
     }
+  }
+
+  /** Load the code for MetadataEditor and show it. */
+  doEdit() {
+    if (!Params['editMetadata'] || this.editor_) {
+      return;
+    }
+
+    import('./metadata-editor.js').then(module => {
+      getElem('editMetadataButton').style.display = 'none';
+      this.editor_ = new module.MetadataEditor(this.book_);
+    });
   }
 
   /**
@@ -55,8 +81,13 @@ export class MetadataViewer {
       return false;
     }
 
+    if (Params['editMetadata'] && this.editor_) {
+      return this.editor_.handleKeyEvent(evt);
+    }
+
     switch (evt.keyCode) {
-      case Key.ESCAPE: this.doClose(); break;
+      case Key.T: this.doClose(); break;
+      case Key.E: this.doEdit(); break;
     }
 
     return true;
@@ -79,10 +110,15 @@ export class MetadataViewer {
   }
 
   /**
-   * Opens or closes the metadata viewer pane. Only works if the MetadataViewer has a book.
+   * Opens or closes the metadata viewer pane. Only works if the MetadataViewer has a book and only
+   * if the Editor is not open.
    */
   toggleOpen() {
     if (!this.book_) {
+      return;
+    }
+    // TODO: Let the user know they need to close the metadata editor first via a toast or callout.
+    if (this.editor_) {
       return;
     }
     getElem('metadataViewer').classList.toggle('opened');
@@ -105,23 +141,10 @@ export class MetadataViewer {
         }
       }
 
-      if (Params['editMetadata']) {
-        const toolbarDiv = getElem('metadataToolbar');
-        toolbarDiv.style.display = 'block';
-
-        const editButton = getElem('editMetadataButton');
-        // Dynamically load Metadata Editor when the edit button is clicked.
-        editButton.addEventListener('click', evt => {
-          import('./metadata-editor.js').then(module => {
-            this.editor_ = new module.MetadataEditor(this.book_);
-          });
-        });
-      }
-  
       this.contentDiv_.innerHTML = '';
       this.contentDiv_.appendChild(tableElem);
     } else {
-      this.contentDiv_.innerHTML = 'No metadata';
+      this.contentDiv_.innerHTML = 'No book loaded';
     }
   }
 }

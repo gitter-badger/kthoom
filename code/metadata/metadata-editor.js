@@ -4,8 +4,7 @@ import { getElem } from '../common/helpers.js';
 
 // TODO: Style the form fields appropriately.
 // TODO: Add a button to remove a row.
-// TODO: Add a save button that becomes visible if the editorMetadata differs.
-// TODO: When close is clicked and there have been changes, ask user if they want to abandon.
+// TODO: Add a button to add a row.
 // TODO: If save is clicked, ask to get save handle access.
 // TODO: When save handle is obtained, do a zip (optimized for streaming).
 // TODO: Once zip is done, save to file system.
@@ -51,6 +50,39 @@ export class MetadataEditor {
     this.rerender_();
   }
 
+  /** @returns {boolean} True if the editor is allowed to close. */
+  doClose() {
+    // If the metadata is edited, confirm the user wants to abandon changes before allowing closing.
+    let allowClose = true;
+    if (!this.editorMetadata_.equals(this.book_.getMetadata())) {
+      allowClose = confirm(`Abandon metadata changes?`)
+    }
+
+    // If we are allowed to close, abandon all metadata changes and update UI.
+    if (allowClose) {
+      this.editorMetadata_ = this.book_.getMetadata().clone();
+      this.setupUI_();
+    }
+    return allowClose;
+  }
+
+  /**
+   * @param {KeyboardEvent} evt
+   * @return {boolean} True if the event was handled.
+   */
+  handleKeyEvent(evt) {
+    switch (evt.keyCode) {
+      case Key.S: this.doSave_(); break;
+      case Key.T: this.doClose(); break;
+    }
+
+    return true;
+  }
+
+  /** @private */
+  doSave_() {
+  }
+
   /** @private */
   rerender_() {
     const tableTemplate = getElem('metadataTable');
@@ -68,7 +100,7 @@ export class MetadataEditor {
         keyCellContent += `</select>
           </td>
           <td>
-            <input id="property-value" type="text" value="${value}">
+            <input id="property-value" type="text" data-key="${key}" value="${value}">
           </td>`;
 
         const rowElem = document.createElement('tr');
@@ -84,8 +116,10 @@ export class MetadataEditor {
 
     for (const row of this.rows_) {
       row.input.addEventListener('change', evt => {
-        this.editorMetadata_.setProperty(key, evt.target.value);
+        this.editorMetadata_.setProperty(evt.target.dataset['key'], evt.target.value);
+        this.setupUI_();
       });
+      row.input.addEventListener('keydown', evt => { evt.stopPropagation(); });
       row.select.addEventListener('change', evt => {
         const select = evt.target;
         const oldKey = select.dataset['key'];
@@ -95,27 +129,30 @@ export class MetadataEditor {
           this.editorMetadata_.setProperty(newKey, row.input.value);
           select.dataset['key'] = newKey;
         }
-        this.setupRows_();
+        this.setupUI_();
       });
     }
 
-    this.setupRows_();
+    this.setupUI_();
 
     this.contentDiv_.innerHTML = '';
     this.contentDiv_.appendChild(tableElem);
   }
 
   /**
-   * Update row options, disabling options that are already used.
+   * Update editor UI after some event. For example, it disables key options in rows and may show
+   * the Save button.
    * @private
    */
-  setupRows_() {
+  setupUI_() {
     const selectedValues = this.rows_.map(row => row.select.value);
     for (const row of this.rows_) {
       for (const optionEl of row.select.querySelectorAll('option')) {
         const optVal = optionEl.value;
         optionEl.disabled = selectedValues.includes(optVal) && optVal !== row.select.value;
       }
-    }    
+    }
+    getElem('saveMetadataButton').style.display =
+        this.editorMetadata_.equals(this.book_.getMetadata()) ? 'none' : '';
   }
 }
