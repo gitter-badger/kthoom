@@ -9,14 +9,14 @@ export const ComicBookMetadataType = {
 };
 
 /**
- * ComicRack. Let's start with these five fields:
- * - Series, querySelector('Series').textContent
- * - Volume, querySelector('Volume').textContent
- * - Number, querySelector('Number').textContent
- * - Publisher, querySelector('Publisher').textContent
- * - Year, querySelector('Year').textContent
+ * ComicRack. Schema now maintained here, apparently: https://github.com/anansi-project/comicinfo
+ * We will use the following fields for now.
+ * TODO: Add in Characters (a comma-separated list) and Summary (a long string).
  */
-const COMICRACK_KEYS = ['Series', 'Volume', 'Number', 'Publisher', 'Year'];
+const COMICRACK_KEYS = [
+  'Title', 'Series', 'Number', 'Volume', 'Year', 'Month', 'Writer', 'Penciller', 'Inker',
+  'Colorist', 'Letterer', 'CoverArtist', 'Editor', 'Publisher', 'Genre',
+];
 
 /**
  * A lightweight class to encapsulate metadata of a book. This will

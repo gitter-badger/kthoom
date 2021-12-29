@@ -2,13 +2,12 @@ import { Book } from '../book.js';
 import { BookMetadata } from './book-metadata.js';
 import { Key, assert, getElem } from '../common/helpers.js';
 
-// TODO: If save is clicked, ask to get save handle access.
 // TODO: When save handle is obtained, do a zip (optimized for streaming).
 // TODO: Once zip is done, save to file system.
 // TODO: Style the form fields appropriately.
 
 /**
- * @typedef MetadataRow
+ * @typedef MetadataRow An easy way to get access to row elements in the DOM.
  * @property {HTMLSelectElement} select
  * @property {HTMLInputElement} input
  * @property {HTMLButtonElement} deleteRowButton
@@ -119,7 +118,23 @@ export class MetadataEditor {
   }
 
   /** @private */
-  doSave_() {
+  async doSave_() {
+    let fileHandle = this.book_.getFileSystemHandle();
+    if (!fileHandle) {
+      // Ask the user where to save. Only allow saving as cbz.
+      fileHandle = await window['showSaveFilePicker']({
+        types: [
+          {
+            description: 'Comic Book Archive files',
+            accept: {
+              'application/vnd.comicbook+zip': ['.cbz'],
+            },
+          },
+        ],
+      });
+
+      // TODO: Something with the file system handle.
+    }
   }
 
   /** @private */

@@ -14,9 +14,14 @@ import { BookMetadata, createEmptyMetadata } from './metadata/book-metadata.js';
 import { BookPumpEventType } from './book-pump.js';
 
 /**
- * Book and BookContainer share the following interface:
- *   getContainer() - returns a BookContainer or null
- *   getName() - returns the name of the book or folder
+ * @typedef BookOrBookContainer A shared type that both Book and BookContainer implement.
+ * @property {function} getContainer
+ * @property {function} getName
+ */
+
+/**
+ * A BookContainer represents a folder containing books on the native file system.
+ * @implements {BookOrBookContainer}
  */
 export class BookContainer {
   /**
@@ -25,9 +30,15 @@ export class BookContainer {
    * @param {BookContainer} parent An optional parent.
    */
   constructor(name, handle, parent) {
+    /** @type {string} */
     this.name = name;
+
+    /** @type {FileSystemDirectoryHandle} */
     this.handle = handle;
+
+    /** @type {BookContainer} */
     this.parent = parent;
+
     /** @type {Array<Book|BookContainer>} */
     this.entries = [];
   }
@@ -40,6 +51,7 @@ export class BookContainer {
  * unarchiving, and page setting. A Book will either have a URI, a File object, or a
  * FileSystemFileHandle object from which to load the data. Books may also have a container that
  * contains it.
+ * @implements {BookOrBookContainer}
  */
 export class Book extends EventTarget {
   /**
@@ -47,7 +59,7 @@ export class Book extends EventTarget {
    * @param {string|File|FileSystemFileHandle} uriOrFileHandle For files loaded via URI, this param
    *    contains the URI. For files loaded via a file input element, this contains the File object,
    *    for files loaded via the native file system, it contains the FileSystemFileHandle.
-   * @param {BookContainer} An optional BookContainer that contains this Book.
+   * @param {BookContainer} bookContainer An optional BookContainer that contains this Book.
    */
   constructor(name, uriOrFileHandle = undefined, bookContainer = undefined) {
     super();
@@ -155,6 +167,9 @@ export class Book extends EventTarget {
 
   /** @returns {BookContainer} */
   getContainer() { return this.bookContainer_; }
+
+  /** @returns {FileSystemFileHandle} */
+  getFileSystemHandle() { return this.fileHandle_; }
 
   /** @returns {BookMetadata} */
   getMetadata() { return this.bookMetadata_; }

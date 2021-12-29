@@ -31,7 +31,9 @@ export class MetadataViewer {
     getElem('metadataViewerOverlay').addEventListener('click', () => this.toggleOpen());
     getElem('closeMetadataButton').addEventListener('click', () => this.doClose());
 
-    if (Params['editMetadata']) {
+    // Only show the toolbar if editMetadata flag is true and the browser supports the
+    // File System Access API (for now).
+    if (Params['editMetadata'] && window['showSaveFilePicker']) {
       const toolbarDiv = getElem('metadataToolbar');
       toolbarDiv.style.display = '';
       getElem('editMetadataButton').addEventListener('click', () => this.doEdit());
