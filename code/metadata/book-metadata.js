@@ -160,7 +160,7 @@ export function createComicBookXmlFromMetadata(metadata) {
     xmlStr += `  <ArchiveFileInfo xmlns="http://www.codedread.com/sop" optimizedForStreaming="true"></ArchiveFileInfo>\n`;
   }
 
-  for (const [key, val] of this.tagMap.entries()) {
+  for (const [key, val] of metadata.propertyEntries()) {
     if (COMICRACK_KEYS.includes(key)) {
       // TODO: Sanitize these values?
       xmlStr += `  <${key}>${val}</${key}>\n`;

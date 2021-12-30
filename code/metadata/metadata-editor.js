@@ -1,9 +1,9 @@
 import { Book } from '../book.js';
-import { BookMetadata } from './book-metadata.js';
+import { BookMetadata, createComicBookXmlFromMetadata } from './book-metadata.js';
 import { Key, assert, getElem } from '../common/helpers.js';
+import { Zipper } from '../bitjs/archive/compress.js';
+import { config } from '../config.js';
 
-// TODO: When save handle is obtained, do a zip (optimized for streaming).
-// TODO: Once zip is done, save to file system.
 // TODO: Style the form fields appropriately.
 
 /**
@@ -46,6 +46,7 @@ export class MetadataEditor {
     this.rows_ = [];
 
     getElem('addRowMetadataButton').addEventListener('click', evt => { this.doAddRow_(); })
+    getElem('saveMetadataButton').addEventListener('click', evt => { this.doSave_(); });
 
     this.rerender_();
   }
@@ -133,8 +134,34 @@ export class MetadataEditor {
         ],
       });
 
-      // TODO: Something with the file system handle.
-    }
+      const compressorOptions = {
+        'pathToBitJS': config.get('PATH_TO_BITJS'),
+      };
+      const zipper = new Zipper(compressorOptions);
+      let fileInfos = [];
+
+      const comicInfoXml = createComicBookXmlFromMetadata(this.editorMetadata_);
+      fileInfos.push({
+        fileName: 'ComicInfo.xml',
+        lastModTime: Date.now(),
+        fileData: new TextEncoder().encode(comicInfoXml),
+      });
+
+      for (let i = 0, L = this.book_.getNumberOfPages(); i < L; ++i) {
+        const page = this.book_.getPage(i);
+        fileInfos.push({
+          fileName: page.getPageName(),
+          lastModTime: page.getLastModTime(),
+          fileData: page.getBytes(),
+        });
+      }
+
+      const zipBytes = await zipper.start(fileInfos, true);
+      const writableStream = await fileHandle.createWritable();
+      await writableStream.write(zipBytes);
+      await writableStream.close();
+      alert('File saved');
+  }
   }
 
   /** @private */

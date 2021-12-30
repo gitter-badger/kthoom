@@ -98,7 +98,8 @@ class TarLocalFile {
 
     bytesRead += 512;
 
-    // Done header, now rest of blocks are the file contents.
+    // Done header, now rest of blocks are the file contents, matching the UnarchivedFile typedef.
+    /** @type {string} */
     this.filename = this.name;
     /** @type {Uint8Array} */
     this.fileData = null;

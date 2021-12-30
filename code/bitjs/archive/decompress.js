@@ -33,9 +33,9 @@ export {
 */
 
 /**
-* @typedef UnarchivedFile
-* @property {string} filename
-* @property {Uint8Array} fileData
+ * @typedef UnarchivedFile
+ * @property {string} filename
+ * @property {Uint8Array} fileData
 */
 
 /**
