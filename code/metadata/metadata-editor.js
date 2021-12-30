@@ -4,8 +4,12 @@ import { Key, assert, getElem } from '../common/helpers.js';
 import { Zipper } from '../bitjs/archive/compress.js';
 import { config } from '../config.js';
 
-// TODO: Auto-commit changes in text fields periodically (every 100ms?)
+// TODO: Some progress / spinner while file is saving.
+// TODO: When adding a row, the other rows' text is sometimes deleted.
+// TODO: Always show all buttons on the metadata toolbar, but have a disabled state?
+// TODO: If metadata editor is empty, always add a row?
 // TODO: Style the form fields appropriately.
+// TODO: Remove the ?editMetadata flag.
 
 /**
  * @typedef MetadataRow An easy way to get access to row elements in the DOM.
@@ -13,6 +17,8 @@ import { config } from '../config.js';
  * @property {HTMLInputElement} input
  * @property {HTMLButtonElement} deleteRowButton
  */
+
+const REFRESH_TIMER_MS = 200;
 
 /**
  */
@@ -49,7 +55,11 @@ export class MetadataEditor {
     getElem('addRowMetadataButton').addEventListener('click', evt => { this.doAddRow_(); })
     getElem('saveMetadataButton').addEventListener('click', evt => { this.doSave_(); });
 
-    this.rerender_();
+    /**
+     * @private
+     * @type {number}
+     */
+    this.idleTimer_ = null;
   }
 
   /** @returns {boolean} True if the editor is allowed to close. */
@@ -60,14 +70,44 @@ export class MetadataEditor {
       allowClose = confirm(`Abandon metadata changes?`)
     }
 
-    // If we are allowed to close, abandon all metadata changes and update UI.
+    // If we are allowed to close, abandon all metadata changes and remove idle timer.
     if (allowClose) {
       this.editorMetadata_ = this.book_.getMetadata().clone();
-      this.rerender_();
+      if (this.idleTimer_) {
+        clearInterval(this.idleTimer_);
+      }
       // Rendering the editor can show the Add Row button, and we are closing, so hide it.
       getElem('addRowMetadataButton').style.display = 'none';
     }
     return allowClose;
+  }
+
+  /**
+   * Renders the editor UI and set up an idle timer to watch for changes in metadata values.
+   */
+  doOpen() {
+    if (this.idleTimer_) {
+      throw `Metadata Editor had an idle timer set. Did you call doOpen() when it was open?`;
+    }
+
+    this.rerender_();
+
+    this.idleTimer_ = setInterval(() => {
+      // For each row, if its value does not match the metadata's current value, update the
+      // metadata and then update the UI to reflect the state.
+      let dirty = false;
+      for (const row of this.rows_) {
+        const key = row.select.dataset['key'];
+        const val = row.input.value;
+        if (this.editorMetadata_.getProperty(key) != val) {
+          this.editorMetadata_.setProperty(key, val);
+          dirty = true;
+        }
+      }
+      if (dirty) {
+        this.updateUI_();
+      }
+    }, REFRESH_TIMER_MS);
   }
 
   /**
@@ -218,7 +258,10 @@ export class MetadataEditor {
         this.editorMetadata_.setProperty(evt.target.dataset['key'], evt.target.value);
         this.updateUI_();
       });
-      row.input.addEventListener('keydown', evt => { evt.stopPropagation(); });
+      row.input.addEventListener('keydown', evt => {
+        evt.stopPropagation();
+        this.editorMetadata_.setProperty(row.select.dataset['key'], row.input.value);
+      });
       row.select.addEventListener('change', evt => {
         const select = evt.target;
         const oldKey = select.dataset['key'];
@@ -240,8 +283,8 @@ export class MetadataEditor {
   }
 
   /**
-   * Update editor UI after some event. For example, it disables key options in rows and may show
-   * the Save button.
+   * Update editor UI after some event. For example, after a row key is changed, this function
+   * disables key options in rows and may show the Save button.
    * @private
    */
   updateUI_() {

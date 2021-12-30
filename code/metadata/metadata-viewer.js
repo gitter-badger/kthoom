@@ -71,6 +71,7 @@ export class MetadataViewer {
     import('./metadata-editor.js').then(module => {
       getElem('editMetadataButton').style.display = 'none';
       this.editor_ = new module.MetadataEditor(this.book_);
+      this.editor_.doOpen();
     });
   }
 

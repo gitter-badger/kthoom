@@ -89,6 +89,14 @@ export class BookMetadata {
     return this.tags_.get(key);
   }
 
+  /**
+   * @param {string} key
+   * @returns {boolean}
+   */
+  hasProperty(key) {
+    return this.tags_.has(key);
+  }
+
   /** @returns {boolean} */
   isOptimizedForStreaming() { return this.optimizedForStreaming_; }
 
@@ -145,7 +153,7 @@ export function createEmptyMetadata(bookType = BookType.COMIC) {
       tagMap.set(key, val);
     }
   }
-  
+
   return new BookMetadata(BookType.COMIC, tagMap, optimizedForStreaming);
 }
 
