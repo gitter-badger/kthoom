@@ -4,6 +4,7 @@ import { Key, assert, getElem } from '../common/helpers.js';
 import { Zipper } from '../bitjs/archive/compress.js';
 import { config } from '../config.js';
 
+// TODO: Auto-commit changes in text fields periodically (every 100ms?)
 // TODO: Style the form fields appropriately.
 
 /**
@@ -133,35 +134,46 @@ export class MetadataEditor {
           },
         ],
       });
+    }
 
-      const compressorOptions = {
-        'pathToBitJS': config.get('PATH_TO_BITJS'),
-      };
-      const zipper = new Zipper(compressorOptions);
-      let fileInfos = [];
-
-      const comicInfoXml = createComicBookXmlFromMetadata(this.editorMetadata_);
-      fileInfos.push({
-        fileName: 'ComicInfo.xml',
-        lastModTime: Date.now(),
-        fileData: new TextEncoder().encode(comicInfoXml),
-      });
-
-      for (let i = 0, L = this.book_.getNumberOfPages(); i < L; ++i) {
-        const page = this.book_.getPage(i);
-        fileInfos.push({
-          fileName: page.getPageName(),
-          lastModTime: page.getLastModTime(),
-          fileData: page.getBytes(),
-        });
+    const queryPerms = await fileHandle.queryPermission({ mode: 'readwrite' });
+    if (queryPerms === 'prompt') {
+      if ((await fileHandle.requestPermission({ mode: 'readwrite' })) !== 'granted') {
+        return;
       }
+    } else if (queryPerms !== 'granted') {
+      return;
+    }
 
-      const zipBytes = await zipper.start(fileInfos, true);
-      const writableStream = await fileHandle.createWritable();
-      await writableStream.write(zipBytes);
-      await writableStream.close();
-      alert('File saved');
-  }
+    // After this point, the user has given permission to save.
+
+    const compressorOptions = {
+      'pathToBitJS': config.get('PATH_TO_BITJS'),
+    };
+    const zipper = new Zipper(compressorOptions);
+    let fileInfos = [];
+
+    const comicInfoXml = createComicBookXmlFromMetadata(this.editorMetadata_);
+    fileInfos.push({
+      fileName: 'ComicInfo.xml',
+      lastModTime: Date.now(),
+      fileData: new TextEncoder().encode(comicInfoXml),
+    });
+
+    for (let i = 0, L = this.book_.getNumberOfPages(); i < L; ++i) {
+      const page = this.book_.getPage(i);
+      fileInfos.push({
+        fileName: page.getPageName(),
+        lastModTime: page.getLastModTime(),
+        fileData: page.getBytes(),
+      });
+    }
+
+    const zipBytes = await zipper.start(fileInfos, true);
+    const writableStream = await fileHandle.createWritable();
+    await writableStream.write(zipBytes);
+    await writableStream.close();
+    alert('File saved');
   }
 
   /** @private */
