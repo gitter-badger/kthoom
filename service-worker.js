@@ -2,11 +2,14 @@ const CACHE_NAME = 'kthoom:v2';
 
 let urlsToCache = [
   '.',
-  'code/bitjs/archive/archive.js',
+  'code/bitjs/archive/compress.js',
+  'code/bitjs/archive/decompress.js',
+  'code/bitjs/archive/decompress-internal.js',
   'code/bitjs/archive/rarvm.js',
-  'code/bitjs/archive/unzip.js',
   'code/bitjs/archive/unrar.js',
   'code/bitjs/archive/untar.js',
+  'code/bitjs/archive/unzip.js',
+  'code/bitjs/archive/zip.js',
   'code/bitjs/file/sniffer.js',
   'code/bitjs/image/webp-shim/webp-shim.js',
   'code/bitjs/image/webp-shim/webp-shim-module.js',

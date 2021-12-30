@@ -17,7 +17,7 @@
  *   - Parse CSS and see if any rules reference a url() and do Blob URLs at render time.
  */
 
-import { UnarchiveEventType } from './bitjs/archive/archive.js';
+import { UnarchiveEventType } from './bitjs/archive/decompress.js';
 import { BookBinder, BookType } from './book-binder.js';
 import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
 import { NodeType, walkDom } from './common/dom-walker.js';

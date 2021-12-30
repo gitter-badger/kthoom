@@ -72,9 +72,10 @@ const BIT = [0x01, 0x02, 0x04, 0x08,
   0x100, 0x200, 0x400, 0x800,
   0x1000, 0x2000, 0x4000, 0x8000];
 
-
 class ZipLocalFile {
-  // takes a ByteStream and parses out the local file information
+  /**
+   * @param {bitjs.io.ByteStream} bstream 
+   */
   constructor(bstream) {
     if (typeof bstream != typeof {} || !bstream.readNumber || typeof bstream.readNumber != typeof function () { }) {
       return null;
@@ -110,6 +111,7 @@ class ZipLocalFile {
     }
 
     // Read in the compressed data if we have no data descriptor.
+    /** @type {Uint8Array} */
     this.fileData = null;
     let descriptorSize = 0;
     if (this.hasDataDescriptor) {
@@ -209,9 +211,19 @@ class ZipLocalFile {
   }
 }
 
-// returns a table of Huffman codes 
-// each entry's index is its code and its value is a JavaScript object 
-// containing {length: 6, symbol: X}
+/**
+ * @typedef SymbolLengthPair
+ * @property {number} length
+ * @property {number} symbol
+ */
+
+/**
+ * Returns a table of Huffman codes. Each entry's key is its code and its value is a JavaScript
+ * object containing {length: 6, symbol: X}.
+ * @param {number[]} bitLengths An array representing the bit lengths of the codes, in order.
+ *     See section 3.2.2 of https://datatracker.ietf.org/doc/html/rfc1951.
+ * @returns {Map<number, SymbolLengthPair>}
+ */
 function getHuffmanCodes(bitLengths) {
   // ensure bitLengths is an array containing at least one element
   if (typeof bitLengths != typeof [] || bitLengths.length < 1) {
@@ -251,6 +263,7 @@ function getHuffmanCodes(bitLengths) {
   }
 
   // Step 3: Assign numerical values to all codes
+  /** @type Map<number, SymbolLengthPair> */
   const table = new Map();
   for (let n = 0; n < numLengths; ++n) {
     const len = bitLengths[n];
@@ -282,6 +295,7 @@ function getHuffmanCodes(bitLengths) {
 // fixed Huffman codes go from 7-9 bits, so we need an array whose index can hold up to 9 bits
 let fixedHCtoLiteral = null;
 let fixedHCtoDistance = null;
+/** @returns {Map<number, SymbolLengthPair>} */
 function getFixedLiteralTable() {
   // create once
   if (!fixedHCtoLiteral) {
@@ -297,6 +311,7 @@ function getFixedLiteralTable() {
   return fixedHCtoLiteral;
 }
 
+/** @returns {Map<number, SymbolLengthPair>} */
 function getFixedDistanceTable() {
   // create once
   if (!fixedHCtoDistance) {
@@ -309,8 +324,13 @@ function getFixedDistanceTable() {
   return fixedHCtoDistance;
 }
 
-// extract one bit at a time until we find a matching Huffman Code
-// then return that symbol
+/**
+ * Extract one bit at a time until we find a matching Huffman Code
+ * then return that symbol.
+ * @param {bitjs.io.BitStream} bstream
+ * @param {Map<number, SymbolLengthPair>} hcTable
+ * @returns {number}
+ */
 function decodeSymbol(bstream, hcTable) {
   let code = 0;
   let len = 0;
@@ -326,14 +346,13 @@ function decodeSymbol(bstream, hcTable) {
     if (hcTable.has(code) && hcTable.get(code).length == len) {
       break;
     }
-    if (len > hcTable.maxLength) {
+    if (len > hcTable.length) {
       err(`Bit stream out of sync, didn't find a Huffman Code, length was ${len} ` +
         `and table only max code length of ${hcTable.length}`);
       break;
     }
   }
   return hcTable.get(code).symbol;
-//  return hcTable[code].symbol;
 }
 
 
@@ -397,6 +416,13 @@ const DistLookupTable = [
   [13, 16385], [13, 24577]
 ];
 
+/**
+ * @param {bitjs.io.BitStream} bstream
+ * @param {Map<number, SymbolLengthPair>} hcLiteralTable
+ * @param {Map<number, SymbolLengthPair>} hcDistanceTable
+ * @param {bitjs.io.ByteBuffer} buffer
+ * @returns 
+ */
 function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer) {
   /*
       loop (until end of block code recognized)
@@ -413,11 +439,9 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer) {
                stream, and copy length bytes from this
                position to the output stream.
   */
-  let numSymbols = 0;
   let blockSize = 0;
   for (; ;) {
     const symbol = decodeSymbol(bstream, hcLiteralTable);
-    ++numSymbols;
     if (symbol < 256) {
       // copy literal byte to output
       buffer.insertByte(symbol);
@@ -459,15 +483,20 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer) {
   return blockSize;
 }
 
-// {Uint8Array} compressedData A Uint8Array of the compressed file data.
-// compression method 8
-// deflate: http://tools.ietf.org/html/rfc1951
+/**
+ * Compression method 8. Deflate: http://tools.ietf.org/html/rfc1951
+ * @param {Uint8Array} compressedData A Uint8Array of the compressed file data.
+ * @param {number} numDecompressedBytes
+ * @returns {Uint8Array} The decompressed array.
+ */
 function inflate(compressedData, numDecompressedBytes) {
   // Bit stream representing the compressed data.
+  /** @type {bitjs.io.BitStream} */
   const bstream = new bitjs.io.BitStream(compressedData.buffer,
-    false /* rtl */,
+    false /* mtl */,
     compressedData.byteOffset,
     compressedData.byteLength);
+  /** @type {bitjs.io.ByteBuffer} */
   const buffer = new bitjs.io.ByteBuffer(numDecompressedBytes);
   let blockSize = 0;
 
@@ -524,17 +553,18 @@ function inflate(compressedData, numDecompressedBytes) {
       // and distance tables together
       const literalCodeLengths = [];
       let prevCodeLength = 0;
-      while (literalCodeLengths.length < numLiteralLengthCodes + numDistanceCodes) {
+      const maxCodeLengths = numLiteralLengthCodes + numDistanceCodes;
+      while (literalCodeLengths.length < maxCodeLengths) {
         const symbol = decodeSymbol(bstream, codeLengthsCodes);
         if (symbol <= 15) {
           literalCodeLengths.push(symbol);
           prevCodeLength = symbol;
-        } else if (symbol == 16) {
+        } else if (symbol === 16) {
           let repeat = bstream.readBits(2) + 3;
           while (repeat--) {
             literalCodeLengths.push(prevCodeLength);
           }
-        } else if (symbol == 17) {
+        } else if (symbol === 17) {
           let repeat = bstream.readBits(3) + 3;
           while (repeat--) {
             literalCodeLengths.push(0);
@@ -596,7 +626,7 @@ function archiveUnzip() {
       oneLocalFile.unzip();
 
       if (oneLocalFile.fileData != null) {
-        postMessage({ type: 'extract', unarchivedFile: oneLocalFile });
+        postMessage({ type: 'extract', unarchivedFile: oneLocalFile }, [oneLocalFile.fileData.buffer]);
         postProgress();
       }
     }
@@ -707,7 +737,6 @@ onmessage = function (event) {
     bytestream = new bitjs.io.ByteStream(bytes);
   } else {
     bytestream.push(bytes);
-    // TODO: Shouldn't this return here?
   }
 
   if (unarchiveState === UnarchiveState.NOT_STARTED) {

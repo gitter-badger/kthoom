@@ -1,8 +1,8 @@
 /**
- * archive-internal.js
+ * decompress-internal.js
  *
  * Provides base functionality for unarchiving, extracted here as an internal
- * module for unit testing. Import archive.js instead.
+ * module for unit testing. Import decompress.js instead.
  *
  * Licensed under the MIT License
  *
@@ -207,11 +207,15 @@ export class UnarchiveExtractEvent extends UnarchiveEvent {
      */
     this.pathToBitJS_ = options.pathToBitJS || '/';
 
-    /** @orivate {boolean} */
+    /**
+     * @orivate
+     * @type {boolean}
+     */
     this.debugMode_ = !!(options.debug);
 
     /**
      * A map from event type to an array of listeners.
+     * @private
      * @type {Map.<string, Array>}
      */
     this.listeners_ = {};
@@ -221,8 +225,8 @@ export class UnarchiveExtractEvent extends UnarchiveEvent {
 
     /**
      * Private web worker initialized during start().
-     * @type {Worker}
      * @private
+     * @type {Worker}
      */
     this.worker_ = null;
   }
@@ -360,7 +364,9 @@ export class UnarchiveExtractEvent extends UnarchiveEvent {
 
   /**
    * Adds more bytes to the unarchiver's Worker thread.
-   * @param {ArrayBuffer} ab The ArrayBuffer with more bytes in it.
+   * @param {ArrayBuffer} ab The ArrayBuffer with more bytes in it. If opt_transferable is
+   *     set to true, this ArrayBuffer must not be referenced after calling update(), since it
+   *     is marked as Transferable and sent to the Worker.
    * @param {boolean=} opt_transferable Optional boolean whether to mark this ArrayBuffer
    *     as a Tranferable object, which means it can no longer be referenced outside of
    *     the Worker thread.

@@ -6,7 +6,7 @@
  * Copyright(c) 2019 Google Inc.
  */
 
-import { UnarchiveEventType, getUnarchiver } from './bitjs/archive/archive.js';
+import { UnarchiveEventType, getUnarchiver } from './bitjs/archive/decompress.js';
 import { BookProgressEvent } from './book-events.js';
 import { config } from './config.js';
 import { Params } from './common/helpers.js';

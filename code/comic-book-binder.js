@@ -6,7 +6,7 @@
  * Copyright(c) 2019 Google Inc.
  */
 
-import { UnarchiveEventType } from './bitjs/archive/archive.js';
+import { UnarchiveEventType } from './bitjs/archive/decompress.js';
 import { BookBinder, BookType } from './book-binder.js';
 import { BookBindingCompleteEvent, BookMetadataXmlExtractedEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
 import { createPageFromFileAsync, guessMimeType } from './page.js';
