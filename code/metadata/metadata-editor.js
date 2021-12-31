@@ -4,8 +4,7 @@ import { Key, assert, getElem } from '../common/helpers.js';
 import { Zipper } from '../bitjs/archive/compress.js';
 import { config } from '../config.js';
 
-// TODO: Some progress / spinner while file is saving.
-// TODO: When adding a row, the other rows' text is sometimes deleted.
+// TODO: Some progress / spinner while file is saving. It is particularly slow on my NAS.
 // TODO: Always show all buttons on the metadata toolbar, but have a disabled state?
 // TODO: If metadata editor is empty, always add a row?
 // TODO: Style the form fields appropriately.
@@ -186,6 +185,7 @@ export class MetadataEditor {
     }
 
     // After this point, the user has given permission to save.
+    this.book_.setMetadata(this.editorMetadata_);
 
     const compressorOptions = {
       'pathToBitJS': config.get('PATH_TO_BITJS'),
@@ -209,10 +209,15 @@ export class MetadataEditor {
       });
     }
 
+    const startTime = Date.now();
+    console.log(`Starting zip...`);
     const zipBytes = await zipper.start(fileInfos, true);
+    const zipTime = Date.now();
+    console.log(`... zip complete in ${zipTime - startTime}ms`)
     const writableStream = await fileHandle.createWritable();
     await writableStream.write(zipBytes);
     await writableStream.close();
+    console.log(`... file saved in ${Date.now() - zipTime}ms`)
     alert('File saved');
   }
 

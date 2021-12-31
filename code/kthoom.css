@@ -500,8 +500,8 @@ button:focus {
   border-radius: 5px;
   color: grey;
   padding: 0;
-  height: 2em;
-  width: 2em;
+  height: 2.5em;
+  width: 2.5em;
   vertical-align: bottom;
 }
 
@@ -509,6 +509,7 @@ button:focus {
   border-color: yellow;
   color: yellow;
   cursor: pointer;
+  font-weight: bold;
 }
 
 /* TODO: Remove current class and use focus for reading stack. */

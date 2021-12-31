@@ -465,7 +465,7 @@ export class Book extends EventTarget {
    * @param {BookMetata} metadata 
    */
   setMetadata(metadata) {
-    this.bookMetadata_ = metadata;
+    this.bookMetadata_ = metadata.clone();
   }
 
   /**
