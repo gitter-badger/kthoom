@@ -75,8 +75,10 @@ export class MetadataEditor {
       if (this.idleTimer_) {
         clearInterval(this.idleTimer_);
       }
-      // Rendering the editor can show the Add Row button, and we are closing, so hide it.
+      // Rendering the editor can show certain buttons, and we are closing, so hide them.
       getElem('addRowMetadataButton').style.display = 'none';
+      getElem('saveMetadataButton').style.display = 'none';
+
     }
     return allowClose;
   }

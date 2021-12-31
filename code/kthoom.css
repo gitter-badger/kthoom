@@ -453,8 +453,8 @@ button:focus {
 
 /** Metadata Viewer */
 #metadataViewer {
-  margin-left: calc(40em - 30px);
-  left: calc(100% - 40em - 5px);
+  margin-left: calc(31em - 30px);
+  left: calc(100% - 31em - 5px);
 }
 
 #metadataViewerButton {
@@ -464,7 +464,7 @@ button:focus {
 }
 
 #metadataTrayContents {
-  width: 40em;
+  width: 30em;
 }
 
 #metadataViewer.opened {
@@ -499,6 +499,7 @@ button:focus {
   border: solid 1px grey;
   border-radius: 5px;
   color: grey;
+  font-weight: bold;
   padding: 0;
   height: 2.5em;
   width: 2.5em;
@@ -509,7 +510,6 @@ button:focus {
   border-color: yellow;
   color: yellow;
   cursor: pointer;
-  font-weight: bold;
 }
 
 /* TODO: Remove current class and use focus for reading stack. */
