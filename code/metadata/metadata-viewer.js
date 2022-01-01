@@ -33,7 +33,7 @@ export class MetadataViewer {
 
     // Only show the toolbar if editMetadata flag is true and the browser supports the
     // File System Access API (for now).
-    if (Params['editMetadata'] && window['showSaveFilePicker']) {
+    if (window['showSaveFilePicker']) {
       const toolbarDiv = getElem('metadataToolbar');
       toolbarDiv.style.display = '';
       getElem('editMetadataButton').addEventListener('click', () => this.doEdit());
@@ -49,7 +49,7 @@ export class MetadataViewer {
       return;
     }
 
-    if (Params['editMetadata'] && this.editor_) {
+    if (this.editor_) {
       // doClose() returning true means the editor should be released.
       if (this.editor_.doClose()) {
         this.editor_ = null;
@@ -64,7 +64,7 @@ export class MetadataViewer {
 
   /** Load the code for MetadataEditor and show it. */
   doEdit() {
-    if (!Params['editMetadata'] || this.editor_) {
+    if (this.editor_) {
       return;
     }
 
@@ -84,7 +84,7 @@ export class MetadataViewer {
       return false;
     }
 
-    if (Params['editMetadata'] && this.editor_) {
+    if (this.editor_) {
       return this.editor_.handleKeyEvent(evt);
     }
 

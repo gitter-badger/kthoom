@@ -4,11 +4,9 @@ import { Key, assert, getElem } from '../common/helpers.js';
 import { Zipper } from '../bitjs/archive/compress.js';
 import { config } from '../config.js';
 
-// TODO: Some progress / spinner while file is saving. It is particularly slow on my NAS.
 // TODO: Always show all buttons on the metadata toolbar, but have a disabled state?
 // TODO: If metadata editor is empty, always add a row?
 // TODO: Style the form fields appropriately.
-// TODO: Remove the ?editMetadata flag.
 
 /**
  * @typedef MetadataRow An easy way to get access to row elements in the DOM.
@@ -17,7 +15,9 @@ import { config } from '../config.js';
  * @property {HTMLButtonElement} deleteRowButton
  */
 
+const METADATA_STATUS_ID = 'metadataStatus';
 const REFRESH_TIMER_MS = 200;
+const STATUS_TIMER_MS = 5000;
 
 /**
  */
@@ -189,6 +189,9 @@ export class MetadataEditor {
     // After this point, the user has given permission to save.
     this.book_.setMetadata(this.editorMetadata_);
 
+    const statusEl = getElem(METADATA_STATUS_ID);
+    statusEl.innerHTML = 'Zipping... please wait...';
+
     const compressorOptions = {
       'pathToBitJS': config.get('PATH_TO_BITJS'),
     };
@@ -216,11 +219,13 @@ export class MetadataEditor {
     const zipBytes = await zipper.start(fileInfos, true);
     const zipTime = Date.now();
     console.log(`... zip complete in ${zipTime - startTime}ms`)
+    statusEl.innerHTML = 'Saving comic book... please wait...';
     const writableStream = await fileHandle.createWritable();
     await writableStream.write(zipBytes);
     await writableStream.close();
     console.log(`... file saved in ${Date.now() - zipTime}ms`)
-    alert('File saved');
+    statusEl.innerHTML = 'Comic book saved!';
+    setTimeout(() => statusEl.innerHTML = '', STATUS_TIMER_MS);
   }
 
   /** @private */
@@ -258,6 +263,9 @@ export class MetadataEditor {
         tableElem.append(rowElem);
       }
     }
+    const tableContainerDiv = document.createElement('div');
+    tableContainerDiv.className = 'metadataTableContainer';
+    tableContainerDiv.append(tableElem);
 
     for (let i = 0, L = this.rows_.length; i < L; ++i) {
       const row = this.rows_[i];
@@ -283,10 +291,16 @@ export class MetadataEditor {
       row.deleteRowButton.addEventListener('click', evt => { this.doDeleteRow_(i); });
     }
 
+    // Positioned at the bottom above the toolbar.
+    const statusBarEl = document.createElement('div');
+    statusBarEl.id = METADATA_STATUS_ID;
+    statusBarEl.setAttribute('style',
+        'background-color: #444; color: #yellow; position: absolute; bottom: 2em;' +
+        'width: 85%; height: 1.5em; margin-bottom: 7px; border: solid 1px yellow;');
     this.updateUI_();
 
     this.contentDiv_.innerHTML = '';
-    this.contentDiv_.appendChild(tableElem);
+    this.contentDiv_.append(tableContainerDiv, statusBarEl);
   }
 
   /**
