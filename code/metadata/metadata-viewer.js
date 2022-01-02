@@ -149,6 +149,9 @@ export class MetadataViewer {
 
       this.contentDiv_.innerHTML = '';
       this.contentDiv_.appendChild(tableElem);
+
+      const hasMetadata = Array.from(metadata.propertyEntries()).length > 0;
+      getElem('metadataIsPresent').style.display = hasMetadata ? '' : 'none';
     } else {
       this.contentDiv_.innerHTML = 'No book loaded';
     }

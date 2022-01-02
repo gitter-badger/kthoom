@@ -28,9 +28,13 @@ export const Key = {
 let document = {};
 try { document = window.document; } catch (e) {};
 
-export const getElem = function (id) {
+/**
+ * @param {string} id The id of the element to get.
+ * @returns {HTMLElement} The element.
+ */
+export function getElem(id) {
   return document.body.querySelector('#' + id);
-};
+}
 
 // Parse the URL parameters the first time this module is loaded.
 export const Params = {};
