@@ -3,6 +3,8 @@
 
 # kthoom
 
+![kthoom logo](images/logo.svg)
+
 kthoom is a comic book / ebook reader that runs in the browser using modern client-side open web
 technologies such as JavaScript, HTML5, the
 [File System Access API](https://wicg.github.io/file-system-access/), Web Workers, Typed Arrays,
