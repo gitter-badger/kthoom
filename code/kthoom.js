@@ -232,6 +232,13 @@ export class KthoomApp {
           this.saveSettings_();
           closeMainMenu();
           break;
+        case 'menu-view-hide':
+          getElem('readingStackOverlay').setAttribute("display","none");
+          getElem('readingStack').setAttribute("display","none");
+          getElem('metadataViewerOverlay').setAttribute("display","none");
+          getElem('metadataViewer').setAttribute("display","none");
+          this.viewMenu_.setMenuItemSelected('menu-view-hide');
+        break;
         case 'menu-view-fit-best':
         case 'menu-view-fit-height':
         case 'menu-view-fit-width':
@@ -626,6 +633,19 @@ export class KthoomApp {
         break;
       case Key.R:
         this.bookViewer_.rotateClockwise();
+        this.saveSettings_();
+        break;
+      case Key.P:
+        let selected = this.viewMenu_.getMenuItemSelected('menu-view-hide');
+        this.viewMenu_.setMenuItemSelected('menu-view-hide',!selected);
+
+        if(!selected){ //TODO move to an eventListener
+        getElem('readingStackOverlay').setAttribute("display","?");
+          getElem('readingStack').setAttribute("display","?");
+          getElem('metadataViewerOverlay').setAttribute("display","?");
+          getElem('metadataViewer').setAttribute("display","?");
+        }
+        
         this.saveSettings_();
         break;
       case Key.W: case Key.H: case Key.B:

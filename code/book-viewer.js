@@ -391,7 +391,8 @@ export class BookViewer {
       }
 
       this.showPageInViewer_(this.currentPageNum_, page1);
-    } else if (this.numPagesInViewer_ === 2) {
+    } else if (this.numPagesInViewer_ === 2) 
+    {
       // 2-page view.
       page1.style.display = '';
       page2.style.display = '';
@@ -402,6 +403,116 @@ export class BookViewer {
       // TODO: Test this.
       // This is the dimensions before transformation.  They can go beyond the bv dimensions.
       let pw, ph, pl1, pt1, pl2, pt2;
+
+      if (portraitMode) {
+        // It is as if the book viewer width is cut in half horizontally for the purposes of
+        // measuring the page fit.
+        bv.ar /= 2;
+
+        // Portrait, 2-page.
+        if (this.fitMode_ === FitMode.Width ||
+          (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
+          // fit-width, 2-page.
+          // fit-best, 2-page, width maxed.
+          pw = bv.width / 2;
+          ph = pw / par;
+          pl1 = bv.left;
+          if (par > bv.ar) { // not scrollable.
+            pt1 = roty - ph / 2;
+          } else { // fit-width, scrollable.
+            pt1 = roty - bv.height / 2;
+            if (this.rotateTimes_ === 2) {
+              pt1 += bv.height - ph;
+            }
+          }
+        } else {
+          // fit-height, 2-page.
+          // fit-best, 2-page, height maxed.
+          ph = bv.height;
+          pw = ph * par;
+          pt1 = bv.top;
+          if (par < bv.ar) { // not scrollable.
+            pl1 = rotx - pw;
+          } else { // fit-height, scrollable.
+            pl1 = bv.left;
+            if (this.rotateTimes_ === 2) {
+              pl1 += bv.width - pw * 2;
+            }
+          }
+        }
+
+        if (topw < pw * 2) topw = pw * 2;
+        if (toph < ph) toph = ph;
+      } else {
+        bv.ar *= 2;
+
+        // Landscape, 2-page.
+        if (this.fitMode_ === FitMode.Width ||
+          (this.fitMode_ === FitMode.Best && par > (1 / bv.ar))) {
+          // fit-best, 2-page, width-maxed.
+          // fit-width, 2-page.
+          pw = bv.height / 2;
+          ph = pw / par;
+          pl1 = rotx - pw;
+          if (par > (1 / bv.ar)) { // not scrollable.
+            pt1 = roty - ph / 2;
+          } else { // fit-width, scrollable.
+            pt1 = roty - bv.width / 2;
+            if (this.rotateTimes_ === 1) {
+              pt1 += bv.width - ph;
+            }
+          }
+        } else {
+          // fit-best, 2-page, height-maxed.
+          // fit-height, 2-page.
+          ph = bv.width;
+          pw = ph * par;
+          pt1 = roty - ph / 2;
+          if (par < (1 / bv.ar)) { // not scrollable.
+            pl1 = rotx - pw;
+          } else { // fit-height, scrollable.
+            pl1 = rotx - bv.height / 2;
+            if (this.rotateTimes_ === 3) {
+              pl1 += bv.height - pw * 2;
+            }
+          }
+        }
+        if (topw < ph) topw = ph;
+        if (toph < pw * 2) toph = pw * 2;
+      } // Landscape
+
+      pl2 = pl1 + pw;
+      pt2 = pt1;
+
+      // Now size the page elements.
+      for (const pageElem of page1Elems) {
+        pageElem.setAttribute('x', pl1);
+        pageElem.setAttribute('y', pt1);
+        pageElem.setAttribute("width", pw);
+        pageElem.setAttribute("height", ph);
+      }
+      for (const pageElem of page2Elems) {
+        pageElem.setAttribute('x', pl2);
+        pageElem.setAttribute('y', pt2);
+        pageElem.setAttribute("width", pw);
+        pageElem.setAttribute("height", ph);
+      }
+
+      this.showPageInViewer_(this.currentPageNum_, page1);
+      this.showPageInViewer_((this.currentPageNum_ < this.currentBook_.getNumberOfPages() - 1) ?
+      this.currentPageNum_ + 1 : 0, page2);
+    }
+    else{
+      //long-strip view.
+      page1.style.display = '';
+      page2.style.display = '';
+      for(let i = 2; i < this.currentBook_.getNumberOfPages; i++){
+        getElem(`page${i+1}`).style.display = 'none';
+      }
+
+      // TODO: Test this.
+      // This is the dimensions before transformation.  They can go beyond the bv dimensions.
+      let pw, ph, pl, pt;
 
       if (portraitMode) {
         // Portrait, long-strip.
@@ -467,31 +578,30 @@ export class BookViewer {
         if (toph < pw) toph = pw;
       } // Landscape
  
-       pl2 = pl1;
-       pt2 = pt1+ph;
-       plN = pl1;
-       ptN = pt2;
+   
+    
  
        // Now size the page elements.
        for (const pageElem of page1Elems) {
-         pageElem.setAttribute('x', pl1);
-         pageElem.setAttribute('y', pt1);
+         pageElem.setAttribute('x', pl);
+         pageElem.setAttribute('y', pt);
          pageElem.setAttribute("width", pw);
          pageElem.setAttribute("height", ph);
        }
+       pt += ph;
        for (const pageElem of page2Elems) {
-         pageElem.setAttribute('x', pl2);
-         pageElem.setAttribute('y', pt2);
+         pageElem.setAttribute('x', pl);
+         pageElem.setAttribute('y', pt);
          pageElem.setAttribute("width", pw);
          pageElem.setAttribute("height", ph);
        }
 
 
        for(const page of pageN){
-         ptN += ph;
+         pt += ph;
          for(const pageElem of page ){
-          pageElem.setAttribute('x', plN);
-          pageElem.setAttribute('y', ptN);
+          pageElem.setAttribute('x', pl);
+          pageElem.setAttribute('y', pt);
           pageElem.setAttribute("width", pw);
           pageElem.setAttribute("height", ph);
          }
