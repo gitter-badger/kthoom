@@ -279,8 +279,11 @@ export class BookViewer {
       foreignObject.setAttribute("id", `page${i+1}Html`);
       g.appendChild(image);
       g.appendChild(foreignObject);
+      if( i > bvViewport.children.length -1)
+      {
       bvViewport.appendChild(g);
       pageN.push([getElem(`page${i+1}Image`),getElem(`page${i+1}Html`)]);
+      }
 
     
     }
