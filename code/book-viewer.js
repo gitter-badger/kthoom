@@ -224,8 +224,7 @@ export class BookViewer {
    */
   setNumPagesInViewer(numPages) {
     numPages = parseInt(numPages, 10);
-    const totalNumPages = this.currentBook_.getNumberOfPages();
-    if (numPages !== 1 && numPages !== 2 && numPages !== totalNumPages) return;
+    if (numPages !== 1 && numPages !== 2 && numPages !== 3) return;
 
     if (this.numPagesInViewer_ !== numPages) {
       this.numPagesInViewer_ = numPages;
