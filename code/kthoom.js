@@ -233,11 +233,11 @@ export class KthoomApp {
           closeMainMenu();
           break;
         case 'menu-view-hide':
-          getElem('readingStackOverlay').setAttribute("display","none");
-          getElem('readingStack').setAttribute("display","none");
-          getElem('metadataViewerOverlay').setAttribute("display","none");
-          getElem('metadataViewer').setAttribute("display","none");
-          this.viewMenu_.setMenuItemSelected('menu-view-hide');
+          getElem('readingStackOverlay').setProperty("display","none");
+          getElem('readingStack').setProperty("display","none");
+          getElem('metadataViewerOverlay').setProperty("display","none");
+          getElem('metadataViewer').setProperty("display","none");
+          this.viewMenu_.setMenuItemSelected('menu-view-hide',true);
         break;
         case 'menu-view-fit-best':
         case 'menu-view-fit-height':
@@ -640,10 +640,11 @@ export class KthoomApp {
         this.viewMenu_.setMenuItemSelected('menu-view-hide',!selected);
 
         if(!selected){ //TODO move to an eventListener
-        getElem('readingStackOverlay').setAttribute("display","?");
-          getElem('readingStack').setAttribute("display","?");
-          getElem('metadataViewerOverlay').setAttribute("display","?");
-          getElem('metadataViewer').setAttribute("display","?");
+          
+        getElem('readingStackOverlay').setProperty("display","?")
+          getElem('readingStack').setProperty("display","?");
+          getElem('metadataViewerOverlay').setProperty("display","?");
+          getElem('metadataViewer').setProperty("display","?");
         }
         
         this.saveSettings_();

@@ -9,16 +9,12 @@
   box-shadow: 0 0 1px rgba(255,255,255,.5);
 }
 
-html{
-  scroll-behavior: smooth;
-}
 body {
 	background: #444;
 	color: white;
 	font-family: sans-serif;
 	margin: 0px;
   animation: fadeIn ease 1.5s;
-  overflow:auto;
 }
 
 @keyframes fadeIn {
