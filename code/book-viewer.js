@@ -634,7 +634,7 @@ export class BookViewer {
     svgTop.setAttribute('x', 0);
     svgTop.setAttribute('y', 0);
     svgTop.setAttribute('width', topw);
-    svgTop.setAttribute('height', toph);
+    svgTop.setAttribute('height', toph * this.currentBook_.getNumberOfPages);
   }
 
   /** @private */
