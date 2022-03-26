@@ -235,7 +235,7 @@ export class KthoomApp {
         case 'menu-view-hide':
           let selected = this.viewMenu_.getMenuItemSelected('menu-view-hide');
       
-        if(!selected){ //TODO move to an eventListener
+        if(selected){ //TODO move to an eventListener
           
           getElem('readingStackOverlay').setAttribute("style","display: ?;");
           getElem('readingStack').setAttribute("style","display: ?;");
@@ -652,20 +652,20 @@ export class KthoomApp {
       case Key.P:
         let selected = this.viewMenu_.getMenuItemSelected('menu-view-hide');
       
-        if(!selected){ //TODO move to an eventListener
+        if(selected){ //TODO move to an eventListener
           
           getElem('readingStackOverlay').setAttribute("style","display: ?;");
           getElem('readingStack').setAttribute("style","display: ?;");
           getElem('metadataViewerOverlay').setAttribute("style","display: ?;");
           getElem('metadataViewer').setAttribute("style","display: ?;");
-          this.viewMenu_.setMenuItemSelected('menu-view-hide',false);
+          this.viewMenu_.setMenuItemSelected('menu-view-hide',true);
         }
         else{
           getElem('readingStackOverlay').setAttribute("style","display: none;");
           getElem('readingStack').setAttribute("style","display: none;");
           getElem('metadataViewerOverlay').setAttribute("style","display: none;");
           getElem('metadataViewer').setAttribute("style","display: none;");
-          this.viewMenu_.setMenuItemSelected('menu-view-hide',true);
+          this.viewMenu_.setMenuItemSelected('menu-view-hide',false);
       }
       this.saveSettings_();
     
