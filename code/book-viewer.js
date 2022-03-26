@@ -219,7 +219,7 @@ export class BookViewer {
   }
 
   /**
-   * Sets the number of pages in the viewer (1- or 2-page viewer are supported).
+   * Sets the number of pages in the viewer (1-,2-page, or Long Strip viewer are supported).
    * @param {Number} numPages Can be 1 or 2.
    */
   setNumPagesInViewer(numPages) {
@@ -269,8 +269,25 @@ export class BookViewer {
     const bvViewport = getElem('bvViewport');
     const page1 = getElem(ID_PAGE_1);
     const page2 = getElem(ID_PAGE_2);
+    const pageN= []; //pages for long-strip for pages 3 and greater
+    for(let i = pageN.length + 2; i < this.currentBook_.getNumberOfPages(); i++){
+      let g = document.createElement('g');
+      g.setAttribute("id", `page${i+1}`);
+      let image = document.createElement('image');
+      image.setAttribute("id", `page${i+1}Image`);
+      let foreignObject = document.createElement('foreignObject');
+      foreignObject.setAttribute("id", `page${i+1}Html`);
+      image.appendChild(foreignObject);
+      g.appendChild(image);
+      bvViewport.appendChild(g);
+      pageN.push([getElem(`page${i+1}Image`),getElem(`page${i+1}Html`)]);
+
+    
+    }
     const page1Elems = [getElem('page1Image'), getElem('page1Html')];
     const page2Elems = [getElem('page2Image'), getElem('page2Html')];
+    
+    
 
     const portraitMode = (this.rotateTimes_ % 2 === 0);
     const par = page.getAspectRatio();
@@ -370,7 +387,7 @@ export class BookViewer {
       }
 
       this.showPageInViewer_(this.currentPageNum_, page1);
-    } else {
+    } else if (this.numPagesInViewer_ === 2) {
       // 2-page view.
       page1.style.display = '';
       page2.style.display = '';
@@ -476,6 +493,126 @@ export class BookViewer {
       this.showPageInViewer_(this.currentPageNum_, page1);
       this.showPageInViewer_((this.currentPageNum_ < this.currentBook_.getNumberOfPages() - 1) ?
         this.currentPageNum_ + 1 : 0, page2);
+    }
+    else{
+       //Long strip view
+       page1.style.display = '';
+       page2.style.display = '';
+ 
+       // TODO: Test this.
+       // This is the dimensions before transformation.  They can go beyond the bv dimensions.
+       let pw, ph, pl1, pt1, pl2, pt2, plN, ptN;
+ 
+       if (portraitMode) {
+         // It is as if the book viewer width is cut in half horizontally for the purposes of
+         // measuring the page fit.
+         bv.ar /= 2;
+ 
+         // Portrait, long-strip.
+         if (this.fitMode_ === FitMode.Width ||
+           (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
+           // fit-width, long-strip.
+           // fit-best, long-strip, width maxed.
+           pw = bv.width / 2;
+           ph = pw / par;
+           pl1 = bv.left;
+           if (par > bv.ar) { // not scrollable.
+             pt1 = roty - ph / 2;
+           } else { // fit-width, scrollable.
+             pt1 = roty - bv.height / 2;
+             if (this.rotateTimes_ === 2) {
+               pt1 += bv.height - ph;
+             }
+           }
+         } else {
+           // fit-height, long-strip.
+           // fit-best, long-strip, height maxed.
+           ph = bv.height;
+           pw = ph * par;
+           pt1 = bv.top;
+           if (par < bv.ar) { // not scrollable.
+             pl1 = rotx - pw;
+           } else { // fit-height, scrollable.
+             pl1 = bv.left;
+             if (this.rotateTimes_ === 2) {
+               pl1 += bv.width - pw * 2;
+             }
+           }
+         }
+ 
+         if (topw < pw * 2) topw = pw * 2;
+         if (toph < ph) toph = ph;
+       } else {
+         bv.ar *= 2;
+ 
+         // Landscape, long-strip.
+         if (this.fitMode_ === FitMode.Width ||
+           (this.fitMode_ === FitMode.Best && par > (1 / bv.ar))) {
+           // fit-best, long-strip, width-maxed.
+           // fit-width, long-strip.
+           pw = bv.height / 2;
+           ph = pw / par;
+           pl1 = rotx - pw;
+           if (par > (1 / bv.ar)) { // not scrollable.
+             pt1 = roty - ph / 2;
+           } else { // fit-width, scrollable.
+             pt1 = roty - bv.width / 2;
+             if (this.rotateTimes_ === 1) {
+               pt1 += bv.width - ph;
+             }
+           }
+         } else {
+           // fit-best, Long-strip, height-maxed.
+           // fit-height, long-strip.
+           ph = bv.width;
+           pw = ph * par;
+           pt1 = roty - ph / 2;
+           if (par < (1 / bv.ar)) { // not scrollable.
+             pl1 = rotx - pw;
+           } else { // fit-height, scrollable.
+             pl1 = rotx - bv.height / 2;
+             if (this.rotateTimes_ === 3) {
+               pl1 += bv.height - pw * 2;
+             }
+           }
+         }
+         if (topw < ph) topw = ph;
+         if (toph < pw * 2) toph = pw * 2;
+       } // Landscape
+ 
+       pl2 = pl1;
+       pt2 = pt1+ph;
+       plN = pl1;
+       ptN = pt2;
+ 
+       // Now size the page elements.
+       for (const pageElem of page1Elems) {
+         pageElem.setAttribute('x', pl1);
+         pageElem.setAttribute('y', pt1);
+         pageElem.setAttribute("width", pw);
+         pageElem.setAttribute("height", ph);
+       }
+       for (const pageElem of page2Elems) {
+         pageElem.setAttribute('x', pl2);
+         pageElem.setAttribute('y', pt2);
+         pageElem.setAttribute("width", pw);
+         pageElem.setAttribute("height", ph);
+       }
+
+
+       for(const page of pageN){
+         ptN += ph;
+         for(const pageElem of page ){
+          pageElem.setAttribute('x', plN);
+          pageElem.setAttribute('y', ptN);
+          pageElem.setAttribute("width", pw);
+          pageElem.setAttribute("height", ph);
+         }
+       }
+       
+       for(let i = this.currentPageNum_; i < this.currentBook_.getNumberOfPages(); i++){
+         this.showPageInViewer_(i,getElem(`page${i+1}`));
+       }
     }
 
     // Rotate the book viewer viewport.
@@ -733,7 +870,7 @@ export class BookViewer {
 
     pageViewerEl.dataset.pagenum = pageNum;
     const imageEl = pageViewerEl.querySelector('image');
-    const objEl = pageViewerEl.querySelector('foreignObject');
-    thePage.renderIntoViewer(imageEl, objEl);
+    const objEl = pageViewerEl.querySelector('foreignObject');  
+    thePage.renderIntoViewer(imageEl, objEl); 
   }
 }
