@@ -271,11 +271,11 @@ export class BookViewer {
     const pageN= []; //pages for long-strip for pages 3 and greater
     for(let i = pageN.length + 2; i < this.currentBook_.getNumberOfPages(); i++){
       let g =  document.createElementNS('http://www.w3.org/2000/svg','g');
-      g.setAttribute("id", `page${i+1}`);
+      g.setAttributeNS('http://www.w3.org/2000/svg',"id", `page${i+1}`);
       let image =  document.createElementNS('http://www.w3.org/2000/svg','image');
-      image.setAttribute("id", `page${i+1}Image`);
+      image.setAttributeNS('http://www.w3.org/2000/svg',"id", `page${i+1}Image`);
       let foreignObject =  document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
-      foreignObject.setAttribute("id", `page${i+1}Html`);
+      foreignObject.setAttributeNS('http://www.w3.org/2000/svg',"id", `page${i+1}Html`);
       g.appendChild(image);
       g.appendChild(foreignObject);
       if( i > bvViewport.children.length -1)
@@ -614,10 +614,10 @@ export class BookViewer {
        for(const page of pageN){
          pt += ph;
          for(const pageElem of page ){
-          pageElem.setAttribute('x', pl);
-          pageElem.setAttribute('y', pt);
-          pageElem.setAttribute("width", pw);
-          pageElem.setAttribute("height", ph);
+          pageElem.setAttributeNS('http://www.w3.org/2000/svg','x', pl);
+          pageElem.setAttributeNS('http://www.w3.org/2000/svg','y', pt);
+          pageElem.setAttributeNS('http://www.w3.org/2000/svg',"width", pw);
+          pageElem.setAttributeNS('http://www.w3.org/2000/svg',"height", ph);
          }
        }
        
