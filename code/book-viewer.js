@@ -550,7 +550,7 @@ export class BookViewer {
         }
 
         if (topw < pw) topw = pw;
-        if (toph < ph) toph = ph;
+        
       } else {
         // Landscape, long-strip.
         if (this.fitMode_ === FitMode.Width ||
@@ -588,7 +588,6 @@ export class BookViewer {
         }
 
         if (topw < ph) topw = ph;
-        if (toph < pw) toph = pw;
       } // Landscape
  
    
@@ -623,6 +622,7 @@ export class BookViewer {
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
          this.showPageInViewer_(i,getElem(`page${i+1}`));
        }
+       toph = pt;
     }
 
     // Rotate the book viewer viewport.
