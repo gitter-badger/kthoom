@@ -94,7 +94,7 @@ export class BookViewer {
 
   /** @private */
   handleSwipeEvent(evt) {
-    if (!this.currentBook_) {
+    if (!this.currentBook_ || this.currentBook_.getNumPagesInViewer === 3) {
       return;
     }
 
@@ -599,14 +599,14 @@ export class BookViewer {
        for (const pageElem of page1Elems) {
          pageElem.setAttribute('x', pl1);
          pageElem.setAttribute('y', pt1);
-         pageElem.setAttribute("width", pw);
-         pageElem.setAttribute("height", ph);
+         pageElem.setAttribute("max-width", '100%');
+         pageElem.setAttribute("height", 'auto');
        }
        for (const pageElem of page2Elems) {
          pageElem.setAttribute('x', pl2);
          pageElem.setAttribute('y', pt2);
-         pageElem.setAttribute("width", pw);
-         pageElem.setAttribute("height", ph);
+         pageElem.setAttribute("max-width", '100%');
+         pageElem.setAttribute("height", 'auto');
        }
 
 
@@ -615,8 +615,8 @@ export class BookViewer {
          for(const pageElem of page ){
           pageElem.setAttribute('x', plN);
           pageElem.setAttribute('y', ptN);
-          pageElem.setAttribute("width", pw);
-          pageElem.setAttribute("height", ph);
+          pageElem.setAttribute("max-width", '100%');
+          pageElem.setAttribute("height", 'auto');
          }
        }
        
