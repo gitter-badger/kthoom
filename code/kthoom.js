@@ -225,7 +225,7 @@ export class KthoomApp {
           closeMainMenu();
           break;
         case 'menu-view-long-strip':
-          this.bookViewer__.setNumPagesInViewer(3);
+          this.bookViewer_.setNumPagesInViewer(3);
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip', true);

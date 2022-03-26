@@ -205,7 +205,7 @@ export class BookViewer {
     this.updateLayout();
   }
 
-  /** @returns {number} The number of pages being shown in the viewer (1 or 2). */
+  /** @returns {number} The number of pages being shown in the viewer (1,2, or 3). */
   getNumPagesInViewer() { return this.numPagesInViewer_; }
 
   /** @private */
@@ -220,7 +220,7 @@ export class BookViewer {
 
   /**
    * Sets the number of pages in the viewer (1-,2-page, or 3-Long Strip viewer are supported).
-   * @param {Number} numPages Can be 1 or 2.
+   * @param {Number} numPages Can be 1,2, or 3.
    */
   setNumPagesInViewer(numPages) {
     numPages = parseInt(numPages, 10);
