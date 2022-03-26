@@ -270,11 +270,11 @@ export class BookViewer {
     const page2 = getElem(ID_PAGE_2);
     const pageN= []; //pages for long-strip for pages 3 and greater
     for(let i = pageN.length + 2; i < this.currentBook_.getNumberOfPages(); i++){
-      let g = document.createElement('g');
+      let g =  document.createElementNS('http://www.w3.org/2000/svg','g');
       g.setAttribute("id", `page${i+1}`);
-      let image = document.createElement('image');
+      let image =  document.createElementNS('http://www.w3.org/2000/svg','image');
       image.setAttribute("id", `page${i+1}Image`);
-      let foreignObject = document.createElement('foreignObject');
+      let foreignObject =  document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
       foreignObject.setAttribute("id", `page${i+1}Html`);
       g.appendChild(image);
       g.appendChild(foreignObject);
@@ -550,6 +550,7 @@ export class BookViewer {
         }
 
         if (topw < pw) topw = pw;
+        if (toph < ph) toph = ph;
         
       } else {
         // Landscape, long-strip.
@@ -588,6 +589,7 @@ export class BookViewer {
         }
 
         if (topw < ph) topw = ph;
+        if (toph < ph) toph = pw;
       } // Landscape
  
    
@@ -622,7 +624,7 @@ export class BookViewer {
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
          this.showPageInViewer_(i,getElem(`page${i+1}`));
        }
-       toph = pt * this.currentBook_.getNumberOfPages();
+      toph *= this.currentBook_.getNumberOfPages();
     }
 
     // Rotate the book viewer viewport.
