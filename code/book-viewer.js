@@ -523,7 +523,7 @@ export class BookViewer {
            (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
            // fit-width, long-strip.
            // fit-best, long-strip, width maxed.
-           pw = bv.width / 2;
+           pw = bv.height;
            ph = pw / par;
            pl1 = bv.left;
            if (par > bv.ar) { // not scrollable.
@@ -560,7 +560,7 @@ export class BookViewer {
            (this.fitMode_ === FitMode.Best && par > (1 / bv.ar))) {
            // fit-best, long-strip, width-maxed.
            // fit-width, long-strip.
-           pw = bv.height / 2;
+           pw = bv.height;
            ph = pw / par;
            pl1 = rotx - pw;
            if (par > (1 / bv.ar)) { // not scrollable.
@@ -599,14 +599,14 @@ export class BookViewer {
        for (const pageElem of page1Elems) {
          pageElem.setAttribute('x', pl1);
          pageElem.setAttribute('y', pt1);
-         pageElem.setAttribute("max-width", '100%');
-         pageElem.setAttribute("height", 'auto');
+         pageElem.setAttribute("width", pw);
+         pageElem.setAttribute("height", ph);
        }
        for (const pageElem of page2Elems) {
          pageElem.setAttribute('x', pl2);
          pageElem.setAttribute('y', pt2);
-         pageElem.setAttribute("max-width", '100%');
-         pageElem.setAttribute("height", 'auto');
+         pageElem.setAttribute("width", pw);
+         pageElem.setAttribute("height", ph);
        }
 
 
@@ -616,7 +616,7 @@ export class BookViewer {
           pageElem.setAttribute('x', plN);
           pageElem.setAttribute('y', ptN);
           pageElem.setAttribute("max-width", '100%');
-          pageElem.setAttribute("height", 'auto');
+          pageElem.setAttribute("height", ph);
          }
        }
        
