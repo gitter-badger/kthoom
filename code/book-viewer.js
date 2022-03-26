@@ -622,7 +622,7 @@ export class BookViewer {
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
          this.showPageInViewer_(i,getElem(`page${i+1}`));
        }
-       toph = pt;
+       toph = ph;
     }
 
     // Rotate the book viewer viewport.
