@@ -212,6 +212,7 @@ export class KthoomApp {
           this.bookViewer_.setNumPagesInViewer(1);
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
           this.saveSettings_();
           closeMainMenu();
           break;
@@ -219,6 +220,16 @@ export class KthoomApp {
           this.bookViewer_.setNumPagesInViewer(2);
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+          this.saveSettings_();
+          closeMainMenu();
+          break;
+        case 'menu-view-long-strip':
+          const numPages = this.currentBook_.getNumberOfPages();
+          this.bookViewer__.setNumPagesInViewer(numPages);
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', true);
           this.saveSettings_();
           closeMainMenu();
           break;
@@ -635,9 +646,16 @@ export class KthoomApp {
         if (numPages === 1) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
-        } else {
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+        } else if(numPages === 2) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+        }
+        else{
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', true);
         }
         this.saveSettings_();
         break;
