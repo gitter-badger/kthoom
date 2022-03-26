@@ -622,7 +622,7 @@ export class BookViewer {
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
          this.showPageInViewer_(i,getElem(`page${i+1}`));
        }
-       toph = pt;
+       toph = pt * this.currentBook_.getNumberOfPages();
     }
 
     // Rotate the book viewer viewport.
@@ -634,7 +634,7 @@ export class BookViewer {
     svgTop.setAttribute('x', 0);
     svgTop.setAttribute('y', 0);
     svgTop.setAttribute('width', topw);
-    svgTop.setAttribute('height', toph * this.currentBook_.getNumberOfPages);
+    svgTop.setAttribute('height', toph );
   }
 
   /** @private */
