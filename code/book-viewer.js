@@ -523,24 +523,30 @@ export class BookViewer {
           pw = bv.width;
           ph = pw / par;
           pl = bv.left;
+          if (par > bv.ar) { // not scrollable.
+            pt = roty - ph / 2;
+          } else{
            // fit-width, scrollable.
             pt = roty - bv.height / 2;
             if (this.rotateTimes_ === 2) {
               pt += bv.height - ph;
             
           }
+        }
         } else {
           // fit-height, long-strip.
           // fit-best, long-strip, height maxed.
           ph = bv.height;
           pw = ph * par;
           pt = bv.top;
-          // fit-height, scrollable.
+          if (par < bv.ar) { // not scrollable.
+            pl = rotx - pw / 2;
+          } else { // fit-height, scrollable.
             pl = bv.left;
             if (this.rotateTimes_ === 2) {
               pl += bv.width - pw;
             }
-          
+          }
         }
 
         if (topw < pw) topw = pw;
@@ -554,24 +560,31 @@ export class BookViewer {
           pw = bv.height;
           ph = pw / par;
           pl = rotx - pw / 2;
+          if (par > (1 / bv.ar)) { // not scrollable.
+            pt = roty - ph / 2;
+          } else {
          // fit-width, scrollable.
             pt = roty - bv.width / 2;
             if (this.rotateTimes_ === 1) {
               pt += bv.width - ph;
             }
-          
+          }
         } else {
           // fit-best, long-strip, height-maxed.
           // fit-height, long-strip.
           ph = bv.width;
           pw = ph * par;
           pt = roty - ph / 2;
+          if (par > (1 / bv.ar)) { // not scrollable.
+            pt = roty - ph / 2;
+          } else {
           // fit-height, scrollable.
             pl = rotx - bv.height / 2;
             if (this.rotateTimes_ === 3) {
               pl += bv.height - pw;
             
           }
+        }
         }
 
         if (topw < ph) topw = ph;

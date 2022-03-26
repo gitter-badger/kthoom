@@ -233,10 +233,10 @@ export class KthoomApp {
           closeMainMenu();
           break;
         case 'menu-view-hide':
-          getElem('readingStackOverlay').setProperty("display","none");
-          getElem('readingStack').setProperty("display","none");
-          getElem('metadataViewerOverlay').setProperty("display","none");
-          getElem('metadataViewer').setProperty("display","none");
+          getElem('readingStackOverlay').setAttribute("style","display: none;");
+          getElem('readingStack').setAttribute("style","display: none;");
+          getElem('metadataViewerOverlay').setAttribute("style","display: none;");
+          getElem('metadataViewer').setAttribute("style","display: none;");
           this.viewMenu_.setMenuItemSelected('menu-view-hide',true);
         break;
         case 'menu-view-fit-best':
@@ -641,10 +641,10 @@ export class KthoomApp {
 
         if(!selected){ //TODO move to an eventListener
           
-        getElem('readingStackOverlay').setProperty("display","?")
-          getElem('readingStack').setProperty("display","?");
-          getElem('metadataViewerOverlay').setProperty("display","?");
-          getElem('metadataViewer').setProperty("display","?");
+        getElem('readingStackOverlay').setAttribute("style","display: ?;");
+          getElem('readingStack').setAttribute("style","display: ?;");
+          getElem('metadataViewerOverlay').setAttribute("style","display: ?;");
+          getElem('metadataViewer').setAttribute("style","display: ?;");
         }
         
         this.saveSettings_();
