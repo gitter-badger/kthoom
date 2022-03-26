@@ -277,8 +277,8 @@ export class BookViewer {
       image.setAttribute("id", `page${i+1}Image`);
       let foreignObject = document.createElement('foreignObject');
       foreignObject.setAttribute("id", `page${i+1}Html`);
-      image.appendChild(foreignObject);
       g.appendChild(image);
+      g.appendChild(foreignObject);
       bvViewport.appendChild(g);
       pageN.push([getElem(`page${i+1}Image`),getElem(`page${i+1}Html`)]);
 
@@ -302,7 +302,9 @@ export class BookViewer {
     if (this.numPagesInViewer_ === 1) {
       page1.style.display = '';
       page2.style.display = 'none';
-
+      for(let i = 2; i < this.currentBook_.getNumberOfPages; i++){
+        getElem(`page${i+1}`).style.display = 'none';
+      }
       // This is the dimensions before transformation.  They can go beyond the bv dimensions.
       let pw, ph, pl, pt;
 
@@ -391,6 +393,9 @@ export class BookViewer {
       // 2-page view.
       page1.style.display = '';
       page2.style.display = '';
+      for(let i = 2; i < this.currentBook_.getNumberOfPages; i++){
+        getElem(`page${i+1}`).style.display = 'none';
+      }
 
       // TODO: Test this.
       // This is the dimensions before transformation.  They can go beyond the bv dimensions.
@@ -498,6 +503,9 @@ export class BookViewer {
        //Long strip view
        page1.style.display = '';
        page2.style.display = '';
+       for(let i = 2; i < this.currentBook_.getNumberOfPages; i++){
+         getElem(`page${i+1}`).style.display = '';
+       }
  
        // TODO: Test this.
        // This is the dimensions before transformation.  They can go beyond the bv dimensions.

@@ -382,7 +382,7 @@ export class KthoomApp {
     window.addEventListener('wheel', (evt) => {
       let target = evt.target;
       while (target && target != window) {
-        if (target.id === BOOK_VIEWER_ELEM_ID) {
+        if (target.id === BOOK_VIEWER_ELEM_ID && this.currentBook_.getNumPagesInViewer !== 3) {
           // Deliver the wheel event to the Book Viewer to deal with swipes.
           this.bookViewer_.handleSwipeEvent(evt);
           return;
