@@ -233,11 +233,25 @@ export class KthoomApp {
           closeMainMenu();
           break;
         case 'menu-view-hide':
+          let selected = this.viewMenu_.getMenuItemSelected('menu-view-hide');
+      
+        if(!selected){ //TODO move to an eventListener
+          
+          getElem('readingStackOverlay').setAttribute("style","display: ?;");
+          getElem('readingStack').setAttribute("style","display: ?;");
+          getElem('metadataViewerOverlay').setAttribute("style","display: ?;");
+          getElem('metadataViewer').setAttribute("style","display: ?;");
+          this.viewMenu_.setMenuItemSelected('menu-view-hide',false);
+        }
+        else{
           getElem('readingStackOverlay').setAttribute("style","display: none;");
           getElem('readingStack').setAttribute("style","display: none;");
           getElem('metadataViewerOverlay').setAttribute("style","display: none;");
           getElem('metadataViewer').setAttribute("style","display: none;");
           this.viewMenu_.setMenuItemSelected('menu-view-hide',true);
+      }
+      this.saveSettings_();
+      closeMainMenu();
         break;
         case 'menu-view-fit-best':
         case 'menu-view-fit-height':
@@ -637,18 +651,25 @@ export class KthoomApp {
         break;
       case Key.P:
         let selected = this.viewMenu_.getMenuItemSelected('menu-view-hide');
-        this.viewMenu_.setMenuItemSelected('menu-view-hide',!selected);
-
+      
         if(!selected){ //TODO move to an eventListener
           
-        getElem('readingStackOverlay').setAttribute("style","display: ?;");
+          getElem('readingStackOverlay').setAttribute("style","display: ?;");
           getElem('readingStack').setAttribute("style","display: ?;");
           getElem('metadataViewerOverlay').setAttribute("style","display: ?;");
           getElem('metadataViewer').setAttribute("style","display: ?;");
+          this.viewMenu_.setMenuItemSelected('menu-view-hide',false);
         }
-        
-        this.saveSettings_();
-        break;
+        else{
+          getElem('readingStackOverlay').setAttribute("style","display: none;");
+          getElem('readingStack').setAttribute("style","display: none;");
+          getElem('metadataViewerOverlay').setAttribute("style","display: none;");
+          getElem('metadataViewer').setAttribute("style","display: none;");
+          this.viewMenu_.setMenuItemSelected('menu-view-hide',true);
+      }
+      this.saveSettings_();
+    
+      break;
       case Key.W: case Key.H: case Key.B:
         const fitMode =
           code === Key.W ? FitMode.Width :
