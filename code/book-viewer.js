@@ -615,7 +615,7 @@ export class BookViewer {
 
         //  pageElem.setAttribute('x', '?');
          
-          pageElem.setAttribute('y', getElem(page1Image).getAttribute("height"));
+          pageElem.setAttribute('y', getElem("page1Image").getAttribute("height"));
         //  pageElem.setAttribute("width", '?');
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
