@@ -270,12 +270,13 @@ export class BookViewer {
     const page2 = getElem(ID_PAGE_2);
     const pageN= []; //pages for long-strip for pages 3 and greater
     for(let i = pageN.length + 2; i < this.currentBook_.getNumberOfPages(); i++){
+      var xlinkns = "http://www.w3.org/1999/xlink";
       let g =  document.createElementNS('http://www.w3.org/2000/svg','g');
-      g.setAttribute("id", `page${i+1}`);
+      g.setAttributeNS(xlinkns,"id", `page${i+1}`);
       let image =  document.createElementNS('http://www.w3.org/2000/svg','image');
-      image.setAttribute("id", `page${i+1}Image`);
+      image.setAttributeNS(xlinkns,"id", `page${i+1}Image`);
       let foreignObject =  document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
-      foreignObject.setAttribute("id", `page${i+1}Html`);
+      foreignObject.setAttributeNS(xlinkns,"id", `page${i+1}Html`);
       g.appendChild(image);
       g.appendChild(foreignObject);
       if( i > bvViewport.children.length -1)
