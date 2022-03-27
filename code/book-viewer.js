@@ -681,7 +681,7 @@ export class BookViewer {
       
       }
        
-      toph *= this.currentBook_.getNumberOfPages();
+      //toph *= this.currentBook_.getNumberOfPages();
     }
 
     // Rotate the book viewer viewport.
