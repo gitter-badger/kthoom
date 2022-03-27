@@ -519,83 +519,83 @@ export class BookViewer {
       // This is the dimensions before transformation.  They can go beyond the bv dimensions.
       let pw, ph, pl, pt;
 
-      // if (portraitMode) {
-      //   // Portrait, long-strip.
-      //   if (this.fitMode_ === FitMode.Width ||
-      //     (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
-      //     // fit-width, long-strip.
-      //     // fit-best, long-strip, width maxed.
-      //     pw = bv.width;
-      //     ph = pw / par;
-      //     pl = bv.left;
-      //     if (par > bv.ar) { // not scrollable.
-      //       pt = roty - ph / 2;
-      //     } else{
-      //      // fit-width, scrollable.
-      //       pt = roty - bv.height / 2;
-      //       if (this.rotateTimes_ === 2) {
-      //         pt += bv.height - ph;
+      if (portraitMode) {
+        // Portrait, long-strip.
+        if (this.fitMode_ === FitMode.Width ||
+          (this.fitMode_ === FitMode.Best && bv.ar <= par)) {
+          // fit-width, long-strip.
+          // fit-best, long-strip, width maxed.
+          pw = bv.width;
+          ph = pw / par;
+          pl = bv.left;
+          if (par > bv.ar) { // not scrollable.
+            pt = roty - ph / 2;
+          } else{
+           // fit-width, scrollable.
+            pt = roty - bv.height / 2;
+            if (this.rotateTimes_ === 2) {
+              pt += bv.height - ph;
             
-      //     }
-      //   }
-      //   } else {
-      //     // fit-height, long-strip.
-      //     // fit-best, long-strip, height maxed.
-      //     ph = bv.height;
-      //     pw = ph * par;
-      //     pt = bv.top;
-      //     if (par < bv.ar) { // not scrollable.
-      //       pl = rotx - pw / 2;
-      //     } else { // fit-height, scrollable.
-      //       pl = bv.left;
-      //       if (this.rotateTimes_ === 2) {
-      //         pl += bv.width - pw;
-      //       }
-      //     }
-      //   }
+          }
+        }
+        } else {
+          // fit-height, long-strip.
+          // fit-best, long-strip, height maxed.
+          ph = bv.height;
+          pw = ph * par;
+          pt = bv.top;
+          if (par < bv.ar) { // not scrollable.
+            pl = rotx - pw / 2;
+          } else { // fit-height, scrollable.
+            pl = bv.left;
+            if (this.rotateTimes_ === 2) {
+              pl += bv.width - pw;
+            }
+          }
+        }
 
-      //   if (topw < pw) topw = pw;
-      //   if (toph < ph) toph = ph;
+        if (topw < pw) topw = pw;
+        if (toph < ph) toph = ph;
         
-      // } else {
-      //   // Landscape, long-strip.
-      //   if (this.fitMode_ === FitMode.Width ||
-      //     (this.fitMode_ === FitMode.Best && par > (1 / bv.ar))) {
-      //     // fit-best, long-strip, width-maxed.
-      //     // fit-width, long-strip.
-      //     pw = bv.height;
-      //     ph = pw / par;
-      //     pl = rotx - pw / 2;
-      //     if (par > (1 / bv.ar)) { // not scrollable.
-      //       pt = roty - ph / 2;
-      //     } else {
-      //    // fit-width, scrollable.
-      //       pt = roty - bv.width / 2;
-      //       if (this.rotateTimes_ === 1) {
-      //         pt += bv.width - ph;
-      //       }
-      //     }
-      //   } else {
-      //     // fit-best, long-strip, height-maxed.
-      //     // fit-height, long-strip.
-      //     ph = bv.width;
-      //     pw = ph * par;
-      //     pt = roty - ph / 2;
-      //     if (par > (1 / bv.ar)) { // not scrollable.
-      //       pt = roty - ph / 2;
-      //     } else {
-      //     // fit-height, scrollable.
-      //       pl = rotx - bv.height / 2;
-      //       if (this.rotateTimes_ === 3) {
-      //         pl += bv.height - pw;
+      } else {
+        // Landscape, long-strip.
+        if (this.fitMode_ === FitMode.Width ||
+          (this.fitMode_ === FitMode.Best && par > (1 / bv.ar))) {
+          // fit-best, long-strip, width-maxed.
+          // fit-width, long-strip.
+          pw = bv.height;
+          ph = pw / par;
+          pl = rotx - pw / 2;
+          if (par > (1 / bv.ar)) { // not scrollable.
+            pt = roty - ph / 2;
+          } else {
+         // fit-width, scrollable.
+            pt = roty - bv.width / 2;
+            if (this.rotateTimes_ === 1) {
+              pt += bv.width - ph;
+            }
+          }
+        } else {
+          // fit-best, long-strip, height-maxed.
+          // fit-height, long-strip.
+          ph = bv.width;
+          pw = ph * par;
+          pt = roty - ph / 2;
+          if (par > (1 / bv.ar)) { // not scrollable.
+            pt = roty - ph / 2;
+          } else {
+          // fit-height, scrollable.
+            pl = rotx - bv.height / 2;
+            if (this.rotateTimes_ === 3) {
+              pl += bv.height - pw;
             
-      //     }
-      //   }
-      //   }
+          }
+        }
+        }
 
-      //   if (topw < ph) topw = ph;
-      //   if (toph < pw) toph = pw;
-      // } // Landscape
+        if (topw < ph) topw = ph;
+        if (toph < pw) toph = pw;
+      } // Landscape
  
    
     
@@ -645,7 +645,7 @@ export class BookViewer {
               }
               for(const pageElem of page)
               {
-               pageElem.setAttribute("width",bv.width)
+               pageElem.setAttribute("width",pw)
                pageElem.setAttribute("height", img.naturalHeight);    
                 pageElem.setAttribute("x", 0 );
                 pageElem.setAttribute("y", position ); 
