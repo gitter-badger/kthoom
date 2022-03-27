@@ -631,6 +631,20 @@ export class BookViewer {
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
          this.showPageInViewer_(i,getElem(`page${i+1}`));
        }
+
+       for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){ //TODO: Simplify dimension change
+         let page = getElem(`page${i+1}`);
+         let naturalHeight = getElem(`page${i+1}Image`).naturalHeight;
+         let naturalWidth = getElem(`page${i+1}Image`).naturalHeight;
+        for(const pageElem of page ){
+         
+         pageElem.setAttribute("x", pl);
+         pageElem.setAttribute("y", pt);
+         pageElem.setAttribute("width", naturalWidth);
+         pageElem.setAttribute("height", naturalHeight);
+         
+        }
+      }
       toph *= this.currentBook_.getNumberOfPages();
     }
 
