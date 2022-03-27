@@ -278,7 +278,7 @@ export class BookViewer {
       g.setAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
       g.setAttribute("xmlns:xhtml","http://www.w3.org/1999/xhtml");
       let image =  document.createElementNS('http://www.w3.org/2000/svg','image');
-      image.setAttribute("id", `page${i+1}Image`);
+      image.setAttributeNS("id", `page${i+1}Image`);
       let foreignObject =  document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
       foreignObject.setAttribute("id", `page${i+1}Html`);
       g.appendChild(image);
@@ -291,7 +291,6 @@ export class BookViewer {
 
     
     }
-    console.log(pageN);
     const page1Elems = [getElem('page1Image'), getElem('page1Html')];
     const page2Elems = [getElem('page2Image'), getElem('page2Html')];
     
@@ -616,20 +615,18 @@ export class BookViewer {
          pageElem.setAttribute("height", ph);
        }
 
-       console.log(pageN);
        for(const page of pageN){
          pt += ph;
          
          for(const pageElem of page ){
-          var xlinkns = "http://www.w3.org/1999/xlink";
-          pageElem.setAttributeNS(xlinkns,"x", pl);
-          pageElem.setAttributeNS(xlinkns,"y", pt);
-          pageElem.setAttributeNS(xlinkns,"width", pw);
-          pageElem.setAttributeNS(xlinkns,"height", ph);
+         // var xlinkns = "http://www.w3.org/1999/xlink";
+          pageElem.setAttribute("x", pl);
+          pageElem.setAttribute("y", pt);
+          pageElem.setAttribute("width", pw);
+          pageElem.setAttribute("height", ph);
           
          }
        }
-       console.log(pageN);
        
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
          this.showPageInViewer_(i,getElem(`page${i+1}`));
