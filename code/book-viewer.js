@@ -282,9 +282,8 @@ export class BookViewer {
       if( i > bvViewport.children.length -1)
       {
       bvViewport.appendChild(g);
-      pageN.push([getElem(`page${i+1}Image`),getElem(`page${i+1}Html`)]);
       }
-      
+      pageN.push([getElem(`page${i+1}Image`),getElem(`page${i+1}Html`)]);
 
     
     }
