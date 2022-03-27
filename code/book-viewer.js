@@ -600,7 +600,7 @@ export class BookViewer {
    
     
  
-  //Now size the page elements.
+     //Now size the page elements.
       for (const pageElem of page1Elems) {
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
         // pageElem.setAttribute('x', 0);
@@ -678,7 +678,7 @@ export class BookViewer {
 
        // this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
         
-      }
+      
 
        
       toph *= this.currentBook_.getNumberOfPages();
