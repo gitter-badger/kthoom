@@ -26,8 +26,10 @@ body {
 img {
   vertical-align: middle;
   border-style: none;
-  max-width: 100%;
-  height: auto;
+  /*max-width: 100%;
+  height: auto;*/
+  height: 100%;
+  width: 100%;
 }
 #bookViewer{
   
