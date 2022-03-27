@@ -284,9 +284,11 @@ export class BookViewer {
       bvViewport.appendChild(g);
       pageN.push([getElem(`page${i+1}Image`),getElem(`page${i+1}Html`)]);
       }
+      
 
     
     }
+    console.log(pageN);
     const page1Elems = [getElem('page1Image'), getElem('page1Html')];
     const page2Elems = [getElem('page2Image'), getElem('page2Html')];
     
@@ -611,10 +613,10 @@ export class BookViewer {
          pageElem.setAttribute("height", ph);
        }
 
-
+       console.log(pageN);
        for(const page of pageN){
          pt += ph;
-         console.log(page);
+         
          for(const pageElem of page ){
           var xlinkns = "http://www.w3.org/1999/xlink";
           pageElem.setAttributeNS(xlinkns,"x", pl);
