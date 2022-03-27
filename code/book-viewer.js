@@ -611,18 +611,31 @@ export class BookViewer {
        }
 
 
-       for(const page of pageN){
-         pt += ph;
-         for(const pageElem of page ){
-          pageElem.setAttribute('x', pl);
-          pageElem.setAttribute('y', pt);
-          pageElem.setAttribute("width", pw);
-          pageElem.setAttribute("height", ph);
-         }
-       }
+      //  for(const page of pageN){
+      //    pt += ph;
+      //    for(const pageElem of page ){
+      //     pageElem.setAttribute('x', pl);
+      //     pageElem.setAttribute('y', pt);
+      //     pageElem.setAttribute("width", pw);
+      //     pageElem.setAttribute("height", ph);
+      //    }
+      //  }
        
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
-         this.showPageInViewer_(i,getElem(`page${i+1}`));
+         if(i == 0 || i == 1){
+          this.showPageInViewer_(i,getElem(`page${i+1}`));
+           continue;
+         }
+        let page = document.getElementById(`page${i+1}`);
+        for(const pageElem of page ){
+
+             pageElem.setAttribute('x', pl);
+              pageElem.setAttribute('y', pt);
+              pageElem.setAttribute("width", pw);
+               pageElem.setAttribute("height", ph);
+              }
+              this.showPageInViewer_(i,page);
+       //  this.showPageInViewer_(i,getElem(`page${i+1}`));
        }
       toph *= this.currentBook_.getNumberOfPages();
     }
