@@ -621,7 +621,7 @@ export class BookViewer {
          for(const pageElem of page ){
           pageElem.setAttribute("x", pl);
           pageElem.setAttribute("y", pt);
-          pageElem.setAttribute("width", pw);
+          pageElem.setAttribute("max-width", "100%");
           pageElem.setAttribute("height", ph);
           
          }
