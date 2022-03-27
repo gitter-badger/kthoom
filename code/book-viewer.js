@@ -633,14 +633,18 @@ export class BookViewer {
           const thePage = that.currentBook_.getPage(i);
         
           var img = new Image();
-img.onload = function(){
-        console.log(img.naturalWidth);
-        console.log(img.naturalHeight);
+          img.onload = function(){
+          let page = that.getElem(`page${i+1}`).children;
+          for(const pageElem  of page)
+          {
+          pageElem.setAttribute("width", img.naturalWidth);
+          pageElem.setAttribute("height", img.naturalHeight);
+          }
 
-};
-img.src = thePage.getURI();
+          };
+        img.src = thePage.getURI();
         }, 5000);
-       
+        this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
         
       }
 
