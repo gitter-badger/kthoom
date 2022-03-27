@@ -8,7 +8,11 @@
   background-color: rgba(0,0,0,.5);
   box-shadow: 0 0 1px rgba(255,255,255,.5);
 }
-
+*,
+*::before,
+*::after {
+  box-sizing: border-box; 
+}
 body {
 	color: #212529;
 	background-color: #fff;
@@ -19,6 +23,41 @@ body {
 img {
   vertical-align: middle;
   border-style: none;
+  max-width: 100%;
+  height: auto;
+}
+#bookViewer{
+  
+    min-height: calc(100vh - 144px);
+    padding-top: 15px;
+    padding-bottom: 15px;
+
+}
+
+
+#bookViewer {
+    padding-top: 8px;
+}
+@media (max-width: 768px)
+{
+#bookViewer {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+}
+#pages {
+  text-align: center;
+    cursor: pointer;
+    min-height: 50vh;
+}
+#pages img {
+  -khtml-user-select: none;
+  -o-user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+  margin-left: auto;
+  margin-right: auto;
 }
 @keyframes fadeIn {
   0% {opacity:0;}
