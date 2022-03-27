@@ -615,16 +615,16 @@ export class BookViewer {
 
         //  pageElem.setAttribute('x', '?');
          
-          pageElem.setAttribute('y', getElem("page1Image").getAttribute("height"));
+          pageElem.setAttribute('y',page1Elems[0].getAttribute("height"));
         //  pageElem.setAttribute("width", '?');
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
        }
-       let y = parseFloat(getElem("page2Image").getAttribute("y"));
+       let y = parseFloat(page2Elems[0].getAttribute("y"));
        let q = 2;
        for(const page of pageN){
         // pt += ph;
-         y += getElem(`page${i}Image`).getAttribute("height")
+         y += pageN[q][0].getAttribute("height");
          for(const pageElem of page ){
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
           // pageElem.setAttribute("x", '?');
