@@ -920,14 +920,14 @@ console.log(img.naturalHeight,    img.naturalWidth);
   async showPages_() {
    
 const insert = i => new Promise(resolve => {
-  console.log(`started inserting ${i}`);
+  console.log(`started inserting ${i+1}`);
   this.showPageInViewer_(i,getElem(`page${i+1}`));
   setTimeout(() => {
-    console.log(`inserted ${i}`);
+    console.log(`inserted ${i+1}`);
     console.log(getElem(`page${i+1}Image`).naturalHeight);
     console.log(getElem(`page${i+1}Image`).height);
     resolve();
-  }, 300);
+  }, 2000);
 });
 Promise.all(
   Array.from(Array(this.currentBook_.getNumberOfPages())).map((_, i) => insert(i))
