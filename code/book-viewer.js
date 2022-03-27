@@ -620,6 +620,12 @@ export class BookViewer {
          
          for(const pageElem of page ){
          // var xlinkns = "http://www.w3.org/1999/xlink";
+//          var img = new Image();
+// img.onload = function(){
+
+
+// };
+// img.src = this.store.image_url;
           pageElem.setAttribute("x", pl);
           pageElem.setAttribute("y", pt);
           pageElem.setAttribute("width", pw);
@@ -629,7 +635,7 @@ export class BookViewer {
        }
        
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
-         this.showPageInViewer_(i,getElem(`page${i+1}`));
+       await this.showPageInViewer_(i,getElem(`page${i+1}`));
        }
 
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){ //TODO: Simplify dimension change
@@ -912,4 +918,6 @@ console.log(img.naturalHeight,    img.naturalWidth);
     const objEl = pageViewerEl.querySelector('foreignObject');  
     thePage.renderIntoViewer(imageEl, objEl); 
   }
+
+
 }
