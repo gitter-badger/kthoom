@@ -654,7 +654,7 @@ export class BookViewer {
           let img = new Image();
           img.onload = function(){
           let page = getElem(`page${i+1}`).children;
-          let position = getElem(`page${i}Image`).getAttribute("y") + getElem(`page${i}Image`).getAttribute("height");
+          let position = parseFloat(getElem(`page${i}Image`).getAttribute("y")) + parseFloat(getElem(`page${i}Image`).getAttribute("height"));
           for(const pageElem  of page)
           {
             pageElem.setAttribute("y", position ); 
