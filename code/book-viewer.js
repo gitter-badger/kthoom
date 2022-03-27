@@ -637,7 +637,8 @@ export class BookViewer {
           let page = getElem(`page${i+1}`).children;
           for(const pageElem  of page)
           {
-          pageElem.setAttribute("width", getElem(`page${i + 1}Image`).getAttribute("width")); //TODO: img.naturalWidth Do largest natural width of images or width to 100% above?
+          //pageElem.setAttribute("width", getElem(`page${i + 1}Image`).getAttribute("width")); //TODO: img.naturalWidth Do largest natural width of images or width to 100% above?
+          pageElem.setAttribute("width",img.naturalWidth)
           pageElem.setAttribute("height", img.naturalHeight); 
           pageElem.setAttribute("y", pt);
           
@@ -659,13 +660,14 @@ export class BookViewer {
           if(i+1 === that.currentBook_.getNumberOfPages()){
             svgTop.setAttribute("height",position);
           }
-        }
+        };
+        img.src = thePage.getURI();
         
       }
           
         }
-        ,100);
-        }, 100);
+        ,10);
+        }, 10);
         
         
         this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
