@@ -619,13 +619,6 @@ export class BookViewer {
          pt += ph;
          
          for(const pageElem of page ){
-         // var xlinkns = "http://www.w3.org/1999/xlink";
-//          var img = new Image();
-// img.onload = function(){
-
-
-// };
-// img.src = this.store.image_url;
           pageElem.setAttribute("x", pl);
           pageElem.setAttribute("y", pt);
           pageElem.setAttribute("width", pw);
@@ -633,28 +626,17 @@ export class BookViewer {
           
          }
        }
+         for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
+        this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
+        setTimeout(function() {
+          const thePage = this.currentBook_.getPage(i);
+          console.log(thePage.getURI());
+        }, 5000);
        
-       this.showPages_();
-
-       for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){ //TODO: Simplify dimension change
-         let page = getElem(`page${i+1}`).children;
-         var img = document.getElementById(`page${i+1}Image`);
-
-console.log(img.height,           img.width);
-console.log(img.naturalHeight,    img.naturalWidth);
-
-
-         let naturalHeight = getElem(`page${i+1}Image`).height;
-         let naturalWidth = getElem(`page${i+1}Image`).width;
-        for(const pageElem of page ){
-         
-         pageElem.setAttribute("x", pl);
-         pageElem.setAttribute("y", pt);
-         pageElem.setAttribute("width", naturalWidth);
-         pageElem.setAttribute("height", naturalHeight);
-         
-        }
+        
       }
+
+       
       toph *= this.currentBook_.getNumberOfPages();
     }
 
@@ -916,41 +898,5 @@ console.log(img.naturalHeight,    img.naturalWidth);
     const objEl = pageViewerEl.querySelector('foreignObject');  
     thePage.renderIntoViewer(imageEl, objEl); 
   }
-
-  async showPages_() {
-   
-const insert = i => new Promise(resolve => {
-  console.log(`started inserting ${i+1}`);
-  this.showPageInViewer_(i,getElem(`page${i+1}`));
-  setTimeout(() => {
-    console.log(`inserted ${i+1}`);
-    console.log(getElem(`page${i+1}Image`).naturalHeight);
-    console.log(getElem(`page${i+1}Image`).height);
-    resolve();
-  }, 2000);
-});
-Promise.all(
-  Array.from(Array(this.currentBook_.getNumberOfPages())).map((_, i) => insert(i))
-).then(values => { 
-    console.log("promise all ends");
-});
-// // your code
-// let inserts = [];
-// for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++) inserts.push(insert(i, "..string.."))
-// Promise.all(inserts).then(values => {
-//   console.log("promise all ends");
-// });
-var xlinkns = "http://www.w3.org/1999/xlink";
-//          var img = new Image();
-// img.onload = function(){
-
-
-// };
-// img.src = this.store.image_url;
-
-    // for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
-    //    this.showPageInViewer_(i,getElem(`page${i+1}`));
-    //   }
-}
 
 }
