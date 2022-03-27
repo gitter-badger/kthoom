@@ -649,13 +649,14 @@ export class BookViewer {
                pageElem.setAttribute("height", img.naturalHeight);    
                 pageElem.setAttribute("x", 0 );
                 pageElem.setAttribute("y", position ); 
+                
               }
+              console.log(position,i);
                if(i+1 === that.currentBook_.getNumberOfPages()){
                  svgTop.setAttribute("height",position);
                }
             };
             img.src = thePage.getURI();
-            console.log(thePage.getURI());
           },i+1);
 
 
