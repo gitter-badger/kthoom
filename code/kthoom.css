@@ -13,6 +13,9 @@
 *::after {
   box-sizing: border-box; 
 }
+* {
+  min-height: 0.01px;
+}
 body {
 	color: #212529;
 	background-color: #fff;

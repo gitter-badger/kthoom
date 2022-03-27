@@ -630,38 +630,47 @@ export class BookViewer {
       //    }
       //  }
          for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
+          page1.style.display = 'none';
+          page2.style.display = 'none';
+          for(let i = 2; i < this.currentBook_.getNumberOfPages; i++){
+            getElem(`page${i+1}`).style.display = 'none';
+          }
           this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
-        //   let that = this;
-        //   setTimeout(function(){
-        //   const thePage = that.currentBook_.getPage(i);
+          let that = this;
+          setTimeout(function(){
+            
+          const thePage = that.currentBook_.getPage(i);
 
-        //       let position = 0;
-        //       let img = new Image();
-        //       img.onload = function(){
-        //       let page = getElem(`page${i+1}`).children;
-        //       if(i != 0)
-        //       {
-        //       position = parseFloat(getElem(`page${i}Image`).getAttribute("y")) + parseFloat(getElem(`page${i}Image`).getAttribute("height"));
-        //       }
-        //       for(const pageElem of page)
-        //       {
+              let position = 0;
+              let img = new Image();
+              img.onload = function(){
+              let page = getElem(`page${i+1}`).children;
+              if(i != 0)
+              {
+              position = parseFloat(getElem(`page${i}Image`).getAttribute("y")) + parseFloat(getElem(`page${i}Image`).getAttribute("height"));
+              }
+              for(const pageElem of page)
+              {
                 
-        //        pageElem.setAttribute("width",pw)
-        //        pageElem.setAttribute("height", img.naturalHeight);    
-        //         pageElem.setAttribute("x", 0 );
-        //         pageElem.setAttribute("y", position ); 
+               pageElem.setAttribute("width",pw)
+               pageElem.setAttribute("height", img.naturalHeight);    
+                pageElem.setAttribute("x", 0 );
+                pageElem.setAttribute("y", position ); 
+                pageElem.setAttribute("display","contents");
                 
-        //       }
-        //        if(i+1 === that.currentBook_.getNumberOfPages()){
-        //          svgTop.setAttribute("height",position);
-        //        }
-        //     };
-        //     img.src = thePage.getURI();
-        //   },i+200);
+              }
+               if(i+1 === that.currentBook_.getNumberOfPages()){
+                 svgTop.setAttribute("height",position);
+               }
+            };
+            img.src = thePage.getURI();
+
+            this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
+          },i+200);
 
 
 
-        // this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
+       // this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
         
       }
 
