@@ -646,6 +646,8 @@ export class BookViewer {
           };
         img.src = thePage.getURI();
         setTimeout(function(){
+          if(i !== 0)
+          {
           let img = new Image();
           img.onload = function(){
           let page = getElem(`page${i+1}`).children;
@@ -654,10 +656,12 @@ export class BookViewer {
           {
             pageElem.setAttribute("y", position ); 
           }
+        }
+          }
           if(i+1 === this.currentBook_.getNumberOfPages()){
             svgTop.setAttribute("height",position);
           }
-        }}
+        }
         ,100);
         }, 100);
         
