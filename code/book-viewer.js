@@ -655,7 +655,7 @@ export class BookViewer {
               // }
             };
             img.src = thePage.getURI();
-            console.log(thePage.getUrI());
+            console.log(thePage.getURI());
           },i+1);
 
 
