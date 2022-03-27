@@ -644,27 +644,27 @@ export class BookViewer {
          
           };
         img.src = thePage.getURI();
-      //   setTimeout(function(){
-      //     if(i !== 0)
-      //     {
-      //     let img = new Image();
-      //     img.onload = function(){
-      //     let page = getElem(`page${i+1}`).children;
-      //     let position = getElem(`page${i}Image`).getAttribute("y") + getElem(`page${i}Image`).getAttribute("height");
-      //     for(const pageElem  of page)
-      //     {
-      //       pageElem.setAttribute("y", position ); 
-      //     }
-      //     if(i+1 === that.currentBook_.getNumberOfPages()){
-      //       svgTop.setAttribute("height",position);
-      //     }
-      //   };
-      //   img.src = thePage.getURI();
+        setTimeout(function(){
+          if(i !== 0)
+          {
+          let img = new Image();
+          img.onload = function(){
+          let page = getElem(`page${i+1}`).children;
+          let position = getElem(`page${i}Image`).getAttribute("y") + getElem(`page${i}Image`).getAttribute("height");
+          for(const pageElem  of page)
+          {
+            pageElem.setAttribute("y", position ); 
+          }
+          if(i+1 === that.currentBook_.getNumberOfPages()){
+            svgTop.setAttribute("height",position);
+          }
+        };
+        img.src = thePage.getURI();
         
-      // }
+      }
           
-      //   }
-      //   ,500);
+        }
+        ,10);
         }, 10);
         
         
