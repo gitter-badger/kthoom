@@ -609,7 +609,6 @@ export class BookViewer {
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
       }
-      //this.showPageInViewer_(0,getElem(`page1`)); 
        //pt += ph;
        for (const pageElem of page2Elems) {
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
@@ -641,12 +640,7 @@ export class BookViewer {
          toph = y; 
          q+=1;
        }
-         for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
-          page1.style.display = 'contents';
-          page2.style.display = 'contents';
-          for(let i = 2; i < this.currentBook_.getNumberOfPages; i++){
-            getElem(`page${i+1}`).style.display = 'contents';
-          }
+        
           this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
           // let that = this;
           // setTimeout(function(){
