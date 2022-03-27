@@ -601,13 +601,13 @@ export class BookViewer {
     
  
        // Now size the page elements.
-       for (const pageElem of page1Elems) {
-         pageElem.setAttribute('x', 0);
-         pageElem.setAttribute('y', 0);
+      // for (const pageElem of page1Elems) {
+        // pageElem.setAttribute('x', 0);
+        // pageElem.setAttribute('y', 0);
         //  pageElem.setAttribute("width", '?');
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
-       }
+      // }
       //  pt += ph;
       //  for (const pageElem of page2Elems) {
       //    pageElem.setAttribute('x', '?');
