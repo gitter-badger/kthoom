@@ -630,11 +630,11 @@ export class BookViewer {
       //    }
       //  }
          for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
-          // page1.style.display = 'none';
-          // page2.style.display = 'none';
-          // for(let i = 2; i < this.currentBook_.getNumberOfPages; i++){
-          //   getElem(`page${i+1}`).style.display = 'none';
-          // }
+          page1.style.display = 'contents';
+          page2.style.display = 'contents';
+          for(let i = 2; i < this.currentBook_.getNumberOfPages; i++){
+            getElem(`page${i+1}`).style.display = 'contents';
+          }
           this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
           // let that = this;
           // setTimeout(function(){
