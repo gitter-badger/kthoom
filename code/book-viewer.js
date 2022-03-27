@@ -657,10 +657,11 @@ export class BookViewer {
             pageElem.setAttribute("y", position ); 
           }
         }
-          }
-          if(i+1 === that.currentBook_.getNumberOfPages()){
-            svgTop.setAttribute("height",position);
-          }
+        if(i+1 === that.currentBook_.getNumberOfPages()){
+          svgTop.setAttribute("height",position);
+        }
+      }
+          
         }
         ,100);
         }, 100);
