@@ -620,11 +620,14 @@ export class BookViewer {
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
        }
-       let y = parseFloat(page2Elems[0].getAttribute("y"));
-       let q = 2;
+       let y = parseFloat(page2Elems[0].getAttribute("y")) + parseFloat(page2Elems[0].getAttribute("height"));
+       let q = 0;
        for(const page of pageN){
         // pt += ph;
+        if(q > 0){
          y += pageN[q][0].getAttribute("height");
+       }
+         
          for(const pageElem of page ){
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
           // pageElem.setAttribute("x", '?');
@@ -694,7 +697,7 @@ export class BookViewer {
     svgTop.setAttribute('x', 0);
     svgTop.setAttribute('y', 0);
     svgTop.setAttribute('width', topw);
-   // svgTop.setAttribute('height', toph );
+    svgTop.setAttribute('height', toph );
   }
 
   /** @private */
