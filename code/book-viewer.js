@@ -281,9 +281,8 @@ export class BookViewer {
       if( i > bvViewport.children.length -1)
       {
       bvViewport.appendChild(g);
-      pageN.push([image,foreignObject]);
+      pageN.push([getElem(`page${i+1}Image`),getElem(`page${i+1}Html`)]);
       }
-      
 
     
     }
@@ -615,10 +614,10 @@ export class BookViewer {
        for(const page of pageN){
          pt += ph;
          for(const pageElem of page ){
-          pageElem.setAttributeNS('http://www.w3.org/2000/svg','x', pl);
-          pageElem.setAttributeNS('http://www.w3.org/2000/svg','y', pt);
-          pageElem.setAttributeNS('http://www.w3.org/2000/svg',"width", pw);
-          pageElem.setAttributeNS('http://www.w3.org/2000/svg',"height", ph);
+          pageElem.setAttribute('x', pl);
+          pageElem.setAttribute('y', pt);
+          pageElem.setAttribute("width", pw);
+          pageElem.setAttribute("height", ph);
          }
        }
        
