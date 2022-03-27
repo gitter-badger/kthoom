@@ -628,8 +628,9 @@ export class BookViewer {
        }
          for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
         this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
+        var that = this;
         setTimeout(function() {
-          const thePage = this.currentBook_.getPage(i);
+          const thePage = that.currentBook_.getPage(i);
           console.log(thePage.getURI());
         }, 5000);
        
