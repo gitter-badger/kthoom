@@ -650,9 +650,9 @@ export class BookViewer {
                 pageElem.setAttribute("x", 0 );
                 pageElem.setAttribute("y", position ); 
               }
-              // if(i+1 === that.currentBook_.getNumberOfPages()){
-              //   svgTop.setAttribute("height",position);
-              // }
+               if(i+1 === that.currentBook_.getNumberOfPages()){
+                 svgTop.setAttribute("height",position);
+               }
             };
             img.src = thePage.getURI();
             console.log(thePage.getURI());
@@ -677,7 +677,7 @@ export class BookViewer {
     svgTop.setAttribute('x', 0);
     svgTop.setAttribute('y', 0);
     svgTop.setAttribute('width', topw);
-    svgTop.setAttribute('height', toph );
+   // svgTop.setAttribute('height', toph );
   }
 
   /** @private */
