@@ -604,7 +604,7 @@ export class BookViewer {
       for (const pageElem of page1Elems) {
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
         // pageElem.setAttribute('x', 0);
-        // pageElem.setAttribute('y', 0);
+        // pageElem.setAttribute('y', );
         //  pageElem.setAttribute("width", '?');
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
@@ -614,24 +614,27 @@ export class BookViewer {
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
 
         //  pageElem.setAttribute('x', '?');
-        //  pageElem.setAttribute('y', '?');
+         
+          pageElem.setAttribute('y', getElem(page1Image).getAttribute("height"));
         //  pageElem.setAttribute("width", '?');
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
        }
-
+       let y = parseFloat(getElem(page2Image).getAttribute("y"));
+       let q = 2;
        for(const page of pageN){
-         pt += ph;
-         
+        // pt += ph;
+         y += getElem(`page${i}Image`).getAttribute("height")
          for(const pageElem of page ){
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
           // pageElem.setAttribute("x", '?');
-          // pageElem.setAttribute("y", '?');
+           pageElem.setAttribute("y", y);
           // pageElem.setAttribute("width", '?');
           // pageElem.setAttribute("height", '?');
           // pageElem.setAttribute("display","none");
           
          }
+         q+=1;
        }
          for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
           page1.style.display = 'contents';
