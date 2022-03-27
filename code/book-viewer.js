@@ -657,7 +657,7 @@ export class BookViewer {
                }
             };
             img.src = thePage.getURI();
-          },i+1);
+          },i+200);
 
 
 
