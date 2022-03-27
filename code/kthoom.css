@@ -10,13 +10,16 @@
 }
 
 body {
-	background: #444;
-	color: white;
+	color: #212529;
+	background-color: #fff;
 	font-family: sans-serif;
 	margin: 0px;
   animation: fadeIn ease 1.5s;
 }
-
+img {
+  vertical-align: middle;
+  border-style: none;
+}
 @keyframes fadeIn {
   0% {opacity:0;}
   100% {opacity:1;}
