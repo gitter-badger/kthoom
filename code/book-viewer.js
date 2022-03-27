@@ -616,8 +616,8 @@ export class BookViewer {
          pt += ph;
          for(const pageElem of page ){
           var xlinkns = "http://www.w3.org/1999/xlink";
-          pageElem.setAttributeNS(xlinkns,'x', pl);
-          pageElem.setAttributeNS(xlinkns,'y', pt);
+          pageElem.setAttributeNS(xlinkns,"x", pl);
+          pageElem.setAttributeNS(xlinkns,"y", pt);
           pageElem.setAttributeNS(xlinkns,"width", pw);
           pageElem.setAttributeNS(xlinkns,"height", ph);
          }
