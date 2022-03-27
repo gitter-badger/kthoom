@@ -614,10 +614,11 @@ export class BookViewer {
        for(const page of pageN){
          pt += ph;
          for(const pageElem of page ){
-          pageElem.setAttribute('x', pl);
-          pageElem.setAttribute('y', pt);
-          pageElem.setAttribute("width", pw);
-          pageElem.setAttribute("height", ph);
+          var xlinkns = "http://www.w3.org/1999/xlink";
+          pageElem.setAttributeNS(xlinkns,'x', pl);
+          pageElem.setAttributeNS(xlinkns,'y', pt);
+          pageElem.setAttributeNS(xlinkns,"width", pw);
+          pageElem.setAttributeNS(xlinkns,"height", ph);
          }
        }
        
