@@ -621,7 +621,7 @@ export class BookViewer {
          for(const pageElem of page ){
           pageElem.setAttribute("x", pl);
           pageElem.setAttribute("y", pt);
-          pageElem.setAttribute("max-width", "100%");
+          pageElem.setAttribute("width", pw);
           pageElem.setAttribute("height", ph);
           
          }
@@ -647,7 +647,23 @@ export class BookViewer {
           console.log(currentdate.getSeconds(),currentdate.getMilliseconds());
           };
         img.src = thePage.getURI();
+        setTimeout(function(){
+          let img = new Image();
+          img.onload = function(){
+          let page = getElem(`page${i+1}`).children;
+          let position = getElem(`page${i}Image`).getAttribute("y") + getElem(`page${i}Image`).getAttribute("height");
+          for(const pageElem  of page)
+          {
+            pageElem.setAttribute("y", position ); 
+          }
+          if(i+1 === this.currentBook_.getNumberOfPages()){
+            svgTop.setAttribute("height",position);
+          }
+        }}
+        ,100);
         }, 5000);
+        
+        
         this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
         
       }
