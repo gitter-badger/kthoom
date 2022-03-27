@@ -637,7 +637,7 @@ export class BookViewer {
           let page = getElem(`page${i+1}`).children;
           for(const pageElem  of page)
           {
-          //pageElem.setAttribute("width", img.naturalWidth); //TODO: Do largest natural width of images or width to 100% above?
+          pageElem.setAttribute("width", getElem(`page${i + 1}Image`).getAttribute("width")); //TODO:img.naturalWidth Do largest natural width of images or width to 100% above?
           pageElem.setAttribute("height", img.naturalHeight); 
           pageElem.setAttribute("y", pt);
           
