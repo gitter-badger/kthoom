@@ -609,7 +609,7 @@ export class BookViewer {
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
       }
-      this.showPageInViewer_(0,getElem(`page1`)); //preload first image
+      //this.showPageInViewer_(0,getElem(`page1`)); 
        //pt += ph;
        for (const pageElem of page2Elems) {
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
