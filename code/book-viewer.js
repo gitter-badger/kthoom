@@ -659,7 +659,7 @@ export class BookViewer {
           }
         }}
         ,100);
-        }, 5000);
+        }, 100);
         
         
         this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
