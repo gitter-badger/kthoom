@@ -600,35 +600,39 @@ export class BookViewer {
    
     
  
-  // Now size the page elements.
- //1     // for (const pageElem of page1Elems) {
+  //Now size the page elements.
+      for (const pageElem of page1Elems) {
+        pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
         // pageElem.setAttribute('x', 0);
         // pageElem.setAttribute('y', 0);
         //  pageElem.setAttribute("width", '?');
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
-      // }
-      //  pt += ph;
-      //  for (const pageElem of page2Elems) {
-      //    pageElem.setAttribute('x', '?');
-      //    pageElem.setAttribute('y', '?');
-      //    pageElem.setAttribute("width", '?');
-      //    pageElem.setAttribute("height", '?');
-      //    pageElem.setAttribute("display","none");
-      //  }
+      }
+       pt += ph;
+       for (const pageElem of page2Elems) {
+        pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
 
-      //  for(const page of pageN){
-      //    pt += ph;
+        //  pageElem.setAttribute('x', '?');
+        //  pageElem.setAttribute('y', '?');
+        //  pageElem.setAttribute("width", '?');
+        //  pageElem.setAttribute("height", '?');
+        //  pageElem.setAttribute("display","none");
+       }
+
+       for(const page of pageN){
+         pt += ph;
          
-      //    for(const pageElem of page ){
-      //     pageElem.setAttribute("x", '?');
-      //     pageElem.setAttribute("y", '?');
-      //     pageElem.setAttribute("width", '?');
-      //     pageElem.setAttribute("height", '?');
-      //     pageElem.setAttribute("display","none");
+         for(const pageElem of page ){
+          pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
+          // pageElem.setAttribute("x", '?');
+          // pageElem.setAttribute("y", '?');
+          // pageElem.setAttribute("width", '?');
+          // pageElem.setAttribute("height", '?');
+          // pageElem.setAttribute("display","none");
           
-      //    }
-      //  }
+         }
+       }
          for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
           page1.style.display = 'contents';
           page2.style.display = 'contents';
