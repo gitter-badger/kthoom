@@ -621,7 +621,7 @@ export class BookViewer {
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
        }
-       let y = parseFloat(page2Elems[0].getAttribute("y")) + parseFloat(page2Elems[0].getBBox()..getAttribute("height"));
+       let y = parseFloat(page2Elems[0].getAttribute("y")) + parseFloat(page2Elems[0].getBBox().getAttribute("height"));
        let q = 0;
        for(const page of pageN){
         // pt += ph;
