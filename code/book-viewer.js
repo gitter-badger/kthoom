@@ -616,17 +616,17 @@ export class BookViewer {
 
         //  pageElem.setAttribute('x', '?');
          
-          pageElem.setAttribute('y',getElem("page1Image").getAttribute("height"));
+          pageElem.setAttribute('y',getElem("page1Image").getBBox().getAttribute("height"));
         //  pageElem.setAttribute("width", '?');
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
        }
-       let y = parseFloat(page2Elems[0].getAttribute("y")) + parseFloat(page2Elems[0].getAttribute("height"));
+       let y = parseFloat(page2Elems[0].getAttribute("y")) + parseFloat(page2Elems[0].getBBox()..getAttribute("height"));
        let q = 0;
        for(const page of pageN){
         // pt += ph;
         if(q > 0){
-         y += pageN[q][0].getAttribute("height");
+         y += pageN[q][0].getBBox().getAttribute("height");
        }
          
          for(const pageElem of page ){
