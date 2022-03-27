@@ -610,7 +610,7 @@ export class BookViewer {
         //  pageElem.setAttribute("display","none");
       }
       this.showPageInViewer_(0,getElem(`page1`)); //preload first image
-       pt += ph;
+       //pt += ph;
        for (const pageElem of page2Elems) {
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
 
