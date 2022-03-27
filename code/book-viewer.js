@@ -614,12 +614,14 @@ export class BookViewer {
 
        for(const page of pageN){
          pt += ph;
+         console.log(page);
          for(const pageElem of page ){
           var xlinkns = "http://www.w3.org/1999/xlink";
           pageElem.setAttributeNS(xlinkns,"x", pl);
           pageElem.setAttributeNS(xlinkns,"y", pt);
           pageElem.setAttributeNS(xlinkns,"width", pw);
           pageElem.setAttributeNS(xlinkns,"height", ph);
+          
          }
        }
        
