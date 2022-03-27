@@ -640,7 +640,7 @@ export class BookViewer {
          toph = y; 
          q+=1;
        }
-        
+       for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
           this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
           // let that = this;
           // setTimeout(function(){
@@ -679,7 +679,7 @@ export class BookViewer {
        // this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
         
       
-
+      }
        
       toph *= this.currentBook_.getNumberOfPages();
     }
