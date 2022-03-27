@@ -635,7 +635,7 @@ export class BookViewer {
        }
        
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
-       await this.showPageInViewer_(i,getElem(`page${i+1}`));
+       await Task.Run(() =>this.showPageInViewer_(i,getElem(`page${i+1}`)));
        }
 
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){ //TODO: Simplify dimension change
