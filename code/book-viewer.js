@@ -272,11 +272,11 @@ export class BookViewer {
     for(let i = pageN.length + 2; i < this.currentBook_.getNumberOfPages(); i++){
       var xlinkns = "http://www.w3.org/1999/xlink";
       let g =  document.createElementNS('http://www.w3.org/2000/svg','g');
-      g.setAttributeNS(xlinkns,"id", `page${i+1}`);
+      g.setAttribute("id", `page${i+1}`);
       let image =  document.createElementNS('http://www.w3.org/2000/svg','image');
-      image.setAttributeNS(xlinkns,"id", `page${i+1}Image`);
+      image.setAttribute("id", `page${i+1}Image`);
       let foreignObject =  document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
-      foreignObject.setAttributeNS(xlinkns,"id", `page${i+1}Html`);
+      foreignObject.setAttribute("id", `page${i+1}Html`);
       g.appendChild(image);
       g.appendChild(foreignObject);
       if( i > bvViewport.children.length -1)
@@ -626,6 +626,7 @@ export class BookViewer {
           
          }
        }
+       console.log(pageN);
        
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
          this.showPageInViewer_(i,getElem(`page${i+1}`));
