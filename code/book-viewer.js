@@ -644,7 +644,11 @@ export class BookViewer {
          
           };
         img.src = thePage.getURI();
+        }, 10);
+        that = this;
         setTimeout(function(){
+          const thePage = that.currentBook_.getPage(i);
+
           if(i !== 0)
           {
           let img = new Image();
@@ -665,8 +669,6 @@ export class BookViewer {
           
         }
         ,10);
-        }, 10);
-        
         
         this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
         
