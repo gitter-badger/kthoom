@@ -631,7 +631,14 @@ export class BookViewer {
         var that = this;
         setTimeout(function() {
           const thePage = that.currentBook_.getPage(i);
-          console.log(thePage.getURI());
+        
+          var img = new Image();
+img.onload = function(){
+        console.log(img.naturalWidth);
+        console.log(img.naturalHeight);
+
+};
+img.src = thePage.getURI();
         }, 5000);
        
         
