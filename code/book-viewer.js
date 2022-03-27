@@ -645,7 +645,8 @@ export class BookViewer {
               }
               for(const pageElem of page)
               {
-               pageElem.setAttribute("width",pw)
+                
+               pageElem.setAttribute("width",that.pw)
                pageElem.setAttribute("height", img.naturalHeight);    
                 pageElem.setAttribute("x", 0 );
                 pageElem.setAttribute("y", position ); 
