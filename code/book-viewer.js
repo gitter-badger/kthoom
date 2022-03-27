@@ -620,7 +620,7 @@ export class BookViewer {
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
        }
-       let y = parseFloat(getElem(page2Image).getAttribute("y"));
+       let y = parseFloat(getElem("page2Image").getAttribute("y"));
        let q = 2;
        for(const page of pageN){
         // pt += ph;
