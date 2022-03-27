@@ -632,8 +632,8 @@ export class BookViewer {
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
           // pageElem.setAttribute("x", '?');
            pageElem.setAttribute("y", y);
-           pageElem.setAttribute("width", 'auto');
-           pageElem.setAttribute("height", 'auto');
+           //pageElem.setAttribute("width", 'auto');
+           //pageElem.setAttribute("height", 'auto');
           // pageElem.setAttribute("display","none");
           
          }
