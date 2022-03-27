@@ -634,9 +634,14 @@ export class BookViewer {
 
        for(let i = 0; i < this.currentBook_.getNumberOfPages(); i++){ //TODO: Simplify dimension change
          let page = getElem(`page${i+1}`).children;
-         console.log(getElem(`page${i+1}Image`));
-         let naturalHeight = getElem(`page${i+1}Image`).naturalHeight;
-         let naturalWidth = getElem(`page${i+1}Image`).naturalHeight;
+         var img = document.getElementById(`page${i+1}Image`);
+
+console.log(img.height,           img.width);
+console.log(img.naturalHeight,    img.naturalWidth);
+
+
+         let naturalHeight = getElem(`page${i+1}Image`).height;
+         let naturalWidth = getElem(`page${i+1}Image`).width;
         for(const pageElem of page ){
          
          pageElem.setAttribute("x", pl);
