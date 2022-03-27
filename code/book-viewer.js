@@ -639,9 +639,7 @@ export class BookViewer {
           {
           //pageElem.setAttribute("width", getElem(`page${i + 1}Image`).getAttribute("width")); //TODO: img.naturalWidth Do largest natural width of images or width to 100% above?
           pageElem.setAttribute("width",img.naturalWidth)
-          pageElem.setAttribute("height", img.naturalHeight); 
-          pageElem.setAttribute("y", pt);
-          
+          pageElem.setAttribute("height", img.naturalHeight);           
           }
          
           };
