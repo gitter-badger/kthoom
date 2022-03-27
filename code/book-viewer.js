@@ -634,7 +634,7 @@ export class BookViewer {
         
           var img = new Image();
           img.onload = function(){
-          let page = that.getElem(`page${i+1}`).children;
+          let page = getElem(`page${i+1}`).children;
           for(const pageElem  of page)
           {
           pageElem.setAttribute("width", img.naturalWidth);
