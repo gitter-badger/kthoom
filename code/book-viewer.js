@@ -632,7 +632,7 @@ export class BookViewer {
          for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
           this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
           setTimeout(function(){
-          const thePage = that.currentBook_.getPage(i);
+          const thePage = this.currentBook_.getPage(i);
 
               let position = 0;
               let img = new Image();
