@@ -601,34 +601,34 @@ export class BookViewer {
     
  
        // Now size the page elements.
-       for (const pageElem of page1Elems) {
-         pageElem.setAttribute('x', '?');
-         pageElem.setAttribute('y', '?');
-         pageElem.setAttribute("width", '?');
-         pageElem.setAttribute("height", '?');
-         pageElem.setAttribute("display","none");
-       }
-       pt += ph;
-       for (const pageElem of page2Elems) {
-         pageElem.setAttribute('x', '?');
-         pageElem.setAttribute('y', '?');
-         pageElem.setAttribute("width", '?');
-         pageElem.setAttribute("height", '?');
-         pageElem.setAttribute("display","none");
-       }
+      //  for (const pageElem of page1Elems) {
+      //    pageElem.setAttribute('x', '?');
+      //    pageElem.setAttribute('y', '?');
+      //    pageElem.setAttribute("width", '?');
+      //    pageElem.setAttribute("height", '?');
+      //    pageElem.setAttribute("display","none");
+      //  }
+      //  pt += ph;
+      //  for (const pageElem of page2Elems) {
+      //    pageElem.setAttribute('x', '?');
+      //    pageElem.setAttribute('y', '?');
+      //    pageElem.setAttribute("width", '?');
+      //    pageElem.setAttribute("height", '?');
+      //    pageElem.setAttribute("display","none");
+      //  }
 
-       for(const page of pageN){
-         pt += ph;
+      //  for(const page of pageN){
+      //    pt += ph;
          
-         for(const pageElem of page ){
-          pageElem.setAttribute("x", '?');
-          pageElem.setAttribute("y", '?');
-          pageElem.setAttribute("width", '?');
-          pageElem.setAttribute("height", '?');
-          pageElem.setAttribute("display","none");
+      //    for(const pageElem of page ){
+      //     pageElem.setAttribute("x", '?');
+      //     pageElem.setAttribute("y", '?');
+      //     pageElem.setAttribute("width", '?');
+      //     pageElem.setAttribute("height", '?');
+      //     pageElem.setAttribute("display","none");
           
-         }
-       }
+      //    }
+      //  }
          for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
         this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
         let that = this;
