@@ -491,9 +491,17 @@ export class KthoomApp {
         if (s.numPagesInViewer === 1) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
-        } else {
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip',false);
+
+        } else if(s.numPagesInViewer === 2) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip',false);
+        }
+        else if(s.numPagesInViewer === 3) {
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip',true);
         }
       }
     } catch (err) { }
