@@ -631,8 +631,9 @@ export class BookViewer {
       //  }
          for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
           this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
+          let that = this;
           setTimeout(function(){
-          const thePage = this.currentBook_.getPage(i);
+          const thePage = that.currentBook_.getPage(i);
 
               let position = 0;
               let img = new Image();
@@ -660,52 +661,6 @@ export class BookViewer {
 
 
         this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
-      //   let that = this;
-      //   setTimeout(function() {
-      //     const thePage = that.currentBook_.getPage(i);
-        
-      //     let img = new Image();
-      //     img.onload = function(){
-      //     let page = getElem(`page${i+1}`).children;
-      //     for(const pageElem  of page)
-      //     {
-      //     pageElem.setAttribute("width", bv.width); //TODO: img.naturalWidth Do largest natural width of images or width to 100% above?
-      //     //pageElem.setAttribute("width",img.naturalWidth)
-      //     pageElem.setAttribute("height", img.naturalHeight);     
-      //     pageElem.setAttribute("display","?") ;     
-      //     }
-         
-      //     };
-      //   img.src = thePage.getURI();
-      //   }, 1);
-      //   that = this;
-      //   setTimeout(function(){
-      //     const thePage = that.currentBook_.getPage(i);
-
-      //     if(i !== 0)
-      //     {
-      //     let img = new Image();
-      //     img.onload = function(){
-      //     let page = getElem(`page${i+1}`).children;
-      //     let position = parseFloat(getElem(`page${i}Image`).getAttribute("y")) + parseFloat(getElem(`page${i}Image`).getAttribute("height"));
-      //     for(const pageElem of page)
-      //     {
-           
-      //       pageElem.setAttribute("x", 0 );
-      //       pageElem.setAttribute("y", position ); 
-      //     }
-      //     if(i+1 === that.currentBook_.getNumberOfPages()){
-      //       svgTop.setAttribute("height",position);
-      //     }
-      //   };
-      //   img.src = thePage.getURI();
-        
-      // }
-          
-      //   }
-      //   ,1);
-        
-      //   this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
         
       }
 
