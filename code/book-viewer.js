@@ -273,7 +273,7 @@ export class BookViewer {
       var xlinkns = "http://www.w3.org/1999/xlink";
       let g =  document.createElementNS('http://www.w3.org/2000/svg','g');
       g.setAttribute("id", `page${i+1}`);
-      g.setAttribute("xmlns:xhtml","http://www.w3.org/1999/xhtml");
+      g.setAttribute("xmlns","http://www.w3.org/2000/svg");
       let image =  document.createElementNS('http://www.w3.org/2000/svg','image');
       image.setAttribute("id", `page${i+1}Image`);
       let foreignObject =  document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
