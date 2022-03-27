@@ -637,8 +637,8 @@ export class BookViewer {
           let page = getElem(`page${i+1}`).children;
           for(const pageElem  of page)
           {
-          //pageElem.setAttribute("width", getElem(`page${i + 1}Image`).getAttribute("width")); //TODO: img.naturalWidth Do largest natural width of images or width to 100% above?
-          pageElem.setAttribute("width",img.naturalWidth)
+          pageElem.setAttribute("width", getElem(`page${i + 1}Image`).getAttribute("width")); //TODO: img.naturalWidth Do largest natural width of images or width to 100% above?
+          //pageElem.setAttribute("width",img.naturalWidth)
           pageElem.setAttribute("height", img.naturalHeight);           
           }
          
@@ -655,7 +655,7 @@ export class BookViewer {
           img.onload = function(){
           let page = getElem(`page${i+1}`).children;
           let position = parseFloat(getElem(`page${i}Image`).getAttribute("y")) + parseFloat(getElem(`page${i}Image`).getAttribute("height"));
-          for(const pageElem  of page)
+          for(const pageElem of page)
           {
             pageElem.setAttribute("y", position ); 
           }
