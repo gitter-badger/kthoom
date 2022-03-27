@@ -658,7 +658,7 @@ export class BookViewer {
           }
         }
           }
-          if(i+1 === this.currentBook_.getNumberOfPages()){
+          if(i+1 === that.currentBook_.getNumberOfPages()){
             svgTop.setAttribute("height",position);
           }
         }
