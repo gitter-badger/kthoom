@@ -642,9 +642,7 @@ export class BookViewer {
           pageElem.setAttribute("y", pt);
           
           }
-          console.log(i);
-          let currentdate = new Date(); 
-          console.log(currentdate.getSeconds(),currentdate.getMilliseconds());
+         
           };
         img.src = thePage.getURI();
         setTimeout(function(){
