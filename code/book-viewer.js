@@ -278,7 +278,7 @@ export class BookViewer {
       g.setAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
       g.setAttribute("xmlns:xhtml","http://www.w3.org/1999/xhtml");
       let image =  document.createElementNS('http://www.w3.org/2000/svg','image');
-      image.setAttributeNS("id", `page${i+1}Image`);
+      image.setAttribute("id", `page${i+1}Image`);
       let foreignObject =  document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
       foreignObject.setAttribute("id", `page${i+1}Html`);
       g.appendChild(image);
