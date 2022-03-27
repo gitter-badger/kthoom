@@ -512,7 +512,7 @@ export class BookViewer {
       page1.style.display = '';
       page2.style.display = '';
       for(let i = 2; i < this.currentBook_.getNumberOfPages; i++){
-        getElem(`page${i+1}`).style.display = 'none';
+        getElem(`page${i+1}`).style.display = '';
       }
 
       // TODO: Test this.
@@ -648,7 +648,7 @@ export class BookViewer {
          
           };
         img.src = thePage.getURI();
-        }, 10);
+        }, 1);
         that = this;
         setTimeout(function(){
           const thePage = that.currentBook_.getPage(i);
@@ -674,7 +674,7 @@ export class BookViewer {
       }
           
         }
-        ,10);
+        ,1);
         
         this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
         
