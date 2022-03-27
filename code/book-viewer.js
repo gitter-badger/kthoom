@@ -605,7 +605,7 @@ export class BookViewer {
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
         // pageElem.setAttribute('x', 0);
         // pageElem.setAttribute('y', );
-        // pageElem.setAttribute("width", '?');
+        pageElem.setAttribute("width", window.innerWidth);
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
       }
@@ -616,23 +616,23 @@ export class BookViewer {
         //  pageElem.setAttribute('x', '?');
          
           pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
-        //  pageElem.setAttribute("width", '?');
+          pageElem.setAttribute("width", window.innerWidth);
         //  pageElem.setAttribute("height", '?');
         //  pageElem.setAttribute("display","none");
        }
-       let y = parseFloat(page2Elems[0].getAttribute("y")) + parseFloat(page2Elems[0].getBBox().height);
+       let y = parseFloat(getElem("page2Image").getBBox().y) + parseFloat(getElem("page2Image").getBBox().height); //TODO: GetElem or from arrays
        let q = 0;
        for(const page of pageN){
         // pt += ph;
         if(q > 0){
-         y += pageN[q][0].getBBox().height;
+         y += getElem(`page${q+1}Image`).getBBox().height;
        }
          
          for(const pageElem of page ){
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
           // pageElem.setAttribute("x", '?');
            pageElem.setAttribute("y", y);
-           //pageElem.setAttribute("width", 'auto');
+           pageElem.setAttribute("width", window.innerWidth);
            //pageElem.setAttribute("height", 'auto');
           // pageElem.setAttribute("display","none");
           
