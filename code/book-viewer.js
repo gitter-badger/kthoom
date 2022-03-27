@@ -644,7 +644,7 @@ export class BookViewer {
           }
           console.log(i);
           let currentdate = new Date(); 
-          console.log(currentdate.getMinutes() , currentdate.getSeconds());
+          console.log(currentdate.getSeconds(),currentdate.getMilliseconds());
           };
         img.src = thePage.getURI();
         }, 5000);
