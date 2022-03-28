@@ -277,7 +277,7 @@ export class BookViewer {
       g.setAttribute("version","1.1");
       g.setAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
       g.setAttribute("xmlns:xhtml","http://www.w3.org/1999/xhtml");
-      g.setAttribute("dispaly","none");
+      g.style.display = "none";
       let image =  document.createElementNS('http://www.w3.org/2000/svg','image');
       image.setAttribute("id", `page${i+1}Image`);
       let foreignObject =  document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
@@ -613,13 +613,8 @@ export class BookViewer {
     }
 
     // Rotate the book viewer viewport.
-  //  const tr = `translate(${rotx}, ${roty}) rotate(${angle}) translate(${-rotx}, ${-roty})`;
-  //rotate around center of first image
-  let cY = parseFloat(getElem('page1').getBBox().y)+ parseFloat(getElem('page1').getBBox().height)/2;
-  let cX  = parseFloat(getElem('page1').getBBox().x)+ parseFloat(getElem('page1').getBBox().width)/2;
-
-    const tr = `rotate(${angle},${cX},${cY})`;
-  
+     const tr = `translate(${rotx}, ${roty}) rotate(${angle}) translate(${-rotx}, ${-roty})`;
+ 
     bvViewport.setAttribute('transform', tr);
 
     // Now size the top-level SVG element of the BookViewer.
