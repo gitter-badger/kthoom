@@ -527,7 +527,15 @@ export class BookViewer {
        
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
        
-        pageElem.setAttribute("width", window.innerWidth);
+        if (this.fitMode_ === FitMode.Width ||
+          (this.fitMode_ === FitMode.Best && portraitMode)){
+            pageElem.setAttribute("width", window.innerWidth);
+
+          }else{
+            pageElem.setAttribute("width", window.innerHeight);
+
+           
+          }
 
      
       }
@@ -541,12 +549,14 @@ export class BookViewer {
          
         if (this.fitMode_ === FitMode.Width ||
           (this.fitMode_ === FitMode.Best && portraitMode)){
-          pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
+            pageElem.setAttribute("width", window.innerWidth);
+
           }else{
-            pageElem.setAttribute('y',getElem("page1Image").getBBox().width);
+            pageElem.setAttribute("width", window.innerHeight);
+
            
           }
-          pageElem.setAttribute("width", window.innerWidth);
+          pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
         
        }
        let position = parseFloat(getElem("page2Image").getBBox().y) + parseFloat(getElem("page2Image").getBBox().height); //TODO: GetElem or from arrays
@@ -572,13 +582,14 @@ export class BookViewer {
            
           if (this.fitMode_ === FitMode.Width ||
             (this.fitMode_ === FitMode.Best && portraitMode)){
-          pageElem.setAttribute("y", position);     
+              pageElem.setAttribute("width", window.innerWidth);
             }
             else{
-              pageElem.setAttribute("y", position);    
+              pageElem.setAttribute("width", window.innerHeight);
+
             }
-            pageElem.setAttribute("width", window.innerWidth);
-         
+            
+            pageElem.setAttribute("y", position);   
          }
          if (this.fitMode_ === FitMode.Width ||
           (this.fitMode_ === FitMode.Best && portraitMode )){       
