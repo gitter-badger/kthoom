@@ -613,7 +613,13 @@ export class BookViewer {
     }
 
     // Rotate the book viewer viewport.
-    const tr = `translate(${rotx}, ${roty}) rotate(${angle}) translate(${-rotx}, ${-roty})`;
+  //  const tr = `translate(${rotx}, ${roty}) rotate(${angle}) translate(${-rotx}, ${-roty})`;
+  //rotate around center of first image
+  let cY = parseFloat(getElem('page1').getBBox().y)+ parseFloat(getElem('page1').getBBox().height)/2;
+  let cX  = parseFloat(getElem('page1').getBBox().x)+ parseFloat(getElem('page1').getBBox().width)/2;
+
+    const tr = `rotate(${angle},${cX}${cY})`;
+  
     bvViewport.setAttribute('transform', tr);
 
     // Now size the top-level SVG element of the BookViewer.
