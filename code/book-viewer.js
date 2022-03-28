@@ -507,13 +507,16 @@ export class BookViewer {
       this.showPageInViewer_((this.currentPageNum_ < this.currentBook_.getNumberOfPages() - 1) ?
       this.currentPageNum_ + 1 : 0, page2);
     }
-    else{
+    else if (this.numPagesInViewer_ === 3){
       //long-strip view.
       page1.style.display = '';
       page2.style.display = '';
 
       for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
         getElem(`page${i+1}`).style.display = '';
+        getElem(`page${i+1}`).removeAttribute("x"); //clears x and y from fit switching
+        getElem(`page${i+1}`).removeAttribute("y");
+
       }
  
      //Now size the page elements.
