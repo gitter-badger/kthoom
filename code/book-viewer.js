@@ -509,11 +509,11 @@ export class BookViewer {
     }
     else{
       // //long-strip view.
-      // page1.style.display = '';
-      // page2.style.display = '';
-      // for(let i = 2; i < this.currentBook_.getNumberOfPages; i++){
-      //   getElem(`page${i+1}`).style.display = '';
-      // }
+      page1.style.display = '';
+      page2.style.display = '';
+      for(let i = 2; i < this.currentBook_.getNumberOfPages; i++){
+        getElem(`page${i+1}`).style.display = '';
+      }
 
       // // TODO: Test this.
       // // This is the dimensions before transformation.  They can go beyond the bv dimensions.
