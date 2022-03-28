@@ -553,14 +553,14 @@ export class BookViewer {
        let q = 0;
        for(const page of pageN){
         if(q > 0){
-          if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && portraitMode)){
+          // if (this.fitMode_ === FitMode.Width ||
+          //   (this.fitMode_ === FitMode.Best && portraitMode)){
          position += getElem(`page${q+1}Image`).getBBox().height;
-            }
-            else{
-              position += getElem(`page${q+1}Image`).getBBox().width;
-            }
-       }
+      //       }
+      //       else{
+      //         position += getElem(`page${q+1}Image`).getBBox().width;
+      //       }
+        }
          
          for(const pageElem of page ){
           pageElem.removeAttribute("x"); 
