@@ -561,9 +561,9 @@ export class BookViewer {
         
        }
        let position = parseFloat(getElem("page2Image").getBBox().y) + parseFloat(getElem("page2Image").getBBox().height); //TODO: GetElem or from arrays
-       let q = 0;
+       let q = 3;
        for(const page of pageN){
-        if(q > 2){
+        if(q > 3){
   
          position += getElem(`page${q+1}Image`).getBBox().height;
  
