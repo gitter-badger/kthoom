@@ -582,9 +582,11 @@ export class BookViewer {
          if (this.fitMode_ === FitMode.Width ||
           (this.fitMode_ === FitMode.Best && this.getRotateTimes() % 2 === 0 )){
          toph = position; 
+         topw = bv.height;
           }
           else{
             topw = position;
+            toph = bv.width;
           }
          q+=1;
        }
@@ -605,6 +607,7 @@ export class BookViewer {
     svgTop.style.display = '';
     svgTop.setAttribute('x', 0);
     svgTop.setAttribute('y', 0);
+
     svgTop.setAttribute('width', topw);
     svgTop.setAttribute('height', toph );
   }
@@ -825,6 +828,8 @@ export class BookViewer {
       imageElems.push(getElem(`page${i+1}Image`));
       objElems.push(getElem(`page${i+1}Html`));
     }
+getElem("pages").removeAttribute("height");
+getElem("page").removeAttribute("width");
     for (const imageEl of imageElems) {
       imageEl.removeAttribute("x"); 
       imageEl.removeAttribute("y");
