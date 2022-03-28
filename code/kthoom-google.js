@@ -247,7 +247,7 @@ function defineGoogleHooks() {
         resolve(evt.target.response);
       };
       xhr.onerror = err => reject(err);
-      //xhr.send(null); //TODO: uncomment if Gkey exists
+      xhr.send(null); 
     });
 
     if (!gkey['apiKey'] || !gkey['clientId']) {
