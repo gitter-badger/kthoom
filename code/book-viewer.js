@@ -576,7 +576,7 @@ export class BookViewer {
          
          }
          if (this.fitMode_ === FitMode.Width ||
-          (this.fitMode_ === FitMode.Best && this.getRotateTimes() % 2 !== 0 )){
+          (this.fitMode_ === FitMode.Best && this.getRotateTimes() % 2 === 0 )){
          toph = position; 
           }
           else{
