@@ -277,6 +277,7 @@ export class BookViewer {
       g.setAttribute("version","1.1");
       g.setAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
       g.setAttribute("xmlns:xhtml","http://www.w3.org/1999/xhtml");
+      g.setAttribute("dispaly","none");
       let image =  document.createElementNS('http://www.w3.org/2000/svg','image');
       image.setAttribute("id", `page${i+1}Image`);
       let foreignObject =  document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
@@ -594,11 +595,11 @@ export class BookViewer {
          if (this.fitMode_ === FitMode.Width ||
           (this.fitMode_ === FitMode.Best && portraitMode )){       
             toph = position; 
-            topw = bv.height;     
+            topw = "auto";     
           }
           else{
             topw = position;
-            toph = bv.width;
+            toph = "auto";
           }
          q+=1;
        }
