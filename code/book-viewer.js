@@ -523,32 +523,65 @@ export class BookViewer {
        
        
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
+        if (this.fitMode_ === FitMode.Width ||
+          (this.fitMode_ === FitMode.Best && bv.ar <= par)){
         pageElem.setAttribute("width", window.innerWidth);
+          }
+          else{
+        pageElem.setAttribute("height", window.innerWidth);    
+          }
      
       }
        for (const pageElem of page2Elems) {
       
        
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
+         
+        if (this.fitMode_ === FitMode.Width ||
+          (this.fitMode_ === FitMode.Best && bv.ar <= par)){
           pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
           pageElem.setAttribute("width", window.innerWidth);
+          }else{
+            pageElem.setAttribute('x',getElem("page1Image").getBBox().width);
+            pageElem.setAttribute("height", window.innerWidth);
+          }
         
        }
-       let y = parseFloat(getElem("page2Image").getBBox().y) + parseFloat(getElem("page2Image").getBBox().height); //TODO: GetElem or from arrays
+       let position = parseFloat(getElem("page2Image").getBBox().y) + parseFloat(getElem("page2Image").getBBox().height); //TODO: GetElem or from arrays
        let q = 0;
        for(const page of pageN){
         if(q > 0){
-         y += getElem(`page${q+1}Image`).getBBox().height;
+          if (this.fitMode_ === FitMode.Width ||
+            (this.fitMode_ === FitMode.Best && bv.ar <= par)){
+         position += getElem(`page${q+1}Image`).getBBox().height;
+            }
+            else{
+              position += getElem(`page${q+1}Image`).getBBox().width;
+            }
        }
          
          for(const pageElem of page ){
 
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
-           pageElem.setAttribute("y", y);
+           
+          if (this.fitMode_ === FitMode.Width ||
+            (this.fitMode_ === FitMode.Best && bv.ar <= par)){
+          pageElem.setAttribute("y", position);
            pageElem.setAttribute("width", window.innerWidth);
+            }
+            else{
+              pageElem.setAttribute("x", position);
+              pageElem.setAttribute("height", window.innerWidth);
+            }
          
          }
-         toph = y; 
+         if (this.fitMode_ === FitMode.Width ||
+          (this.fitMode_ === FitMode.Best && bv.ar <= par)){
+         toph = position; 
+          }
+          else{
+            topw = position;
+          }
          q+=1;
        }
        for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
@@ -789,8 +822,8 @@ export class BookViewer {
       objElems.push(getElem(`page${i+1}Html`));
     }
     for (const imageEl of imageElems) {
-      imageEL.removeAttribute("x"); 
-      imageEL.removeAttribute("y");
+      imageEl.removeAttribute("x"); 
+      imageEl.removeAttribute("y");
       imageEl.removeAttribute("height"); 
       imageEl.removeAttribute("width");
       imageEl.style.display = '';
