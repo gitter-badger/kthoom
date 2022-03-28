@@ -618,7 +618,7 @@ export class BookViewer {
   let cY = parseFloat(getElem('page1').getBBox().y)+ parseFloat(getElem('page1').getBBox().height)/2;
   let cX  = parseFloat(getElem('page1').getBBox().x)+ parseFloat(getElem('page1').getBBox().width)/2;
 
-    const tr = `rotate(${angle},${cX}${cY})`;
+    const tr = `rotate(${angle},${cX},${cY})`;
   
     bvViewport.setAttribute('transform', tr);
 
