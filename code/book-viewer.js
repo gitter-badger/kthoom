@@ -181,7 +181,8 @@ export class BookViewer {
   setRotateTimes(n) {
     n = parseInt(n, 10) % 4;
     if (n < 0) n += 4;
-    if(n == 2 && this.getNumPagesInViewer === 3) // rotations and on long strip
+
+    if((n === 2 || n===3) && this.getNumPagesInViewer() === 3) // rotations and on long strip
     {
       return;
     }
@@ -548,7 +549,7 @@ export class BookViewer {
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
          
         if (this.fitMode_ === FitMode.Width ||
-          (this.fitMode_ === FitMode.Best && portraitMode)){
+          (this.fitMode_ === FitMode.Best && !portraitMode)){
           pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
           pageElem.setAttribute("width", window.innerWidth);
           }else{
@@ -562,7 +563,7 @@ export class BookViewer {
        for(const page of pageN){
         if(q > 0){
           if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && portraitMode)){
+            (this.fitMode_ === FitMode.Best && !portraitMode)){
          position += getElem(`page${q+1}Image`).getBBox().height;
             }
             else{
@@ -579,7 +580,7 @@ export class BookViewer {
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
            
           if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && portraitMode)){
+            (this.fitMode_ === FitMode.Best && !portraitMode)){
           pageElem.setAttribute("y", position);
            pageElem.setAttribute("width", window.innerWidth);
             }
@@ -590,13 +591,14 @@ export class BookViewer {
          
          }
          if (this.fitMode_ === FitMode.Width ||
-          (this.fitMode_ === FitMode.Best && this.getRotateTimes() % 2 === 0 )){
-         toph = position; 
-         topw = bv.height;
-          }
-          else{
+          (this.fitMode_ === FitMode.Best && portraitMode )){
             topw = position;
             toph = bv.width;
+        
+          }
+          else{
+            toph = position; 
+         topw = bv.height;
           }
          q+=1;
        }
