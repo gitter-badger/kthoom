@@ -689,7 +689,7 @@ export class KthoomApp {
         this.viewMenu_.setMenuItemSelected('menu-view-fit-width', fitMode === FitMode.Width);
         this.saveSettings_();
         break;
-      case Key.NUM_1: case Key.NUM_2:
+      case Key.NUM_1: case Key.NUM_2: case Key.NUM_3:
         const numPages = code - Key.NUM_1 + 1;
         this.bookViewer_.setNumPagesInViewer(numPages);
         if (numPages === 1) {
