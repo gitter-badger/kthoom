@@ -299,6 +299,7 @@ export class KthoomApp {
     // TODO: Does this mean the book viewer images have to be focusable for keyboard accessibility?
     getElem('page1Image').addEventListener('contextmenu', evt => this.onContextMenu_(evt));
     getElem('page2Image').addEventListener('contextmenu', evt => this.onContextMenu_(evt));
+  
   }
 
   /** @private */

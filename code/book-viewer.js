@@ -784,7 +784,7 @@ export class BookViewer {
   clearPageContents_() {
     const imageElems = [getElem('page1Image'), getElem('page2Image')];
     const objElems = [getElem('page1Html'), getElem('page2Html')];
-    for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
+    for(let i = 2; i < getElem('page').childElementCount; i++){
       imageElems.push(getElem(`page${i+1}Image`));
       objElems.push(getElem(`page${i+1}Html`));
     }
