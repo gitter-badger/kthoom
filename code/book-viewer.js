@@ -103,7 +103,7 @@ export class BookViewer {
       return;
     }
 
-    //evt.preventDefault(); 
+    //evt.preventDefault();  TODO
 
     // Keep the timer going if it has been started.
     if (this.wheelTimer_) {
@@ -511,7 +511,8 @@ export class BookViewer {
       //long-strip view.
       page1.style.display = '';
       page2.style.display = '';
-      for(let i = 2; i < this.currentBook_.getNumberOfPages; i++){
+
+      for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
         getElem(`page${i+1}`).style.display = '';
       }
  

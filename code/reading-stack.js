@@ -358,7 +358,7 @@ export class ReadingStack {
         });
         bookDiv.addEventListener('dragover', evt => {
           evt.stopPropagation();
-          evt.preventDefault();
+        //  evt.preventDefault(); TODO
         });
         bookDiv.addEventListener('drop', evt => {
           evt.stopPropagation();

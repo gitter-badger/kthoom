@@ -291,12 +291,12 @@ export class Menu extends EventTarget {
 
     switch (code) {
       case Key.UP:
-        evt.preventDefault();
+    //    evt.preventDefault(); TODO
         evt.stopPropagation();
         this.focusMenuItem_(-1);
         return true;
       case Key.DOWN:
-        evt.preventDefault();
+       // evt.preventDefault(); TODO
         evt.stopPropagation();
         this.focusMenuItem_(1);
         return true;

@@ -413,7 +413,7 @@ export class KthoomApp {
         }
         target = target.parentElement;
       }
-      evt.preventDefault();
+     // evt.preventDefault(); TODO
     }, true);
   }
 
@@ -634,12 +634,12 @@ export class KthoomApp {
         }
         break;
       case Key.UP:
-        evt.preventDefault();
+     //   evt.preventDefault(); TODO
         evt.stopPropagation();
         window.scrollBy(0, -5);
         break;
       case Key.DOWN:
-        evt.preventDefault();
+      //  evt.preventDefault(); TODO
         evt.stopPropagation();
         window.scrollBy(0, 5);
         break;
@@ -721,7 +721,7 @@ export class KthoomApp {
   onContextMenu_(evt) {
     if (!this.currentBook_) { return; }
 
-    evt.preventDefault();
+ //   evt.preventDefault();
     const pageNum = parseInt(evt.target.parentElement.dataset.pagenum, 10);
     const thisPage = this.currentBook_.getPage(pageNum);
     const mimeType = thisPage.getMimeType();
