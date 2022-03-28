@@ -543,7 +543,6 @@ export class BookViewer {
            pageElem.setAttribute("y", y);
            pageElem.setAttribute("width", window.innerWidth);
          
-          
          }
          toph = y; 
          q+=1;
