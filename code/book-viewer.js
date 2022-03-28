@@ -526,13 +526,9 @@ export class BookViewer {
         pageElem.removeAttribute("width");
        
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
-        if (this.fitMode_ === FitMode.Width ||
-          (this.fitMode_ === FitMode.Best && bv.ar <= par)){
+       
         pageElem.setAttribute("width", window.innerWidth);
-          }
-          else{
-        pageElem.setAttribute("height", window.innerWidth);    
-          }
+
      
       }
        for (const pageElem of page2Elems) {
@@ -546,11 +542,11 @@ export class BookViewer {
         if (this.fitMode_ === FitMode.Width ||
           (this.fitMode_ === FitMode.Best && portraitMode)){
           pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
-          pageElem.setAttribute("width", window.innerwidth);
           }else{
             pageElem.setAttribute('y',getElem("page1Image").getBBox().width);
-            pageElem.setAttribute("width", window.innerWidth);
+           
           }
+          pageElem.setAttribute("width", window.innerWidth);
         
        }
        let position = parseFloat(getElem("page2Image").getBBox().y) + parseFloat(getElem("page2Image").getBBox().height); //TODO: GetElem or from arrays
@@ -576,13 +572,12 @@ export class BookViewer {
            
           if (this.fitMode_ === FitMode.Width ||
             (this.fitMode_ === FitMode.Best && portraitMode)){
-          pageElem.setAttribute("y", position);
-           pageElem.setAttribute("width", window.innerWidth);
+          pageElem.setAttribute("y", position);     
             }
             else{
-              pageElem.setAttribute("y", position);
-              pageElem.setAttribute("width", window.innerWidth);
+              pageElem.setAttribute("y", position);    
             }
+            pageElem.setAttribute("width", window.innerWidth);
          
          }
          if (this.fitMode_ === FitMode.Width ||
