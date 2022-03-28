@@ -514,22 +514,29 @@ export class BookViewer {
 
       for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
         getElem(`page${i+1}`).style.display = '';
-        getElem(`page${i+1}`).removeAttribute("x"); //clears x and y from fit switching
-        getElem(`page${i+1}`).removeAttribute("y");
+      
 
       }
  
      //Now size the page elements.
       for (const pageElem of page1Elems) {
+        pageElem.removeAttribute("x"); //clearsfrom fit switching
+        pageElem.removeAttribute("y");
+        pageElem.removeAttribute("height"); 
+        pageElem.removeAttribute("width");
+       
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
-    
         pageElem.setAttribute("width", window.innerWidth);
      
       }
        for (const pageElem of page2Elems) {
+        pageElem.removeAttribute("x"); //clearsfrom fit switching
+        pageElem.removeAttribute("y");
+        pageElem.removeAttribute("height"); 
+        pageElem.removeAttribute("width");
+       
+       
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
-
-        
           pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
           pageElem.setAttribute("width", window.innerWidth);
         
@@ -542,6 +549,11 @@ export class BookViewer {
        }
          
          for(const pageElem of page ){
+          pageElem.removeAttribute("x"); //clearsfrom fit switching
+          pageElem.removeAttribute("y");
+          pageElem.removeAttribute("height"); 
+          pageElem.removeAttribute("width");
+          
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
            pageElem.setAttribute("y", y);
            pageElem.setAttribute("width", window.innerWidth);
