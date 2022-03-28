@@ -219,7 +219,6 @@ export class BookViewer {
       this.throbbingTime_ = 0;
     }
   }
-
   /**
    * Sets the number of pages in the viewer (1-,2-page, or 3-Long Strip viewer are supported).
    * @param {Number} numPages Can be 1,2, or 3.
