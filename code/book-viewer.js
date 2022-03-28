@@ -104,7 +104,6 @@ export class BookViewer {
     }
 
     //evt.preventDefault();  TODO
-
     // Keep the timer going if it has been started.
     if (this.wheelTimer_) {
       clearTimeout(this.wheelTimer_);
