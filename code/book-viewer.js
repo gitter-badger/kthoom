@@ -548,7 +548,7 @@ export class BookViewer {
           pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
           pageElem.setAttribute("width", window.innerHeight);
           }else{
-            pageElem.setAttribute('x',getElem("page1Image").getBBox().width);
+            pageElem.setAttribute('y',getElem("page1Image").getBBox().width);
             pageElem.setAttribute("height", window.innerWidth);
           }
         
@@ -580,7 +580,7 @@ export class BookViewer {
            pageElem.setAttribute("width", window.innerHeight);
             }
             else{
-              pageElem.setAttribute("x", position);
+              pageElem.setAttribute("y", position);
               pageElem.setAttribute("height", window.innerWidth);
             }
          
