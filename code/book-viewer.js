@@ -208,7 +208,6 @@ export class BookViewer {
 
   /** @returns {number} The number of pages being shown in the viewer (1,2, or 3). */
   getNumPagesInViewer() { return this.numPagesInViewer_; }
-
   /** @private */
   killThrobbing_() {
     if (this.throbberTimerId_) {
