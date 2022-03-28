@@ -520,21 +520,14 @@ export class BookViewer {
  
      //Now size the page elements.
       for (const pageElem of page1Elems) {
-        pageElem.removeAttribute("x"); //clearsfrom fit switching
-        pageElem.removeAttribute("y");
-        pageElem.removeAttribute("height"); 
-        pageElem.removeAttribute("width");
+       
        
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
         pageElem.setAttribute("width", window.innerWidth);
      
       }
        for (const pageElem of page2Elems) {
-        pageElem.removeAttribute("x"); //clearsfrom fit switching
-        pageElem.removeAttribute("y");
-        pageElem.removeAttribute("height"); 
-        pageElem.removeAttribute("width");
-       
+      
        
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
           pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
@@ -549,11 +542,7 @@ export class BookViewer {
        }
          
          for(const pageElem of page ){
-          pageElem.removeAttribute("x"); //clearsfrom fit switching
-          pageElem.removeAttribute("y");
-          pageElem.removeAttribute("height"); 
-          pageElem.removeAttribute("width");
-          
+
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
            pageElem.setAttribute("y", y);
            pageElem.setAttribute("width", window.innerWidth);
@@ -795,11 +784,23 @@ export class BookViewer {
   clearPageContents_() {
     const imageElems = [getElem('page1Image'), getElem('page2Image')];
     const objElems = [getElem('page1Html'), getElem('page2Html')];
+    for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
+      imageElems.push(getElem(`page${i+1}Image`));
+      objElems.push(getElem(`page${i+1}Html`));
+    }
     for (const imageEl of imageElems) {
+      imageEL.removeAttribute("x"); 
+      imageEL.removeAttribute("y");
+      imageEl.removeAttribute("height"); 
+      imageEl.removeAttribute("width");
       imageEl.style.display = '';
       imageEl.setAttribute('href', '');
     }
     for (const objEl of objElems) {
+      objEl.removeAttribute("x"); 
+      objEl.removeAttribute("y");
+      objEl.removeAttribute("height"); 
+      objEl.removeAttribute("width");
       objEl.style.display = '';
       while (objEl.firstChild) {
         objEl.firstChild.remove();
