@@ -181,7 +181,7 @@ export class BookViewer {
   setRotateTimes(n) {
     n = parseInt(n, 10) % 4;
     if (n < 0) n += 4;
-    if(n == 2 && this.getNumPagesInViewer === 3) // rotations and on long strip
+    if(n === 2 && this.getNumPagesInViewer === 3) // rotations and on long strip
     {
       return;
     }
@@ -524,7 +524,10 @@ export class BookViewer {
  
      //Now size the page elements.
       for (const pageElem of page1Elems) {
-       
+        pageELem.removeAttribute("x"); 
+        pageElem.removeAttribute("y");
+        pageElem.removeAttribute("height"); 
+        pageElem.removeAttribute("width");
        
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
         if (this.fitMode_ === FitMode.Width ||
@@ -537,7 +540,10 @@ export class BookViewer {
      
       }
        for (const pageElem of page2Elems) {
-      
+        pageELem.removeAttribute("x"); 
+        pageElem.removeAttribute("y");
+        pageElem.removeAttribute("height"); 
+        pageElem.removeAttribute("width");
        
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
          
@@ -565,10 +571,13 @@ export class BookViewer {
        }
          
          for(const pageElem of page ){
+          pageELem.removeAttribute("x"); 
+          pageElem.removeAttribute("y");
+          pageElem.removeAttribute("height"); 
+          pageElem.removeAttribute("width");
 
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
-           
-          if (this.fitMode_ === FitMode.Width ||
+           if (this.fitMode_ === FitMode.Width ||
             (this.fitMode_ === FitMode.Best && this.getRotateTimes() % 2 === 0 )){
           pageElem.setAttribute("y", position);
            pageElem.setAttribute("width", window.innerWidth);
