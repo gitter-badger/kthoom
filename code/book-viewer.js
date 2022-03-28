@@ -546,10 +546,10 @@ export class BookViewer {
         if (this.fitMode_ === FitMode.Width ||
           (this.fitMode_ === FitMode.Best && portraitMode)){
           pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
-          pageElem.setAttribute("width", window.innerHeight);
+          pageElem.setAttribute("width", window.innerwidth);
           }else{
             pageElem.setAttribute('y',getElem("page1Image").getBBox().width);
-            pageElem.setAttribute("height", window.innerWidth);
+            pageElem.setAttribute("width", window.innerWidth);
           }
         
        }
@@ -577,11 +577,11 @@ export class BookViewer {
           if (this.fitMode_ === FitMode.Width ||
             (this.fitMode_ === FitMode.Best && portraitMode)){
           pageElem.setAttribute("y", position);
-           pageElem.setAttribute("width", window.innerHeight);
+           pageElem.setAttribute("width", window.innerWidth);
             }
             else{
               pageElem.setAttribute("y", position);
-              pageElem.setAttribute("height", window.innerWidth);
+              pageElem.setAttribute("width", window.innerWidth);
             }
          
          }
