@@ -586,11 +586,9 @@ export class BookViewer {
          
          }
          if (this.fitMode_ === FitMode.Width ||
-          (this.fitMode_ === FitMode.Best && portraitMode )){
-         
+          (this.fitMode_ === FitMode.Best && portraitMode )){       
             toph = position; 
-            topw = bv.height;
-        
+            topw = bv.height;     
           }
           else{
             topw = position;
