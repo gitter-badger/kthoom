@@ -565,7 +565,7 @@ export class BookViewer {
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
            
           if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && && this.getRotateTimes() % 2 !== 0 )){
+            (this.fitMode_ === FitMode.Best && this.getRotateTimes() % 2 !== 0 )){
           pageElem.setAttribute("y", position);
            pageElem.setAttribute("width", window.innerWidth);
             }
