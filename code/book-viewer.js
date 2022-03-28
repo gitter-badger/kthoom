@@ -524,7 +524,7 @@ export class BookViewer {
  
      //Now size the page elements.
       for (const pageElem of page1Elems) {
-        pageELem.removeAttribute("x"); 
+        pageElem.removeAttribute("x"); 
         pageElem.removeAttribute("y");
         pageElem.removeAttribute("height"); 
         pageElem.removeAttribute("width");
@@ -540,7 +540,7 @@ export class BookViewer {
      
       }
        for (const pageElem of page2Elems) {
-        pageELem.removeAttribute("x"); 
+        pageElem.removeAttribute("x"); 
         pageElem.removeAttribute("y");
         pageElem.removeAttribute("height"); 
         pageElem.removeAttribute("width");
@@ -571,7 +571,7 @@ export class BookViewer {
        }
          
          for(const pageElem of page ){
-          pageELem.removeAttribute("x"); 
+          pageElem.removeAttribute("x"); 
           pageElem.removeAttribute("y");
           pageElem.removeAttribute("height"); 
           pageElem.removeAttribute("width");
