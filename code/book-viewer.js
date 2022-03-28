@@ -181,7 +181,7 @@ export class BookViewer {
   setRotateTimes(n) {
     n = parseInt(n, 10) % 4;
     if (n < 0) n += 4;
-    if(n === 2 && this.getNumPagesInViewer === 3) // rotations and on long strip
+    if((n === 2 || n===3) && this.getNumPagesInViewer === 3) // rotations and on long strip
     {
       return;
     }
