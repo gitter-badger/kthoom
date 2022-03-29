@@ -676,14 +676,19 @@ export class BookViewer {
           }
           let setTo = 0;
           if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && portraitMode )){  
-             setTo = window.innerWidth;
+            (this.fitMode_ === FitMode.Best && portraitMode )) {
+             setTo = window.innerHeight;
             }
-            else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
-              setTo = window.innerHeight;
+            else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )) {
+              setTo = window.innterWidth;
             }
-          page1.setAttribute("width",setTo);
-          page2.setAttribute("width",setTo);
+          for (const pageElem of page1Elems){
+          pageElem.setAttribute("width",setTo);
+        }
+          for (const pageElem of page2Elems) {
+            pageElem.setAttribute("width",setTo);
+
+          }
           for(const page of pageN){
         
              
