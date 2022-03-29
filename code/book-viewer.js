@@ -628,47 +628,52 @@ export class BookViewer {
     svgTop.setAttribute('width', topw);
     svgTop.setAttribute('height', toph );
     
-    // if ( this.getNumPagesInViewer() === 3 &&
+    if ( this.getNumPagesInViewer() === 3 &&
     
     
-    // (document.getElementById("page2").getBoundingClientRect().top < 0 && document.getElementById("page2").getBoundingClientRect().left < 0 ))
-    // {
-    //   let side = 0;
+    (document.getElementById("page2").getBoundingClientRect().top < 0 && document.getElementById("page2").getBoundingClientRect().left < 0 ))
+    {
+      let side = 0;
     
-    //  if(
-    //   Math.abs(document.getElementById("page2Image").getBoundingClientRect().top
-    //  ) > Math.abs(document.getElementById("page2Image").getBoundingClientRect().left
-    //  )  )
-    //  {
-    //    side = 1
-    //  }
-    //  else {
-    //    side = 0;
+     if(
+      Math.abs(document.getElementById("page2Image").getBoundingClientRect().top
+     ) > Math.abs(document.getElementById("page2Image").getBoundingClientRect().left
+     )  )
+     {
+       side = 1
+     }
+     else {
+       side = 0;
 
-    //  }
-    //     if(side === 1){
-    //       bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + ` translate(0, ${-toph + Math.abs(getElem("page1").getBoundingClientRect().top)})`
+     }
+        if(side === 1){
+          bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + ` translate(0, ${-toph + Math.abs(getElem("page1").getBoundingClientRect().top)})`
         
-    //       );
-    //       if(page2.style.display ==='none')
-    //       {
-    //       getElem("page1").scrollIntoView({block: "end"});
-    //     }
-    //     }
-    //     if(side === 0)
-    //     {
-    //       bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + ` translate(0, ${-topw + Math.abs(getElem("page1").getBoundingClientRect().top)})`)
-    //       if(page2.style.display ==='none')
-    //       {
-    //       getElem("page1").scrollIntoView({block: "end"});
-    //       }
+          );
+          if(page2.style.display ==='none')
+          {
+          getElem("page1").scrollIntoView({block: "end"});
+        }
+        }
+        if(side === 0)
+        {
+          bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + ` translate(0, ${-topw + Math.abs(getElem("page1").getBoundingClientRect().top)})`)
+          if(page2.style.display ==='none')
+          {
+          getElem("page1").scrollIntoView({block: "end"});
+          }
     
-    //     }
+        }
 
       
      
 
-    // }
+    }
+    if(page2.style.display ==='none')
+    {
+   this.updateLayout();
+    }
+
   
     
    
