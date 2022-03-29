@@ -511,13 +511,13 @@ export class BookViewer {
     else if (this.numPagesInViewer_ === 3){
       //long-strip view.
       page1.style.display = '';
+      if(page1.style.display !== 0){
       page2.style.display = '';
-
+     
       for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
         getElem(`page${i+1}`).style.display = '';
-      
-
       }
+    }
  
      //Now size the page elements.
       for (const pageElem of page1Elems) {
@@ -555,9 +555,9 @@ export class BookViewer {
           else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
             pageElem.setAttribute("width", window.innerHeight);
           }
-        setTimeout(function(){
+       
           pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
-        },1)
+      
           
         
        }
