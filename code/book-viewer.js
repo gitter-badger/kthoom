@@ -203,11 +203,11 @@ export class BookViewer {
     else if(this.rotateSide_ === 3 && n === 1){
       this.rotateSide_ =0;
     }
-    else if(this.rotateSide_ === 1)
+    else if(m === 1)
     {
      this.rotateSide_+=1;
     }
-    else if(this.rotateSide_ === -1){
+    else if(m === -1){
       this.rotateSide_ -=1;
     }
   }
