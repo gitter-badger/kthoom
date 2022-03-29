@@ -196,18 +196,18 @@ export class BookViewer {
   }
   getRotateSide() { return this.rotateSide_; }
 
-  setRotateSide(n,m) {
-    if(n === 0 && m === -1){
+  setRotateSide(m) {
+    if(this.rotateSide_ === 0 && m === -1){
       this.rotateSide_ = 3;
     }
-    else if(n === 3 && n === 1){
+    else if(this.rotateSide_ === 3 && n === 1){
       this.rotateSide_ =0;
     }
-    else if(m === 1)
+    else if(this.rotateSide_ === 1)
     {
      this.rotateSide_+=1;
     }
-    else if(m === -1){
+    else if(this.rotateSide_ === -1){
       this.rotateSide_ -=1;
     }
   }
@@ -652,12 +652,13 @@ export class BookViewer {
       bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + `translate(0,${toph})`
     
       );
+      getElem("page1").scrollIntoView({block: "end"});
     }
     if(this.getRotateSide() === 1)
     {
-      bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + `translate(0,${topw})`
-  
-   )
+      bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + `translate(0,${topw})`)
+   getElem("page1").scrollIntoView({block: "end"});
+
     }
   }
 
