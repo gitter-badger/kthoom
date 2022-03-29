@@ -653,8 +653,8 @@ export class BookViewer {
       for (let i = 0; i < 2; i++){ 
         const tempTr = `translate(${rotx}, ${roty}) rotate(${(this.getRotateTimes() -1 - i) * 90}) translate(${-rotx}, ${-roty})`;
         bvViewport.setAttribute('transform', tempTr);
-        getElem("page3Image").scrollIntoView();
-        if (this.checkInView(svgTop,getElem("page3Image"),true)){
+        getElem("page2Image").scrollIntoView();
+        if (this.checkInView(svgTop,getElem("page2Image"),true)){
           side = i;
           break;
 
