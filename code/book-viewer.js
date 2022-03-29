@@ -668,10 +668,7 @@ export class BookViewer {
      
 
     }
-    if(page2.style.display ==='none')
-    {
-   this.updateLayout();
-    }
+ 
 
   
     
