@@ -513,13 +513,12 @@ export class BookViewer {
     }
     else if (this.numPagesInViewer_ === 3){
       //long-strip view.
-      page1.style.display = 'none';
+      page1.style.display = '';
       page2.style.display = 'none';
       for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
         getElem(`page${i+1}`).style.display = 'none';
       }
       if(getElem("page1Image").getBBox().height !== 0){
-      page1.style.display = '';
       page2.style.display = '';
      
       for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
