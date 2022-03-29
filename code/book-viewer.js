@@ -587,8 +587,7 @@ export class BookViewer {
             
             pageElem.setAttribute("y", position);   
          }
-         if (this.fitMode_ === FitMode.Width ||
-          (this.fitMode_ === FitMode.Best && portraitMode )){       
+         if (portraitMode){       
             toph = position; 
             topw = window.innerWidth;     
           }
