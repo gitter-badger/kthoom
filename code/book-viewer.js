@@ -511,6 +511,7 @@ export class BookViewer {
     else if (this.numPagesInViewer_ === 3){
       //long-strip view.
       page1.style.display = '';
+      page2.style.display = 'none';
       if(page1.style.display !== 0){
       page2.style.display = '';
      
