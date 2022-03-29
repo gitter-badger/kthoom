@@ -662,7 +662,7 @@ export class BookViewer {
           );
           
           if(this.t==1){
-          getElem("page1").scrollIntoView({block: "end"});
+          getElem("page1").scrollIntoView(true);
           }
         
         }
@@ -672,7 +672,7 @@ export class BookViewer {
           this.t=0;
           bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + ` translate(0, ${-topw + Math.abs(getElem("page1").getBoundingClientRect().top)})`)
           if(this.s==1){
-          getElem("page1").scrollIntoView({block: "end"});
+          getElem("page1").scrollIntoView(true);
           }
           let setTo = 0;
           if (this.fitMode_ === FitMode.Width ||
