@@ -648,7 +648,7 @@ export class BookViewer {
     svgTop.setAttribute('height', toph );
     svgTop.style.display="none";
     getElem("page3Image").scrollIntoView();
-    if (!this.checkInView(svgTop,getElem("page3Image"),true) && this.getNumPagesInViewer === 3){
+    if (!this.checkInView(svgTop,getElem("page3Image"),true) && this.getNumPagesInViewer() === 3){
       let side = 0;
       for (let i = 0; i < 2; i++){ 
         const tempTr = `translate(${rotx}, ${roty}) rotate(${(this.getRotateTimes() -1 - i) * 90}) translate(${-rotx}, ${-roty})`;
