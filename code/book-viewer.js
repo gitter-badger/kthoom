@@ -674,14 +674,23 @@ export class BookViewer {
           if(this.s==1){
           getElem("page1").scrollIntoView({block: "end"});
           }
-          page1.setAttribute("width",window.innerWidth);
-          page2.setAttribute("width",window.innerWidth);
+          let setTo = 0;
+          if (portraitMode){       
+           
+            setTo = window.innerWidth;     
+          }
+          else{
+          
+            setTo = window.innerWidth;
+          }
+          page1.setAttribute("width",setTo);
+          page2.setAttribute("width",setTo);
           for(const page of pageN){
         
              
             for(const pageElem of page ){
            
-                 pageElem.setAttribute("width", window.innerHeight);
+                 pageElem.setAttribute("width", setTo);
                }
              }
              for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
