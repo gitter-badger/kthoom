@@ -632,16 +632,7 @@ export class BookViewer {
     
     (document.getElementById("page2").getBoundingClientRect().top < 0 && document.getElementById("page2").getBoundingClientRect().left < 0 )){
       let side = 0;
-     // for (let i = 0; i < 2; i++){ 
-      //   const tempTr = `translate(${rotx}, ${roty}) rotate(${(this.getRotateTimes() -1 - i) * 90}) translate(${-rotx}, ${-roty})`;
-      //   bvViewport.setAttribute('transform', tempTr);
-      //   if (!(document.getElementById("page2").getBoundingClientRect().top < 0 || document.getElementById("page2").getBoundingClientRect().left < 0 )){
-      //     side = i;
-      //     break;
-
-      //   }
-      // }
-      //   bvViewport.setAttribute('transform', tr);
+    
      if(
       Math.abs(document.getElementById("page2Image").getBoundingClientRect().top
      ) > Math.abs(document.getElementById("page2Image").getBoundingClientRect().left
