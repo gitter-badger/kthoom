@@ -662,14 +662,14 @@ export class BookViewer {
       }
         bvViewport.setAttribute('transform', tr);
         if(side === 1){
-          bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + `translate(0,${toph})`
+          bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + ` translate(0, ${toph})`
         
           );
           getElem("page1").scrollIntoView({block: "end"});
         }
         if(side === 0)
         {
-          bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + `translate(0,${topw})`)
+          bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + ` translate(0, ${topw})`)
           getElem("page1").scrollIntoView({block: "end"});
     
         }
