@@ -594,7 +594,7 @@ export class BookViewer {
           }
           else{
             topw = position;
-            toph = window.innerHeight;
+            toph = window.innerWidth;
           }
          q+=1;
        }
