@@ -674,6 +674,8 @@ export class BookViewer {
           if(this.s==1){
           getElem("page1").scrollIntoView({block: "end"});
           }
+          page1.setAttribute("width",window.innerWidth);
+          page2.setAttribute("width",window.innerWidth);
           for(const page of pageN){
         
              
@@ -682,6 +684,12 @@ export class BookViewer {
                  pageElem.setAttribute("width", window.innerHeight);
                }
              }
+             for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
+              this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
+               
+          
+          }
+
     
         }
 
