@@ -675,14 +675,13 @@ export class BookViewer {
           getElem("page1").scrollIntoView({block: "end"});
           }
           let setTo = 0;
-          if (portraitMode){       
-           
-            setTo = window.innerWidth;     
-          }
-          else{
-          
-            setTo = window.innerWidth;
-          }
+          if (this.fitMode_ === FitMode.Width ||
+            (this.fitMode_ === FitMode.Best && portraitMode )){  
+             setTo = window.innerWidth;
+            }
+            else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
+              setTo = window.innerHeight;
+            }
           page1.setAttribute("width",setTo);
           page2.setAttribute("width",setTo);
           for(const page of pageN){
