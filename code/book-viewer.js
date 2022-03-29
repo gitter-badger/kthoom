@@ -655,14 +655,14 @@ export class BookViewer {
 
      }
         if(side === 1){
-          bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + ` translate(0, -${toph})`
+          bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + ` translate(0, ${-toph + Math.abs(getElem("page1").getBoundingClientRect().top)})`
         
           );
           getElem("page1").scrollIntoView({block: "end"});
         }
         if(side === 0)
         {
-          bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + ` translate(0, -${topw})`)
+          bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + ` translate(0, ${-topw + Math.abs(getElem("page1").getBoundingClientRect().top)})`)
           getElem("page1").scrollIntoView({block: "end"});
     
         }
