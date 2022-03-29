@@ -50,11 +50,7 @@ export class BookViewer {
      */
     this.rotateTimes_ = 0;
 
-     /**
-     * The side of rotation from 0 to 3
-     * @type {number}
-     */
-      this.rotateSide_ = 0;
+   
 
     /** @type {!FitMode} */
     this.fitMode_ = FitMode.Best;
@@ -180,7 +176,26 @@ export class BookViewer {
       }
     }
   }
+   checkInView(container, element, partial) {
 
+    //Get container properties
+    let cTop = container.scrollTop;
+    let cBottom = cTop + container.clientHeight;
+
+    //Get element properties
+    let eTop = element.offsetTop;
+    let eBottom = eTop + element.clientHeight;
+
+    //Check if in view    
+    let isTotal = (eTop >= cTop && eBottom <= cBottom);
+    let isPartial = partial && (
+      (eTop < cTop && eBottom > cTop) ||
+      (eBottom > cBottom && eTop < cBottom)
+    );
+
+    //Return outcome
+    return  (isTotal  || isPartial);
+}
   getRotateTimes() { return this.rotateTimes_; }
 
   setRotateTimes(n) {
@@ -194,23 +209,7 @@ export class BookViewer {
       this.updateLayout();
     }
   }
-  getRotateSide() { return this.rotateSide_; }
-
-  setRotateSide(m) {
-    if(this.rotateSide_ === 0 && m === -1){
-      this.rotateSide_ = 3;
-    }
-    else if(this.rotateSide_ === 3 && n === 1){
-      this.rotateSide_ =0;
-    }
-    else if(m === 1)
-    {
-     this.rotateSide_+=1;
-    }
-    else if(m === -1){
-      this.rotateSide_ -=1;
-    }
-  }
+  
   rotateCounterClockwise() {
     this.setRotateTimes(this.rotateTimes_ - 1);
     this.setRotateSide(-1);
@@ -648,18 +647,41 @@ export class BookViewer {
 
     svgTop.setAttribute('width', topw);
     svgTop.setAttribute('height', toph );
-    if(this.getRotateSide() === 2){
-      bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + `translate(0,${toph})`
+    svgTop.style.display="none";
+    getElem("page3Image").scrollIntoView();
+    if (!this.checkInView(svgTop,getElem("page3Image"),true)){
+      let side = 0;
+      const originalTr = tr;
+      for (let i = 0; i < 2; i++){ 
+        this.rotateCounterClockwise();
+        getElem("page3Image").scrollIntoView();
+        if (this.checkInView(svgTop,getElem("page3Image"),true)){
+          side = i;
+          break;
+
+        }
+        bvViewport.setAttribute('transform', tr);
+        if(i === 1){
+          bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + `translate(0,${toph})`
+        
+          );
+          getElem("page1").scrollIntoView({block: "end"});
+        }
+        if(i === 0)
+        {
+          bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + `translate(0,${topw})`)
+       getElem("page1").scrollIntoView({block: "end"});
     
-      );
-      getElem("page1").scrollIntoView({block: "end"});
-    }
-    if(this.getRotateSide() === 1)
-    {
-      bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + `translate(0,${topw})`)
-   getElem("page1").scrollIntoView({block: "end"});
+        }
+
+      }
+     
 
     }
+    svgTop.style.display="";
+  
+    
+   
   }
 
   /** @private */
