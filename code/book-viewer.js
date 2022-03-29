@@ -528,7 +528,13 @@ export class BookViewer {
        
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
      
+        if (this.fitMode_ === FitMode.Width ||
+          (this.fitMode_ === FitMode.Best && portraitMode )){  
             pageElem.setAttribute("width", window.innerWidth);
+          }
+          else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
+            pageElem.setAttribute("width", window.innerHeight);
+          }
 
            
 
@@ -542,9 +548,13 @@ export class BookViewer {
        
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
          
-        
+        if (this.fitMode_ === FitMode.Width ||
+          (this.fitMode_ === FitMode.Best && portraitMode )){  
             pageElem.setAttribute("width", window.innerWidth);
-
+          }
+          else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
+            pageElem.setAttribute("width", window.innerHeight);
+          }
         
           pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
         
@@ -565,8 +575,14 @@ export class BookViewer {
           pageElem.removeAttribute("width");
 
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
-    
+            
+          if (this.fitMode_ === FitMode.Width ||
+            (this.fitMode_ === FitMode.Best && portraitMode )){  
               pageElem.setAttribute("width", window.innerWidth);
+            }
+            else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
+              pageElem.setAttribute("width", window.innerHeight);
+            }
            
             
             pageElem.setAttribute("y", position);   
@@ -578,7 +594,7 @@ export class BookViewer {
           }
           else{
             topw = position;
-            toph = window.innerWidth;
+            toph = window.innerHeight;
           }
          q+=1;
        }
