@@ -629,7 +629,7 @@ export class BookViewer {
     
     svgTop.style.display="none";
     //getElem("page2Image").scrollIntoView();
-    if (getElem("page2Image").style.display === '' && this.getNumPagesInViewer() === 3 &&
+    if (getElem("page2").style.display === '' && this.getNumPagesInViewer() === 3 &&
     
     
     (document.getElementById("page2").getBoundingClientRect().top < 0 || document.getElementById("page2").getBoundingClientRect().left < 0 )){
