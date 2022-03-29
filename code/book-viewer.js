@@ -176,26 +176,7 @@ export class BookViewer {
       }
     }
   }
-   checkInView(container, element, partial) {
-
-    //Get container properties
-    let cTop = container.scrollTop;
-    let cBottom = cTop + container.clientHeight;
-
-    //Get element properties
-    let eTop = element.offsetTop;
-    let eBottom = eTop + element.clientHeight;
-
-    //Check if in view    
-    let isTotal = (eTop >= cTop && eBottom <= cBottom);
-    let isPartial = partial && (
-      (eTop < cTop && eBottom > cTop) ||
-      (eBottom > cBottom && eTop < cBottom)
-    );
-
-    //Return outcome
-    return  (isTotal  || isPartial);
-}
+ 
   getRotateTimes() { return this.rotateTimes_; }
 
   setRotateTimes(n) {
@@ -646,39 +627,42 @@ export class BookViewer {
     svgTop.setAttribute('width', topw);
     svgTop.setAttribute('height', toph );
     
-    // svgTop.style.display="none";
-    // getElem("page2Image").scrollIntoView();
-    // if (getElem("page2Image").style.display === '' && this.getNumPagesInViewer() === 3 && !this.checkInView(svgTop,getElem("page2Image"),true) ){
-    //   let side = 0;
-    //   for (let i = 0; i < 2; i++){ 
-    //     const tempTr = `translate(${rotx}, ${roty}) rotate(${(this.getRotateTimes() -1 - i) * 90}) translate(${-rotx}, ${-roty})`;
-    //     bvViewport.setAttribute('transform', tempTr);
-    //     getElem("page2Image").scrollIntoView();
-    //     if (this.checkInView(svgTop,getElem("page2Image"),true)){
-    //       side = i;
-    //       break;
-
-    //     }
-    //   }
-    //     bvViewport.setAttribute('transform', tr);
-    //     if(side === 1){
-    //       bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + ` translate(0, ${toph})`
-        
-    //       );
-    //       getElem("page1").scrollIntoView({block: "end"});
-    //     }
-    //     if(side === 0)
-    //     {
-    //       bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + ` translate(0, ${topw})`)
-    //       getElem("page1").scrollIntoView({block: "end"});
+    svgTop.style.display="none";
+    //getElem("page2Image").scrollIntoView();
+    if (getElem("page2Image").style.display === '' && this.getNumPagesInViewer() === 3 &&
     
-    //     }
+    
+    (document.getElementById("page2").getBoundingClientRect().top < 0 || document.getElementById("page2").getBoundingClientRect().left < 0 )){
+      let side = 0;
+      for (let i = 0; i < 2; i++){ 
+        const tempTr = `translate(${rotx}, ${roty}) rotate(${(this.getRotateTimes() -1 - i) * 90}) translate(${-rotx}, ${-roty})`;
+        bvViewport.setAttribute('transform', tempTr);
+       // getElem("page2Image").scrollIntoView();
+        if (!(document.getElementById("page2").getBoundingClientRect().top < 0 || document.getElementById("page2").getBoundingClientRect().left < 0 )){
+          side = i;
+          break;
+
+        }
+      }
+        bvViewport.setAttribute('transform', tr);
+        if(side === 1){
+          bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + ` translate(0, ${toph})`
+        
+          );
+          getElem("page1").scrollIntoView({block: "end"});
+        }
+        if(side === 0)
+        {
+          bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + ` translate(0, ${topw})`)
+          getElem("page1").scrollIntoView({block: "end"});
+    
+        }
 
       
      
 
-    // }
-    // svgTop.style.display="";
+    }
+    svgTop.style.display="";
   
     
    
