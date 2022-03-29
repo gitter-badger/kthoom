@@ -627,8 +627,6 @@ export class BookViewer {
     svgTop.setAttribute('width', topw);
     svgTop.setAttribute('height', toph );
     
-    svgTop.style.display="none";
-    //getElem("page2Image").scrollIntoView();
     if (getElem("page2").style.display === '' && this.getNumPagesInViewer() === 3 &&
     
     
@@ -637,7 +635,6 @@ export class BookViewer {
       for (let i = 0; i < 2; i++){ 
         const tempTr = `translate(${rotx}, ${roty}) rotate(${(this.getRotateTimes() -1 - i) * 90}) translate(${-rotx}, ${-roty})`;
         bvViewport.setAttribute('transform', tempTr);
-       // getElem("page2Image").scrollIntoView();
         if (!(document.getElementById("page2").getBoundingClientRect().top < 0 || document.getElementById("page2").getBoundingClientRect().left < 0 )){
           side = i;
           break;
@@ -662,7 +659,6 @@ export class BookViewer {
      
 
     }
-    svgTop.style.display="";
   
     
    
