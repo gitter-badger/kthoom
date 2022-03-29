@@ -633,8 +633,8 @@ export class BookViewer {
   //   {
   //     bvViewport.setAttribute('transform',   `translate(${topw},0)` + bvViewport.getAttribute("transform") 
   //   //  "scale(-1,1)" + 
-  //  );
-    }
+  //  )
+  //   }
   }
 
   /** @private */
