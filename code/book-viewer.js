@@ -212,12 +212,11 @@ export class BookViewer {
   
   rotateCounterClockwise() {
     this.setRotateTimes(this.rotateTimes_ - 1);
-    this.setRotateSide(-1);
+   
   }
 
   rotateClockwise() {
     this.setRotateTimes(this.rotateTimes_ + 1);
-    this.setRotateSide(1);
   }
 
   /** @returns {FitMode} */
@@ -653,14 +652,15 @@ export class BookViewer {
       let side = 0;
       const originalTr = tr;
       for (let i = 0; i < 2; i++){ 
-        this.rotateCounterClockwise();
+        const tempTr = `translate(${rotx}, ${roty}) rotate(${(this.getRotateTimes() -1 - i) * 90}) translate(${-rotx}, ${-roty})`;
+        bvViewport.setAttribute('transform', tempTr);
         getElem("page3Image").scrollIntoView();
         if (this.checkInView(svgTop,getElem("page3Image"),true)){
           side = i;
           break;
 
         }
-        bvViewport.setAttribute('transform', tr);
+        bvViewport.setAttribute('transform', originalTr);
         if(i === 1){
           bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + `translate(0,${toph})`
         
@@ -670,7 +670,7 @@ export class BookViewer {
         if(i === 0)
         {
           bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + `translate(0,${topw})`)
-       getElem("page1").scrollIntoView({block: "end"});
+          getElem("page1").scrollIntoView({block: "end"});
     
         }
 
