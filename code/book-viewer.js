@@ -515,6 +515,7 @@ export class BookViewer {
       //long-strip view.
       page1.style.display = '';
       page2.style.display = 'none';
+      bvViewport.setAttribute('transform', "");
       for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
         getElem(`page${i+1}`).style.display = 'none';
       }
@@ -627,7 +628,7 @@ export class BookViewer {
     svgTop.setAttribute('width', topw);
     svgTop.setAttribute('height', toph );
     
-    if (getElem("page2").style.display === '' && this.getNumPagesInViewer() === 3 &&
+    if ( this.getNumPagesInViewer() === 3 &&
     
     
     (document.getElementById("page2").getBoundingClientRect().top < 0 || document.getElementById("page2").getBoundingClientRect().left < 0 )){
