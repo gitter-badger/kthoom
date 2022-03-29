@@ -574,11 +574,11 @@ export class BookViewer {
          if (this.fitMode_ === FitMode.Width ||
           (this.fitMode_ === FitMode.Best && portraitMode )){       
             toph = position; 
-            topw = "100%";     
+            topw = window.innerWidth;     
           }
           else{
             topw = position;
-            toph = "100%";
+            toph = window.innerWidth;
           }
          q+=1;
        }
