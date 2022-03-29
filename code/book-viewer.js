@@ -677,10 +677,10 @@ export class BookViewer {
           let setTo = 0;
           if (this.fitMode_ === FitMode.Width ||
             (this.fitMode_ === FitMode.Best && portraitMode )) {
-             setTo = window.innerHeight;
+             setTo = toph;
             }
             else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )) {
-              setTo = window.innterWidth;
+              setTo = topw;
             }
           for (const pageElem of page1Elems){
           pageElem.setAttribute("width",setTo);
