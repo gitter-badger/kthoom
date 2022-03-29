@@ -54,12 +54,12 @@ export class BookViewer {
      * Keep track of scroll of left
      * @type {number}
      */
-    let s = 0; 
+    this.s = 0; 
     /**
      * Keep track of scroll of top
      * @type {number}
      */
-     let t = 0; 
+     this.t = 0; 
 
     /** @type {!FitMode} */
     this.fitMode_ = FitMode.Best;
@@ -655,20 +655,21 @@ export class BookViewer {
 
      }
         if(side === 1){
-          t+=1;
-          s=0;
+          this.t+=1;
+          this.s=0;
           bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + ` translate(0, ${-toph + Math.abs(getElem("page1").getBoundingClientRect().top)})`
         
           );
-          if(t==1){
+          
+          if(this.t==1){
           getElem("page1").scrollIntoView({block: "end"});
           }
         
         }
         if(side === 0)
         {
-          s+=1;
-          t=0;
+          this.s+=1;
+          this.t=0;
           bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + ` translate(0, ${-topw + Math.abs(getElem("page1").getBoundingClientRect().top)})`)
           if(s==1){
           getElem("page1").scrollIntoView({block: "end"});
