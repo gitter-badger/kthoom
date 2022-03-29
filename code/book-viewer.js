@@ -628,38 +628,49 @@ export class BookViewer {
     svgTop.setAttribute('width', topw);
     svgTop.setAttribute('height', toph );
     
-    // if ( this.getNumPagesInViewer() === 3 &&
+    if ( this.getNumPagesInViewer() === 3 &&
     
     
-    // (document.getElementById("page2").getBoundingClientRect().top < 0 || document.getElementById("page2").getBoundingClientRect().left < 0 )){
-    //   let side = 0;
-    //   for (let i = 0; i < 2; i++){ 
-    //     const tempTr = `translate(${rotx}, ${roty}) rotate(${(this.getRotateTimes() -1 - i) * 90}) translate(${-rotx}, ${-roty})`;
-    //     bvViewport.setAttribute('transform', tempTr);
-    //     if (!(document.getElementById("page2").getBoundingClientRect().top < 0 || document.getElementById("page2").getBoundingClientRect().left < 0 )){
-    //       side = i;
-    //       break;
+    (document.getElementById("page2").getBoundingClientRect().top < 0 || document.getElementById("page2").getBoundingClientRect().left < 0 )){
+      let side = 0;
+     // for (let i = 0; i < 2; i++){ 
+      //   const tempTr = `translate(${rotx}, ${roty}) rotate(${(this.getRotateTimes() -1 - i) * 90}) translate(${-rotx}, ${-roty})`;
+      //   bvViewport.setAttribute('transform', tempTr);
+      //   if (!(document.getElementById("page2").getBoundingClientRect().top < 0 || document.getElementById("page2").getBoundingClientRect().left < 0 )){
+      //     side = i;
+      //     break;
 
-    //     }
-    //   }
-    //     bvViewport.setAttribute('transform', tr);
-    //     if(side === 1){
-    //       bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + ` translate(0, ${toph})`
+      //   }
+      // }
+      //   bvViewport.setAttribute('transform', tr);
+     if(
+      Math.abs(document.getElementById("page2Image").getBoundingClientRect().top
+     ) > Math.abs(document.getElementById("page2Image").getBoundingClientRect().left
+     )  )
+     {
+       side = 1
+     }
+     else {
+       side = 0;
+
+     }
+        if(side === 1){
+          bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + ` translate(0, ${toph})`
         
-    //       );
-    //       getElem("page1").scrollIntoView({block: "end"});
-    //     }
-    //     if(side === 0)
-    //     {
-    //       bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + ` translate(0, ${topw})`)
-    //       getElem("page1").scrollIntoView({block: "end"});
+          );
+          getElem("page1").scrollIntoView({block: "end"});
+        }
+        if(side === 0)
+        {
+          bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + ` translate(0, ${topw})`)
+          getElem("page1").scrollIntoView({block: "end"});
     
-    //     }
+        }
 
       
      
 
-    // }
+    }
   
     
    
