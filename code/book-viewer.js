@@ -50,6 +50,12 @@ export class BookViewer {
      */
     this.rotateTimes_ = 0;
 
+     /**
+     * The side of rotation from 0 to 3
+     * @type {number}
+     */
+      this.rotateSide_ = 0;
+
     /** @type {!FitMode} */
     this.fitMode_ = FitMode.Best;
 
@@ -188,13 +194,31 @@ export class BookViewer {
       this.updateLayout();
     }
   }
+  getRotateSide() { return this.rotateSide_; }
 
+  setRotateSide(n,m) {
+    if(n === 0 && m === -1){
+      this.rotateSide_ = 3;
+    }
+    else if(n === 3 && n === 1){
+      this.rotateSide_ =0;
+    }
+    else if(m === 1)
+    {
+     this.rotateSide_+=1;
+    }
+    else if(m === -1){
+      this.rotateSide_ -=1;
+    }
+  }
   rotateCounterClockwise() {
     this.setRotateTimes(this.rotateTimes_ - 1);
+    this.setRotateSide(-1);
   }
 
   rotateClockwise() {
     this.setRotateTimes(this.rotateTimes_ + 1);
+    this.setRotateSide(1);
   }
 
   /** @returns {FitMode} */
@@ -624,7 +648,17 @@ export class BookViewer {
 
     svgTop.setAttribute('width', topw);
     svgTop.setAttribute('height', toph );
-
+    if(this.getRotateSide() === 2){
+      bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + `translate(0,${toph})`
+    
+      );
+    }
+    if(this.getRotateSide() === 1)
+    {
+      bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + `translate(0,${topw})`
+  
+   )
+    }
   }
 
   /** @private */
