@@ -682,6 +682,16 @@ export class BookViewer {
             else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )) {
               setTo = topw;
             }
+            if (portraitMode){   
+              topw = window.innerWidth;     
+              svgTop.setAttribute('width', topw);
+      
+            }
+            else{
+              toph = window.innerWidth;
+              svgTop.setAttribute('height', toph ); 
+              
+            }
           for (const pageElem of page1Elems){
           pageElem.setAttribute("width",setTo);
         }
