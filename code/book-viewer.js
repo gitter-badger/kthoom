@@ -515,7 +515,6 @@ export class BookViewer {
       //long-strip view.
       page1.style.display = '';
       page2.style.display = 'none';
-      bvViewport.setAttribute('transform', "");
       for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
         getElem(`page${i+1}`).style.display = 'none';
       }
