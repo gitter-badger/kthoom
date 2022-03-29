@@ -515,7 +515,7 @@ export class BookViewer {
       for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
         getElem(`page${i+1}`).style.display = 'none';
       }
-      if(page1.style.display !== 0){
+      if(getElem("page1Image").getBBox().height !== 0){
       page2.style.display = '';
      
       for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
