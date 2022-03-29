@@ -512,6 +512,9 @@ export class BookViewer {
       //long-strip view.
       page1.style.display = '';
       page2.style.display = 'none';
+      for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
+        getElem(`page${i+1}`).style.display = 'none';
+      }
       if(page1.style.display !== 0){
       page2.style.display = '';
      
