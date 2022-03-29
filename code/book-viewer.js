@@ -624,14 +624,16 @@ export class BookViewer {
 
     svgTop.setAttribute('width', topw);
     svgTop.setAttribute('height', toph );
-    if(this.getRotateTimes() === 2){
-      bvViewport.setAttribute('transform', "scale(1,-1)" + +  `translate(0,${toph})`+ bvViewport.getAttribute("transform") 
-      );
-    }
-    if(this.getRotateTimes() === 3)
-    {
-      bvViewport.setAttribute('transform',  "scale(-1,1)" +  `translate(${topw},0)` + bvViewport.getAttribute("transform") 
-   );
+  //   if(this.getRotateTimes() === 2){
+  //     bvViewport.setAttribute('transform', `translate(0,${toph})`+ bvViewport.getAttribute("transform") 
+  //     //"scale(1,-1)" + 
+  //     );
+  //   }
+  //   if(this.getRotateTimes() === 3)
+  //   {
+  //     bvViewport.setAttribute('transform',   `translate(${topw},0)` + bvViewport.getAttribute("transform") 
+  //   //  "scale(-1,1)" + 
+  //  );
     }
   }
 
