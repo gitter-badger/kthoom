@@ -555,8 +555,10 @@ export class BookViewer {
           else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
             pageElem.setAttribute("width", window.innerHeight);
           }
-        
+        setTimeout(function(){
           pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
+        },1)
+          
         
        }
        let position = parseFloat(getElem("page2Image").getBBox().y) + parseFloat(getElem("page2Image").getBBox().height); //TODO: GetElem or from arrays
