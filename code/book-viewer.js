@@ -660,7 +660,7 @@ export class BookViewer {
           bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + ` translate(0, ${-toph + Math.abs(getElem("page1").getBoundingClientRect().top)})`
         
           );
-          if(f==1){
+          if(t==1){
           getElem("page1").scrollIntoView({block: "end"});
           }
         
