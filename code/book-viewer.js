@@ -674,7 +674,14 @@ export class BookViewer {
           if(this.s==1){
           getElem("page1").scrollIntoView({block: "end"});
           }
-          
+          for(const page of pageN){
+        
+             
+            for(const pageElem of page ){
+           
+                 pageElem.setAttribute("width", window.innerHeight);
+               }
+             }
     
         }
 
