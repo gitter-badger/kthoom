@@ -804,7 +804,7 @@ export class KthoomApp {
    * @param {boolean=} force Use this to force panel buttons and UI into a state. This is used when
    *     loading in settings from storage.
    */
-   #togglePanelButtons(force) {
+  #togglePanelButtons(force) {
     let hide = !this.viewMenu_.getMenuItemSelected(HIDE_PANEL_BUTTONS_MENU_ITEM);
     if (force !== undefined) {
       hide = force;

@@ -362,7 +362,7 @@ export class Menu extends EventTarget {
    * @param {string} itemId 
    * @return {boolean} True if the menu item is selected
    */
-   getMenuItemSelected(itemId) {
+  getMenuItemSelected(itemId) {
     const menuEl = this.dom_.firstElementChild;
     const menuItemCheckmark = menuEl.querySelector(`[id="${itemId}"][role="menuitem"] .menuCheckmark`);
     assert(!!menuItemCheckmark, `Could not find checkmark span for menu item ${itemId}`);
