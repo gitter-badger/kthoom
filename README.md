@@ -44,6 +44,7 @@ the ?readingListUri parameter.
   * R/L: Rotate right/left
   * 1/2: Show 1 or 2 pages side-by-side in the viewer.
   * F: Toggle fullscreen.
+  * P: Hide metadata viewer and reading stack panel buttons.
   * S: Toggle the Reading Stack tray open.
   * T: Toggle the Metadata Tag Viewer tray open.
   * ?: Bring up Help screen
