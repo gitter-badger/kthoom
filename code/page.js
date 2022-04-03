@@ -82,7 +82,9 @@ export class Page {
 }
 
 /**
- * A page that holds a single image.
+ * A page that holds a single image. ImagePages are different than other types of pages because
+ * the aspect ratio is fully driven by the contents (the image) and can change with each page
+ * in a book.
  */
 export class ImagePage extends Page {
   /**

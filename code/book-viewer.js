@@ -78,7 +78,7 @@ export class BookViewer {
 
     /**
      * The number of pages visible in the viewer at one time. Defaults to 1
-     * but can be set to 2.
+     * but can be set to 2 or 3 (long-strip mode).
      * @type {number}
      */
     this.numPagesInViewer_ = 1;
