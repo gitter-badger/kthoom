@@ -165,8 +165,10 @@ export class BookViewer {
           this.updateProgressMeter();
           break;
         case BookEventType.PAGE_EXTRACTED:
-          // Display first page(s) if we haven't yet.
-          if (evt.pageNum <= this.numPagesInViewer_) {
+          // Display first page(s) if we haven't yet. If this is the long-strip view, update
+          // layout every time we get a page so the top-level SVG is lengthened.
+          if (evt.pageNum <= this.numPagesInViewer_ ||
+              this.getNumPagesInViewer() === 3) {
             this.updateLayout();
           } else {
             this.updatePageMeter_();
@@ -528,7 +530,12 @@ export class BookViewer {
           getElem(`page${i+1}`).style.display = '';
         }
       }
- 
+
+      // We make a starting assumption here that all pages will have the same aspect ratio as the
+      // first page. As pages load in and this function is called again, we progressively update
+      // the aspect ratio when possible.
+      let aspectRatio;
+
       // Now size the page elements.
       for (const pageElem of page1Elems) {
         pageElem.removeAttribute("x"); 
@@ -538,11 +545,21 @@ export class BookViewer {
        
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
      
+        const bbox = pageElem.getBBox();
+        if (bbox.width && bbox.height) {
+          aspectRatio = bbox.width / bbox.height;
+        }
         if (this.fitMode_ === FitMode.Width ||
             (this.fitMode_ === FitMode.Best && portraitMode)) {
-          pageElem.setAttribute("width", window.innerWidth);
+          pageElem.setAttribute('width', window.innerWidth);
+          if (!Number.isNaN(aspectRatio)) {
+            pageElem.setAttribute('height', window.innerWidth / aspectRatio);
+          }
         } else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )) {
           pageElem.setAttribute("width", window.innerHeight);
+          if (!Number.isNaN(aspectRatio)) {
+            pageElem.setAttribute('height', window.innerHeight / aspectRatio);
+          }
         }
       }
       for (const pageElem of page2Elems) {
@@ -551,13 +568,24 @@ export class BookViewer {
         pageElem.removeAttribute("height"); 
         pageElem.removeAttribute("width");
        
-        pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
+        pageElem.setAttribute("style",
+            "-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
          
+        const bbox = pageElem.getBBox();
+        if (bbox.width && bbox.height) {
+          aspectRatio = bbox.width / bbox.height;
+        }
         if (this.fitMode_ === FitMode.Width ||
             (this.fitMode_ === FitMode.Best && portraitMode)) {  
-          pageElem.setAttribute("width", window.innerWidth);
+          pageElem.setAttribute('width', window.innerWidth);
+          if (!Number.isNaN(aspectRatio)) {
+            pageElem.setAttribute('height', window.innerWidth / aspectRatio);
+          }
         } else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
-          pageElem.setAttribute("width", window.innerHeight);
+          pageElem.setAttribute('width', window.innerHeight);
+          if (!Number.isNaN(aspectRatio)) {
+            pageElem.setAttribute('height', window.innerHeight / aspectRatio);
+          }
         }
        
         pageElem.setAttribute('y', getElem("page1Image").getBBox().height);
@@ -574,13 +602,24 @@ export class BookViewer {
           pageElem.removeAttribute("height"); 
           pageElem.removeAttribute("width");
 
-          pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
+          pageElem.setAttribute("style",
+              "-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
             
+          const bbox = pageElem.getBBox();
+          if (bbox.width && bbox.height) {
+            aspectRatio = bbox.width / bbox.height;
+          }
           if (this.fitMode_ === FitMode.Width ||
               (this.fitMode_ === FitMode.Best && portraitMode)) {
-            pageElem.setAttribute("width", window.innerWidth);
+            pageElem.setAttribute('width', window.innerWidth);
+            if (!Number.isNaN(aspectRatio)) {
+              pageElem.setAttribute('height', window.innerWidth / aspectRatio);
+            }
           } else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )) {
-            pageElem.setAttribute("width", window.innerHeight);
+            pageElem.setAttribute('width', window.innerHeight);
+            if (!Number.isNaN(aspectRatio)) {
+              pageElem.setAttribute('height', window.innerHeight / aspectRatio);
+            }
           }
           pageElem.setAttribute("y", position);   
         }
