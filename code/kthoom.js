@@ -24,6 +24,7 @@ if (window.kthoom == undefined) {
 const LOCAL_STORAGE_KEY = 'kthoom_settings';
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
 const READING_STACK_ELEM_ID = 'readingStack';
+const HIDE_PANEL_BUTTONS_MENU_ITEM = 'menu-view-hide-panel-buttons';
 
 const PNG = 'image/png';
 const JPG = 'image/jpeg';
@@ -233,22 +234,7 @@ export class KthoomApp {
           closeMainMenu();
           break;
         case 'menu-view-hide':
-          let selected = this.viewMenu_.getMenuItemSelected('menu-view-hide');
-      
-          if (selected) { //TODO move to an eventListener
-            getElem('readingStackOverlay').setAttribute("style","display: ?;");
-            getElem('readingStack').setAttribute("style","display: ?;");
-            getElem('metadataViewerOverlay').setAttribute("style","display: ?;");
-            getElem('metadataViewer').setAttribute("style","display: ?;");
-            this.viewMenu_.setMenuItemSelected('menu-view-hide',false);
-          } else {
-            getElem('readingStackOverlay').setAttribute("style","display: none;");
-            getElem('readingStack').setAttribute("style","display: none;");
-            getElem('metadataViewerOverlay').setAttribute("style","display: none;");
-            getElem('metadataViewer').setAttribute("style","display: none;");
-            this.viewMenu_.setMenuItemSelected('menu-view-hide',true);
-          }
-          this.saveSettings_();
+          this.#togglePanelButtons();
           closeMainMenu();
           break;
         case 'menu-view-fit-best':
@@ -466,10 +452,10 @@ export class KthoomApp {
     try {
       if (localStorage[LOCAL_STORAGE_KEY].length < 10) return;
       const s = JSON.parse(localStorage[LOCAL_STORAGE_KEY]);
-      this.bookViewer_.setRotateTimes(s.rotateTimes);
+      this.bookViewer_.setRotateTimes(s['rotateTimes']);
       // Obsolete settings:  hflip. vflip.
 
-      const fitMode = s.fitMode;
+      const fitMode = s['fitMode'];
       if (fitMode) {
         this.viewMenu_.setMenuItemSelected('menu-view-fit-best', fitMode === FitMode.Best);
         this.viewMenu_.setMenuItemSelected('menu-view-fit-height', fitMode === FitMode.Height);
@@ -477,30 +463,36 @@ export class KthoomApp {
 
         // We used to store the key code for the mode... check for stale settings.
         switch (fitMode) {
-          case Key.B: s.fitMode = FitMode.Best; break;
-          case Key.H: s.fitMode = FitMode.Height; break;
-          case Key.W: s.fitMode = FitMode.Width; break;
+          case Key.B: s['fitMode'] = FitMode.Best; break;
+          case Key.H: s['fitMode'] = FitMode.Height; break;
+          case Key.W: s['fitMode'] = FitMode.Width; break;
         }
         this.bookViewer_.setFitMode(s.fitMode);
       }
 
-      if (s.numPagesInViewer) {
+      const numPagesInViewer = s['numPagesInViewer'];
+      if (numPagesInViewer) {
         this.bookViewer_.setNumPagesInViewer(s.numPagesInViewer);
-        if (s.numPagesInViewer === 1) {
+        if (s['numPagesInViewer'] === 1) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip',false);
 
-        } else if(s.numPagesInViewer === 2) {
+        } else if(s['numPagesInViewer'] === 2) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip',false);
         }
-        else if(s.numPagesInViewer === 3) {
+        else if(s['numPagesInViewer'] === 3) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip',true);
         }
+      }
+
+      const hidePanelButtons = s['hidePanelButtons'];
+      if (hidePanelButtons !== undefined) {
+        this.#togglePanelButtons(hidePanelButtons);
       }
     } catch (err) { }
   }
@@ -592,6 +584,10 @@ export class KthoomApp {
           this.toggleMetadataViewerOpen_();
           return;
         }
+        break;
+      case Key.P:
+        this.#togglePanelButtons();
+        break;
     }
 
     // All other key strokes below this are only valid if the menu and trays are closed.
@@ -653,24 +649,6 @@ export class KthoomApp {
         break;
       case Key.R:
         this.bookViewer_.rotateClockwise();
-        this.saveSettings_();
-        break;
-      case Key.P:
-        let selected = this.viewMenu_.getMenuItemSelected('menu-view-hide');
-      
-        if (selected) { //TODO move to an eventListener
-          getElem('readingStackOverlay').setAttribute("style","display: ?;");
-          getElem('readingStack').setAttribute("style","display: ?;");
-          getElem('metadataViewerOverlay').setAttribute("style","display: ?;");
-          getElem('metadataViewer').setAttribute("style","display: ?;");
-          this.viewMenu_.setMenuItemSelected('menu-view-hide',true);
-        } else {
-          getElem('readingStackOverlay').setAttribute("style","display: none;");
-          getElem('readingStack').setAttribute("style","display: none;");
-          getElem('metadataViewerOverlay').setAttribute("style","display: none;");
-          getElem('metadataViewer').setAttribute("style","display: none;");
-          this.viewMenu_.setMenuItemSelected('menu-view-hide',false);
-        }
         this.saveSettings_();
         break;
       case Key.W: case Key.H: case Key.B:
@@ -773,9 +751,10 @@ export class KthoomApp {
   /** @private */
   saveSettings_() {
     localStorage[LOCAL_STORAGE_KEY] = JSON.stringify({
-      rotateTimes: this.bookViewer_.getRotateTimes(),
-      fitMode: this.bookViewer_.getFitMode(),
-      numPagesInViewer: this.bookViewer_.getNumPagesInViewer(),
+      'rotateTimes': this.bookViewer_.getRotateTimes(),
+      'fitMode': this.bookViewer_.getFitMode(),
+      'numPagesInViewer': this.bookViewer_.getNumPagesInViewer(),
+      'hidePanelButtons': this.viewMenu_.getMenuItemSelected(HIDE_PANEL_BUTTONS_MENU_ITEM),
     });
   }
 
@@ -842,6 +821,22 @@ export class KthoomApp {
   /** @private */
   toggleMetadataViewerOpen_() {
     this.metadataViewer_.toggleOpen();
+  }
+
+  /**
+   * Toggles whether panel buttons are visible and updates settings.
+   * @param {boolean=} force Use this to force panel buttons and UI into a state. This is used when
+   *     loading in settings from storage.
+   */
+  #togglePanelButtons(force) {
+    let hide = !this.viewMenu_.getMenuItemSelected(HIDE_PANEL_BUTTONS_MENU_ITEM);
+    if (force !== undefined) {
+      hide = force;
+    }
+    this.readingStack_.showButton(!hide);
+    this.metadataViewer_.showButton(!hide);
+    this.viewMenu_.setMenuItemSelected(HIDE_PANEL_BUTTONS_MENU_ITEM, hide);
+    this.saveSettings_();
   }
 
   /** @private */

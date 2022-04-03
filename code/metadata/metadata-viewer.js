@@ -115,6 +115,11 @@ export class MetadataViewer {
     this.rerender_();
   }
 
+  /** @param {boolean} show */
+  showButton(show) {
+    getElem('metadataViewerButton').classList.toggle('hidden', !show);
+  }
+
   /**
    * Opens or closes the metadata viewer pane. Only works if the MetadataViewer has a book and only
    * if the Editor is not open.

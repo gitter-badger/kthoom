@@ -160,6 +160,11 @@ export class ReadingStack {
     }
   }
 
+  /** @param {boolean} show */
+  showButton(show) {
+    getElem('readingStackButton').classList.toggle('hidden', !show);
+  }
+
   whenCurrentBookChanged(callback) {
     this.currentBookChangedCallbacks_.push(callback);
   }
