@@ -356,29 +356,25 @@ export class Menu extends EventTarget {
     menuItemCheckmark.innerHTML = selected ? '✔︎' : '&nbsp;';
   }
 
-   /**
+  /**
    * Gets the selected state on a menu item.  Assumes the menu item has a span with the
    * menuCheckmark class.
    * @param {string} itemId 
    * @return {boolean} True if the menu item is selected
    */
-
-    getMenuItemSelected(itemId) {
-      const menuEl = this.dom_.firstElementChild;
-      const menuItemCheckmark = menuEl.querySelector(`[id="${itemId}"][role="menuitem"] .menuCheckmark`);
-      assert(!!menuItemCheckmark, `Could not find checkmark span for menu item ${itemId}`);
-      let selected = false;
-     if(menuItemCheckmark.innerHTML === '✔︎' )
-     {
-       selected = true;
-     }
-     else if(menuItemCheckmark.innerHTML === '&nbsp;'){
+  getMenuItemSelected(itemId) {
+    const menuEl = this.dom_.firstElementChild;
+    const menuItemCheckmark = menuEl.querySelector(`[id="${itemId}"][role="menuitem"] .menuCheckmark`);
+    assert(!!menuItemCheckmark, `Could not find checkmark span for menu item ${itemId}`);
+    let selected = false;
+    if (menuItemCheckmark.innerHTML === '✔︎' ) {
+      selected = true;
+    } else if(menuItemCheckmark.innerHTML === '&nbsp;') {
       selected = false;
-     }
-      
-      
-      return selected;
-    }
+    }    
+    return selected;
+  }
+
   /**
    * @param {string} itemId 
    * @param {boolean} show True to show, false to hide.

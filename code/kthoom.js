@@ -235,24 +235,22 @@ export class KthoomApp {
         case 'menu-view-hide':
           let selected = this.viewMenu_.getMenuItemSelected('menu-view-hide');
       
-        if(selected){ //TODO move to an eventListener
-          
-          getElem('readingStackOverlay').setAttribute("style","display: ?;");
-          getElem('readingStack').setAttribute("style","display: ?;");
-          getElem('metadataViewerOverlay').setAttribute("style","display: ?;");
-          getElem('metadataViewer').setAttribute("style","display: ?;");
-          this.viewMenu_.setMenuItemSelected('menu-view-hide',false);
-        }
-        else{
-          getElem('readingStackOverlay').setAttribute("style","display: none;");
-          getElem('readingStack').setAttribute("style","display: none;");
-          getElem('metadataViewerOverlay').setAttribute("style","display: none;");
-          getElem('metadataViewer').setAttribute("style","display: none;");
-          this.viewMenu_.setMenuItemSelected('menu-view-hide',true);
-      }
-      this.saveSettings_();
-      closeMainMenu();
-        break;
+          if (selected) { //TODO move to an eventListener
+            getElem('readingStackOverlay').setAttribute("style","display: ?;");
+            getElem('readingStack').setAttribute("style","display: ?;");
+            getElem('metadataViewerOverlay').setAttribute("style","display: ?;");
+            getElem('metadataViewer').setAttribute("style","display: ?;");
+            this.viewMenu_.setMenuItemSelected('menu-view-hide',false);
+          } else {
+            getElem('readingStackOverlay').setAttribute("style","display: none;");
+            getElem('readingStack').setAttribute("style","display: none;");
+            getElem('metadataViewerOverlay').setAttribute("style","display: none;");
+            getElem('metadataViewer').setAttribute("style","display: none;");
+            this.viewMenu_.setMenuItemSelected('menu-view-hide',true);
+          }
+          this.saveSettings_();
+          closeMainMenu();
+          break;
         case 'menu-view-fit-best':
         case 'menu-view-fit-height':
         case 'menu-view-fit-width':
@@ -299,7 +297,6 @@ export class KthoomApp {
     // TODO: Does this mean the book viewer images have to be focusable for keyboard accessibility?
     getElem('page1Image').addEventListener('contextmenu', evt => this.onContextMenu_(evt));
     getElem('page2Image').addEventListener('contextmenu', evt => this.onContextMenu_(evt));
-  
   }
 
   /** @private */
@@ -661,24 +658,21 @@ export class KthoomApp {
       case Key.P:
         let selected = this.viewMenu_.getMenuItemSelected('menu-view-hide');
       
-        if(selected){ //TODO move to an eventListener
-          
+        if (selected) { //TODO move to an eventListener
           getElem('readingStackOverlay').setAttribute("style","display: ?;");
           getElem('readingStack').setAttribute("style","display: ?;");
           getElem('metadataViewerOverlay').setAttribute("style","display: ?;");
           getElem('metadataViewer').setAttribute("style","display: ?;");
           this.viewMenu_.setMenuItemSelected('menu-view-hide',true);
-        }
-        else{
+        } else {
           getElem('readingStackOverlay').setAttribute("style","display: none;");
           getElem('readingStack').setAttribute("style","display: none;");
           getElem('metadataViewerOverlay').setAttribute("style","display: none;");
           getElem('metadataViewer').setAttribute("style","display: none;");
           this.viewMenu_.setMenuItemSelected('menu-view-hide',false);
-      }
-      this.saveSettings_();
-    
-      break;
+        }
+        this.saveSettings_();
+        break;
       case Key.W: case Key.H: case Key.B:
         const fitMode =
           code === Key.W ? FitMode.Width :
@@ -697,12 +691,11 @@ export class KthoomApp {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
-        } else if(numPages === 2) {
+        } else if (numPages === 2) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
-        }
-        else{
+        } else {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip', true);

@@ -105,7 +105,7 @@ export class BookViewer {
 
   /** @private */
   handleSwipeEvent(evt) {
-    if (!this.currentBook_ || this.currentBook_.getNumPagesInViewer === 3) {
+    if (!this.currentBook_ || this.getNumPagesInViewer() === 3) {
       return;
     }
 
@@ -185,21 +185,19 @@ export class BookViewer {
       }
     }
   }
- 
+
   getRotateTimes() { return this.rotateTimes_; }
 
   setRotateTimes(n) {
     n = parseInt(n, 10) % 4;
     if (n < 0) n += 4;
 
-
-
     if (this.rotateTimes_ !== n) {
       this.rotateTimes_ = n;
       this.updateLayout();
     }
   }
-  
+
   rotateCounterClockwise() {
     this.setRotateTimes(this.rotateTimes_ - 1);
    
@@ -218,8 +216,9 @@ export class BookViewer {
     this.updateLayout();
   }
 
-  /** @returns {number} The number of pages being shown in the viewer (1,2, or 3). */
+  /** @returns {number} The number of pages being shown in the viewer (1, 2, or 3). */
   getNumPagesInViewer() { return this.numPagesInViewer_; }
+
   /** @private */
   killThrobbing_() {
     if (this.throbberTimerId_) {
@@ -229,7 +228,7 @@ export class BookViewer {
       this.throbbingTime_ = 0;
     }
   }
-  
+
   /**
    * Sets the number of pages in the viewer (1-,2-page, or 3-Long Strip viewer are supported).
    * @param {Number} numPages Can be 1,2, or 3.
@@ -243,7 +242,7 @@ export class BookViewer {
       this.updateLayout();
     }
   }
- 
+
   /**
    * Updates the layout based on window size, scale mode, fit mode, rotations, and page mode and
    * then sets the page contents based on the current page of the current book.  If there is no
@@ -280,34 +279,29 @@ export class BookViewer {
     const bvViewport = getElem('bvViewport');
     const page1 = getElem(ID_PAGE_1);
     const page2 = getElem(ID_PAGE_2);
-    const pageN= []; //pages for long-strip for pages 3 and greater
-    for(let i = pageN.length + 2; i < this.currentBook_.getNumberOfPages(); i++){
-      var xlinkns = "http://www.w3.org/1999/xlink";
+    const pageN = []; // Pages for long-strip for pages 3 and greater
+    for (let i = pageN.length + 2; i < this.currentBook_.getNumberOfPages(); i++) {
       let g =  document.createElementNS('http://www.w3.org/2000/svg','g');
       g.setAttribute("id", `page${i+1}`);
-      g.setAttribute("xmlns","http://www.w3.org/2000/svg");
-      g.setAttribute("version","1.1");
-      g.setAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");
-      g.setAttribute("xmlns:xhtml","http://www.w3.org/1999/xhtml");
+      g.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      g.setAttribute("version", "1.1");
+      g.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+      g.setAttribute("xmlns:xhtml", "http://www.w3.org/1999/xhtml");
       g.style.display = "none";
-      let image =  document.createElementNS('http://www.w3.org/2000/svg','image');
+      let image =  document.createElementNS('http://www.w3.org/2000/svg', 'image');
       image.setAttribute("id", `page${i+1}Image`);
-      let foreignObject =  document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
+      let foreignObject =  document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
       foreignObject.setAttribute("id", `page${i+1}Html`);
       g.appendChild(image);
       g.appendChild(foreignObject);
-      if( i > bvViewport.children.length -1)
-      {
-      bvViewport.appendChild(g);
+      if (i > bvViewport.children.length -1) {
+        bvViewport.appendChild(g);
       }
       pageN.push([getElem(`page${i+1}Image`),getElem(`page${i+1}Html`)]);
-
-    
     }
+
     const page1Elems = [getElem('page1Image'), getElem('page1Html')];
     const page2Elems = [getElem('page2Image'), getElem('page2Html')];
-    
-    
 
     const portraitMode = (this.rotateTimes_ % 2 === 0);
     const par = page.getAspectRatio();
@@ -322,7 +316,7 @@ export class BookViewer {
     if (this.numPagesInViewer_ === 1) {
       page1.style.display = '';
       page2.style.display = 'none';
-      for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
+      for (let i = 2; i < this.currentBook_.getNumberOfPages(); i++) {
         getElem(`page${i+1}`).style.display = 'none';
       }
       // This is the dimensions before transformation.  They can go beyond the bv dimensions.
@@ -409,13 +403,13 @@ export class BookViewer {
       }
 
       this.showPageInViewer_(this.currentPageNum_, page1);
-    } else if (this.numPagesInViewer_ === 2) 
-    {
-      // 2-page view.
+    }
+    // 2-page view.
+    else if (this.numPagesInViewer_ === 2) {
       page1.style.display = '';
       page2.style.display = '';
-      for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
-        getElem(`page${i+1}`).style.display = 'none';
+      for (let i = 2; i < this.currentBook_.getNumberOfPages(); i++) {
+        getElem(`page${i + 1}`).style.display = 'none';
       }
 
       // TODO: Test this.
@@ -518,24 +512,24 @@ export class BookViewer {
 
       this.showPageInViewer_(this.currentPageNum_, page1);
       this.showPageInViewer_((this.currentPageNum_ < this.currentBook_.getNumberOfPages() - 1) ?
-      this.currentPageNum_ + 1 : 0, page2);
+          this.currentPageNum_ + 1 : 0, page2);
     }
-    else if (this.numPagesInViewer_ === 3){
-      //long-strip view.
+    // long-strip view.
+    else if (this.numPagesInViewer_ === 3) {
       page1.style.display = '';
       page2.style.display = 'none';
-      for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
+      for (let i = 2; i < this.currentBook_.getNumberOfPages(); i++) {
         getElem(`page${i+1}`).style.display = 'none';
       }
-      if(getElem("page1Image").getBBox().height !== 0){
-      page2.style.display = '';
-     
-      for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++){
-        getElem(`page${i+1}`).style.display = '';
+      if (getElem("page1Image").getBBox().height !== 0) {
+        page2.style.display = '';
+
+        for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++) {
+          getElem(`page${i+1}`).style.display = '';
+        }
       }
-    }
  
-     //Now size the page elements.
+      // Now size the page elements.
       for (const pageElem of page1Elems) {
         pageElem.removeAttribute("x"); 
         pageElem.removeAttribute("y");
@@ -545,18 +539,13 @@ export class BookViewer {
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
      
         if (this.fitMode_ === FitMode.Width ||
-          (this.fitMode_ === FitMode.Best && portraitMode )){  
-            pageElem.setAttribute("width", window.innerWidth);
-          }
-          else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
-            pageElem.setAttribute("width", window.innerHeight);
-          }
-
-           
-
-     
+            (this.fitMode_ === FitMode.Best && portraitMode)) {
+          pageElem.setAttribute("width", window.innerWidth);
+        } else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )) {
+          pageElem.setAttribute("width", window.innerHeight);
+        }
       }
-       for (const pageElem of page2Elems) {
+      for (const pageElem of page2Elems) {
         pageElem.removeAttribute("x"); 
         pageElem.removeAttribute("y");
         pageElem.removeAttribute("height"); 
@@ -565,28 +554,21 @@ export class BookViewer {
         pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
          
         if (this.fitMode_ === FitMode.Width ||
-          (this.fitMode_ === FitMode.Best && portraitMode )){  
-            pageElem.setAttribute("width", window.innerWidth);
-          }
-          else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
-            pageElem.setAttribute("width", window.innerHeight);
-          }
-       
-          pageElem.setAttribute('y',getElem("page1Image").getBBox().height);
-      
-          
-        
-       }
-       let position = parseFloat(getElem("page2Image").getBBox().y) + parseFloat(getElem("page2Image").getBBox().height); //TODO: GetElem or from arrays
-       let q = 1;
-       for(const page of pageN){
-        if(q > 1){
-  
-         position += getElem(`page${q+1}Image`).getBBox().height;
- 
+            (this.fitMode_ === FitMode.Best && portraitMode)) {  
+          pageElem.setAttribute("width", window.innerWidth);
+        } else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
+          pageElem.setAttribute("width", window.innerHeight);
         }
-         
-         for(const pageElem of page ){
+       
+        pageElem.setAttribute('y', getElem("page1Image").getBBox().height);
+      }
+      let position = parseFloat(getElem("page2Image").getBBox().y) + parseFloat(getElem("page2Image").getBBox().height); //TODO: GetElem or from arrays
+      let q = 1;
+      for (const page of pageN) {
+        if (q > 1) {
+          position += getElem(`page${q+1}Image`).getBBox().height;
+        }
+        for (const pageElem of page) {
           pageElem.removeAttribute("x"); 
           pageElem.removeAttribute("y");
           pageElem.removeAttribute("height"); 
@@ -595,38 +577,29 @@ export class BookViewer {
           pageElem.setAttribute("style","-webkit-user-select: none;margin: auto;cursor: zoom-in;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;");
             
           if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && portraitMode )){  
-              pageElem.setAttribute("width", window.innerWidth);
-            }
-            else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
-              pageElem.setAttribute("width", window.innerHeight);
-            }
-           
-            
-            pageElem.setAttribute("y", position);   
-         }
-         if (portraitMode){       
-            toph = position; 
-            topw = window.innerWidth;     
+              (this.fitMode_ === FitMode.Best && portraitMode)) {
+            pageElem.setAttribute("width", window.innerWidth);
+          } else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )) {
+            pageElem.setAttribute("width", window.innerHeight);
           }
-          else{
-            topw = position;
-            toph = window.innerWidth;
-          }
-         q+=1;
-       }
-       for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
-          this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
-           
-      
+          pageElem.setAttribute("y", position);   
+        }
+        if (portraitMode) {
+          toph = position; 
+          topw = window.innerWidth;     
+        } else {
+          topw = position;
+          toph = window.innerWidth;
+        }
+        q += 1;
       }
-       
-     
+      for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++) {
+        this.showPageInViewer_(i, getElem(`page${i + 1}`)); // TODO: add Promise.all()
+      }
     }
 
     // Rotate the book viewer viewport.
-     const tr = `translate(${rotx}, ${roty}) rotate(${angle}) translate(${-rotx}, ${-roty})`;
- 
+    const tr = `translate(${rotx}, ${roty}) rotate(${angle}) translate(${-rotx}, ${-roty})`;
     bvViewport.setAttribute('transform', tr);
 
     // Now size the top-level SVG element of the BookViewer.
@@ -634,88 +607,62 @@ export class BookViewer {
     svgTop.setAttribute('x', 0);
     svgTop.setAttribute('y', 0);
     svgTop.setAttribute('width', topw);
-    svgTop.setAttribute('height', toph );
-    
-    if ( this.getNumPagesInViewer() === 3 &&
-    
-    
-    (document.getElementById("page2").getBoundingClientRect().top < 0 && document.getElementById("page2").getBoundingClientRect().left < 0 ))
-    {
+    svgTop.setAttribute('height', toph);
+
+    if (this.getNumPagesInViewer() === 3 &&
+        (document.getElementById("page2").getBoundingClientRect().top < 0 &&
+        document.getElementById("page2").getBoundingClientRect().left < 0)) {
       let side = 0;
-    
-     if(
-      Math.abs(document.getElementById("page2Image").getBoundingClientRect().top
-     ) > Math.abs(document.getElementById("page2Image").getBoundingClientRect().left
-     )  )
-     {
-       side = 1
-     }
-     else {
-       side = 0;
+      if (Math.abs(document.getElementById("page2Image").getBoundingClientRect().top) >
+          Math.abs(document.getElementById("page2Image").getBoundingClientRect().left)) {
+        side = 1;
+      } else {
+        side = 0;
+      }
+      if (side === 1) {
+        this.t += 1;
+        this.s = 0;
+        bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") +
+            ` translate(0, ${-toph + Math.abs(getElem("page1").getBoundingClientRect().top)})`);
 
-     }
-        if(side === 1){
-          this.t+=1;
-          this.s=0;
-          bvViewport.setAttribute('transform',  bvViewport.getAttribute("transform") + ` translate(0, ${-toph + Math.abs(getElem("page1").getBoundingClientRect().top)})`
-        
-          );
-          
-          if(this.t==1){
+        if (this.t == 1) {
           getElem("page1").scrollIntoView(true);
-          }
-        
         }
-        if(side === 0)
-        {
-          this.s+=1;
-          this.t=0;
-          bvViewport.setAttribute('transform',    bvViewport.getAttribute("transform") + ` translate(0, ${-topw + Math.abs(getElem("page1").getBoundingClientRect().top)})`)
-          if(this.s==1){
+      }
+      if (side === 0) {
+        this.s += 1;
+        this.t = 0;
+        bvViewport.setAttribute('transform', bvViewport.getAttribute("transform") +
+            ` translate(0, ${-topw + Math.abs(getElem("page1").getBoundingClientRect().top)})`);
+
+        if (this.s == 1) {
           getElem("page1").scrollIntoView(true);
-          }
-          let setTo = 0;
-          if (this.fitMode_ === FitMode.Width ||
+        }
+        let setTo = 0;
+        if (this.fitMode_ === FitMode.Width ||
             (this.fitMode_ === FitMode.Best && portraitMode )) {
-             setTo = toph;
-            }
-            else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )) {
-              setTo = topw;
-            }
-           
-          for (const pageElem of page1Elems){
-          pageElem.setAttribute("width",setTo);
+          setTo = toph;
+        } else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )) {
+          setTo = topw;
         }
-          for (const pageElem of page2Elems) {
-            pageElem.setAttribute("width",setTo);
-
-          }
-          for(const page of pageN){
-        
-             
-            for(const pageElem of page ){
-           
-                 pageElem.setAttribute("width", setTo);
-               }
-             }
-             for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++){
-              this.showPageInViewer_(i,getElem(`page${i+1}`)); //TODO: add Promise.all()
-               
-          
-          }
-
-    
-        }
-
-      
-     
-
-    }
- 
-
   
-    
-   
+        for (const pageElem of page1Elems) {
+          pageElem.setAttribute("width", setTo);
+        }
+        for (const pageElem of page2Elems) {
+          pageElem.setAttribute("width", setTo);
+        }
+
+        for (const page of pageN) {
+          for (const pageElem of page ) {
+            pageElem.setAttribute("width", setTo);
+          }
+        }
+        for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++) {
+          this.showPageInViewer_(i,getElem(`page${i + 1}`)); //TODO: add Promise.all()
+        }
+      }
+    }  
   }
 
   /** @private */
@@ -930,12 +877,12 @@ export class BookViewer {
   clearPageContents_() {
     const imageElems = [getElem('page1Image'), getElem('page2Image')];
     const objElems = [getElem('page1Html'), getElem('page2Html')];
-    for(let i = 2; i < getElem('page').childElementCount; i++){
+    for(let i = 2; i < getElem('page').childElementCount; i++) {
       imageElems.push(getElem(`page${i+1}Image`));
       objElems.push(getElem(`page${i+1}Html`));
     }
-getElem("pages").removeAttribute("height");
-getElem("page").removeAttribute("width");
+    getElem("pages").removeAttribute("height");
+    getElem("page").removeAttribute("width");
     for (const imageEl of imageElems) {
       imageEl.removeAttribute("x"); 
       imageEl.removeAttribute("y");
@@ -975,8 +922,7 @@ getElem("page").removeAttribute("width");
 
     pageViewerEl.dataset.pagenum = pageNum;
     const imageEl = pageViewerEl.querySelector('image');
-    const objEl = pageViewerEl.querySelector('foreignObject');  
-    thePage.renderIntoViewer(imageEl, objEl); 
+    const objEl = pageViewerEl.querySelector('foreignObject');
+    thePage.renderIntoViewer(imageEl, objEl);
   }
-
 }
