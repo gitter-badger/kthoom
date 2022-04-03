@@ -202,7 +202,6 @@ export class BookViewer {
 
   rotateCounterClockwise() {
     this.setRotateTimes(this.rotateTimes_ - 1);
-   
   }
 
   rotateClockwise() {

@@ -233,7 +233,7 @@ export class KthoomApp {
           this.saveSettings_();
           closeMainMenu();
           break;
-        case 'menu-view-hide':
+        case HIDE_PANEL_BUTTONS_MENU_ITEM:
           this.#togglePanelButtons();
           closeMainMenu();
           break;
@@ -467,12 +467,12 @@ export class KthoomApp {
           case Key.H: s['fitMode'] = FitMode.Height; break;
           case Key.W: s['fitMode'] = FitMode.Width; break;
         }
-        this.bookViewer_.setFitMode(s.fitMode);
+        this.bookViewer_.setFitMode(s['fitMode']);
       }
 
       const numPagesInViewer = s['numPagesInViewer'];
       if (numPagesInViewer) {
-        this.bookViewer_.setNumPagesInViewer(s.numPagesInViewer);
+        this.bookViewer_.setNumPagesInViewer(s['numPagesInViewer']);
         if (s['numPagesInViewer'] === 1) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
