@@ -47,21 +47,32 @@ export class BookViewer {
   #twoPageSetter = new TwoPageSetter();
   #longStripPageSetter = new LongStripPageSetter(); // Experimental.
 
+  /** @type {Book} */
+  #currentBook = null;
+
+  /**
+   * The current page number (zero-based).
+   * @type {number}
+   */
+  #currentPageNum = -1;
+
+  /**
+   * The number of 90-degree clockwise rotations the viewer has. An integer from 0 to 3.
+   * @type {number}
+   */
+  #rotateTimes = 0;
+
+  /** @type {!FitMode} */
+  #fitMode = FitMode.Best;
+
+  /**
+   * The number of pages visible in the viewer at one time. Defaults to 1
+   * but can be set to 2 or 3 (long-strip mode).
+   * @type {number}
+   */
+  #numPagesInViewer = 1;
+
   constructor() {
-    this.currentBook_ = null;
-
-    /**
-     * The current page number (zero-based).
-     * @type {number}
-     */
-    this.currentPageNum_ = -1;
-
-    /**
-     * The number of 90-degree clockwise rotations the viewer has. An integer from 0 to 3.
-     * @type {number}
-     */
-    this.rotateTimes_ = 0;
-
     /**
      * Keep track of scroll of left.
      * TODO: Rename this to something better.
@@ -76,9 +87,6 @@ export class BookViewer {
      */
     this.t = 0;
 
-    /** @type {!FitMode} */
-    this.fitMode_ = FitMode.Best;
-
     this.wheelTimer_ = null;
     this.wheelTurnedPageAt_ = 0;
 
@@ -91,36 +99,11 @@ export class BookViewer {
     }
     this.throbbingTime_ = 0;
 
-    /**
-     * The number of pages visible in the viewer at one time. Defaults to 1
-     * but can be set to 2 or 3 (long-strip mode).
-     * @type {number}
-     */
-    this.numPagesInViewer_ = 1;
-
-    this.initProgressMeter_();
+    this.#initProgressMeter();
   }
 
-  /** @private */
-  initProgressMeter_() {
-    const pdiv = getElem('progress');
-    const svg = getElem('svgprogress');
-    svg.addEventListener('click', (evt) => {
-      let l = 0;
-      const docEl = document.documentElement;
-      for (let el = pdiv; el != docEl; el = el.parentNode) {
-        l += el.offsetLeft;
-      }
-      const totalPages = this.currentBook_.getNumberOfPages();
-      const page = Math.max(1, Math.ceil(((evt.clientX - l) / pdiv.offsetWidth) * totalPages)) - 1;
-      this.currentPageNum_ = page;
-      this.updateLayout();
-    });
-  }
-
-  /** @private */
   handleSwipeEvent(evt) {
-    if (!this.currentBook_ || this.getNumPagesInViewer() === 3) {
+    if (!this.#currentBook || this.getNumPagesInViewer() === 3) {
       return;
     }
 
@@ -145,7 +128,7 @@ export class BookViewer {
     }, 200);
 
     // Determine what delta is relevant based on orientation.
-    const delta = (this.rotateTimes_ % 2 == 0 ? evt.deltaX : evt.deltaY);
+    const delta = (this.#rotateTimes % 2 == 0 ? evt.deltaX : evt.deltaY);
 
     // If we turned the page, we won't let the page turn again until the delta
     // is below the hysteresis threshold (i.e. the swipe has lost its momentum).
@@ -156,10 +139,10 @@ export class BookViewer {
     } else {
       // If we haven't turned the page yet, see if this delta would turn the page.
       let turnPageFn = null;
-      if (this.rotateTimes_ <= 1) {
+      if (this.#rotateTimes <= 1) {
         if (delta > SWIPE_THRESHOLD) turnPageFn = () => this.showNextPage();
         else if (delta < -SWIPE_THRESHOLD) turnPageFn = () => this.showPrevPage();
-      } else if (this.rotateTimes_ <= 3) {
+      } else if (this.#rotateTimes <= 3) {
         if (delta < -SWIPE_THRESHOLD) turnPageFn = () => this.showNextPage();
         else if (delta > SWIPE_THRESHOLD) turnPageFn = () => this.showPrevPage();
       }
@@ -175,9 +158,9 @@ export class BookViewer {
    * @private
    */
   handleEvent(evt) {
-    this.killThrobbing_();
+    this.#killThrobbing();
 
-    if (evt.source === this.currentBook_) {
+    if (evt.source === this.#currentBook) {
       switch (evt.type) {
         case BookEventType.PROGRESS:
           getElem('header').classList.add('animating');
@@ -186,11 +169,11 @@ export class BookViewer {
         case BookEventType.PAGE_EXTRACTED:
           // Display first page(s) if we haven't yet. If this is the long-strip view, update
           // layout every time we get a page so the top-level SVG is lengthened.
-          if (evt.pageNum <= this.numPagesInViewer_ ||
+          if (evt.pageNum <= this.#numPagesInViewer ||
               this.getNumPagesInViewer() === 3) {
             this.updateLayout();
           } else {
-            this.updatePageMeter_();
+            this.#updatePageMeter();
           }
           break;
         case BookEventType.BINDING_COMPLETE:
@@ -198,56 +181,50 @@ export class BookViewer {
           this.updateLayout();
           this.updateProgressMeter();
 
-          this.currentBook_.removeEventListener(BookEventType.PROGRESS, this);
-          this.currentBook_.removeEventListener(BookEventType.PAGE_EXTRACTED, this);
-          this.currentBook_.removeEventListener(BookEventType.BINDING_COMPLETE, this);
+          this.#currentBook.removeEventListener(BookEventType.PROGRESS, this);
+          this.#currentBook.removeEventListener(BookEventType.PAGE_EXTRACTED, this);
+          this.#currentBook.removeEventListener(BookEventType.BINDING_COMPLETE, this);
     
           break;
       }
     }
   }
 
-  getRotateTimes() { return this.rotateTimes_; }
+  /** @returns {number} The number of 90-degree clockwise rotations the book viewer has. */
+  getRotateTimes() { return this.#rotateTimes; }
 
+  /** @param {number} n The number of 90-degree clockwise rotations the book viewer should have. */
   setRotateTimes(n) {
     n = parseInt(n, 10) % 4;
     if (n < 0) n += 4;
 
-    if (this.rotateTimes_ !== n) {
-      this.rotateTimes_ = n;
+    if (this.#rotateTimes !== n) {
+      this.#rotateTimes = n;
       this.updateLayout();
     }
   }
 
   rotateCounterClockwise() {
-    this.setRotateTimes(this.rotateTimes_ - 1);
+    this.setRotateTimes(this.#rotateTimes - 1);
   }
 
   rotateClockwise() {
-    this.setRotateTimes(this.rotateTimes_ + 1);
+    this.setRotateTimes(this.#rotateTimes + 1);
   }
 
   /** @returns {FitMode} */
-  getFitMode() { return this.fitMode_; }
+  getFitMode() { return this.#fitMode; }
 
   /** @param {FitMode} m */
   setFitMode(m) {
-    this.fitMode_ = m;
-    this.updateLayout();
+    if (this.#fitMode !== m) {
+      this.#fitMode = m;
+      this.updateLayout();
+    }
   }
 
   /** @returns {number} The number of pages being shown in the viewer (1, 2, or 3). */
-  getNumPagesInViewer() { return this.numPagesInViewer_; }
-
-  /** @private */
-  killThrobbing_() {
-    if (this.throbberTimerId_) {
-      clearInterval(this.throbberTimerId_);
-      this.throbberTimerId_ = null;
-      this.throbbers_.forEach(el => el.style.visibility = 'hidden');
-      this.throbbingTime_ = 0;
-    }
-  }
+  getNumPagesInViewer() { return this.#numPagesInViewer; }
 
   /**
    * Sets the number of pages in the viewer (1-page, 2-page, or Long Strip (3) are supported).
@@ -257,8 +234,8 @@ export class BookViewer {
     numPages = parseInt(numPages, 10);
     if (numPages !== 1 && numPages !== 2 && numPages !== 3) return;
 
-    if (this.numPagesInViewer_ !== numPages) {
-      this.numPagesInViewer_ = numPages;
+    if (this.#numPagesInViewer !== numPages) {
+      this.#numPagesInViewer = numPages;
       this.updateLayout();
     }
   }
@@ -269,15 +246,15 @@ export class BookViewer {
    * current book, we clear the contents of all the page elements.
    */
   updateLayout() {
-    if (!this.currentBook_ || this.currentPageNum_ === -1) {
-      this.clearPageContents_();
+    if (!this.#currentBook || this.#currentPageNum === -1) {
+      this.#clearPageContents();
       return;
     }
 
-    this.updatePageMeter_();
-    this.updateProgressBackgroundPosition_();
+    this.#updatePageMeter();
+    this.#updateProgressBackgroundPosition();
 
-    const page = this.currentBook_.getPage(this.currentPageNum_);
+    const page = this.#currentBook.getPage(this.#currentPageNum);
     if (!page) {
       console.log('updateLayout() before current page is loaded');
       return;
@@ -300,7 +277,7 @@ export class BookViewer {
     const page2 = getElem(ID_PAGE_2);
     const pageN = [];
     // Use pageTemplate to create the DOM elements for pages 3 and greater.
-    for (let i = pageN.length + 2; i < this.currentBook_.getNumberOfPages(); i++) {
+    for (let i = pageN.length + 2; i < this.#currentBook.getNumberOfPages(); i++) {
       const g = pageTemplate.cloneNode(true);
       g.setAttribute('id', `page${i+1}`);
       g.style.display = 'none';
@@ -317,7 +294,7 @@ export class BookViewer {
     const page1Elems = [getElem('page1Image'), getElem('page1Html')];
     const page2Elems = [getElem('page2Image'), getElem('page2Html')];
 
-    const portraitMode = (this.rotateTimes_ % 2 === 0);
+    const portraitMode = (this.#rotateTimes % 2 === 0);
     const par = page.getAspectRatio();
 
     let topw = bv.width, toph = bv.height;
@@ -325,12 +302,12 @@ export class BookViewer {
     // This is the center of rotation, always rotating around the center of the book viewer.
     let rotx = bv.left + bv.width / 2;
     let roty = bv.top + bv.height / 2;
-    let angle = 90 * this.rotateTimes_;
+    let angle = 90 * this.#rotateTimes;
 
     /** @type {PageLayoutParams} */
     const layoutParams = {
-      fitMode: this.fitMode_,
-      rotateTimes: this.rotateTimes_,
+      fitMode: this.#fitMode,
+      rotateTimes: this.#rotateTimes,
       pageAspectRatio: page.getAspectRatio(),
       bv: {...bv},
     };
@@ -338,10 +315,10 @@ export class BookViewer {
     /** @type {PageSetting} */
     let pageSetting;
 
-    if (this.numPagesInViewer_ === 1) {
+    if (this.#numPagesInViewer === 1) {
       page1.style.display = '';
       page2.style.display = 'none';
-      for (let i = 2; i < this.currentBook_.getNumberOfPages(); i++) {
+      for (let i = 2; i < this.#currentBook.getNumberOfPages(); i++) {
         getElem(`page${i+1}`).style.display = 'none';
       }
 
@@ -357,13 +334,13 @@ export class BookViewer {
         pageElem.setAttribute('height', box1.height);
       }
 
-      this.showPageInViewer_(this.currentPageNum_, page1);
+      this.#showPageInViewer(this.#currentPageNum, page1);
     }
     // 2-page view.
-    else if (this.numPagesInViewer_ === 2) {
+    else if (this.#numPagesInViewer === 2) {
       page1.style.display = '';
       page2.style.display = '';
-      for (let i = 2; i < this.currentBook_.getNumberOfPages(); i++) {
+      for (let i = 2; i < this.#currentBook.getNumberOfPages(); i++) {
         getElem(`page${i + 1}`).style.display = 'none';
       }
 
@@ -387,21 +364,21 @@ export class BookViewer {
         pageElem.setAttribute('height', box2.height);
       }
 
-      this.showPageInViewer_(this.currentPageNum_, page1);
-      this.showPageInViewer_((this.currentPageNum_ < this.currentBook_.getNumberOfPages() - 1) ?
-          this.currentPageNum_ + 1 : 0, page2);
+      this.#showPageInViewer(this.#currentPageNum, page1);
+      this.#showPageInViewer((this.#currentPageNum < this.#currentBook.getNumberOfPages() - 1) ?
+          this.#currentPageNum + 1 : 0, page2);
     }
     // long-strip view.
-    else if (this.numPagesInViewer_ === 3) {
+    else if (this.#numPagesInViewer === 3) {
       page1.style.display = '';
       page2.style.display = 'none';
-      for (let i = 2; i < this.currentBook_.getNumberOfPages(); i++) {
+      for (let i = 2; i < this.#currentBook.getNumberOfPages(); i++) {
         getElem(`page${i+1}`).style.display = 'none';
       }
       if (getElem('page1Image').getBBox().height !== 0) {
         page2.style.display = '';
 
-        for(let i = 2; i < this.currentBook_.getNumberOfPages(); i++) {
+        for(let i = 2; i < this.#currentBook.getNumberOfPages(); i++) {
           getElem(`page${i+1}`).style.display = '';
         }
       }
@@ -426,13 +403,13 @@ export class BookViewer {
         if (bbox.width && bbox.height) {
           aspectRatio = bbox.width / bbox.height;
         }
-        if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && portraitMode)) {
+        if (this.#fitMode === FitMode.Width ||
+            (this.#fitMode === FitMode.Best && portraitMode)) {
           pageElem.setAttribute('width', window.innerWidth);
           if (!Number.isNaN(aspectRatio)) {
             pageElem.setAttribute('height', window.innerWidth / aspectRatio);
           }
-        } else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )) {
+        } else if (this.fitMode === FitMode.Height || (this.#fitMode === FitMode.Best && !portraitMode )) {
           pageElem.setAttribute('width', window.innerHeight);
           if (!Number.isNaN(aspectRatio)) {
             pageElem.setAttribute('height', window.innerHeight / aspectRatio);
@@ -453,13 +430,13 @@ export class BookViewer {
         if (bbox.width && bbox.height) {
           aspectRatio = bbox.width / bbox.height;
         }
-        if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && portraitMode)) {  
+        if (this.#fitMode === FitMode.Width ||
+            (this.#fitMode === FitMode.Best && portraitMode)) {  
           pageElem.setAttribute('width', window.innerWidth);
           if (!Number.isNaN(aspectRatio)) {
             pageElem.setAttribute('height', window.innerWidth / aspectRatio);
           }
-        } else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )){
+        } else if (this.fitMode === FitMode.Height || (this.#fitMode === FitMode.Best && !portraitMode )){
           pageElem.setAttribute('width', window.innerHeight);
           if (!Number.isNaN(aspectRatio)) {
             pageElem.setAttribute('height', window.innerHeight / aspectRatio);
@@ -488,13 +465,13 @@ export class BookViewer {
           if (bbox.width && bbox.height) {
             aspectRatio = bbox.width / bbox.height;
           }
-          if (this.fitMode_ === FitMode.Width ||
-              (this.fitMode_ === FitMode.Best && portraitMode)) {
+          if (this.#fitMode === FitMode.Width ||
+              (this.#fitMode === FitMode.Best && portraitMode)) {
             pageElem.setAttribute('width', window.innerWidth);
             if (!Number.isNaN(aspectRatio)) {
               pageElem.setAttribute('height', window.innerWidth / aspectRatio);
             }
-          } else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )) {
+          } else if (this.fitMode === FitMode.Height || (this.#fitMode === FitMode.Best && !portraitMode )) {
             pageElem.setAttribute('width', window.innerHeight);
             if (!Number.isNaN(aspectRatio)) {
               pageElem.setAttribute('height', window.innerHeight / aspectRatio);
@@ -511,10 +488,10 @@ export class BookViewer {
         }
         q += 1;
       }
-      for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++) {
-        this.showPageInViewer_(i, getElem(`page${i + 1}`)); // TODO: add Promise.all()
+      for (let i = 0; i < this.#currentBook.getNumberOfPages(); i++) {
+        this.#showPageInViewer(i, getElem(`page${i + 1}`)); // TODO: add Promise.all()
       }
-    }
+    } // long-strip view.
 
     if (pageSetting) {
       topw = pageSetting.bv.width;
@@ -562,10 +539,10 @@ export class BookViewer {
           getElem('page1').scrollIntoView(true);
         }
         let setTo = 0;
-        if (this.fitMode_ === FitMode.Width ||
-            (this.fitMode_ === FitMode.Best && portraitMode )) {
+        if (this.#fitMode === FitMode.Width ||
+            (this.#fitMode === FitMode.Best && portraitMode )) {
           setTo = toph;
-        } else if (this.fitMode === FitMode.Height || (this.fitMode_ === FitMode.Best && !portraitMode )) {
+        } else if (this.fitMode === FitMode.Height || (this.#fitMode === FitMode.Best && !portraitMode )) {
           setTo = topw;
         }
   
@@ -581,39 +558,22 @@ export class BookViewer {
             pageElem.setAttribute('width', setTo);
           }
         }
-        for (let i = 0; i < this.currentBook_.getNumberOfPages(); i++) {
-          this.showPageInViewer_(i,getElem(`page${i + 1}`)); //TODO: add Promise.all()
+        for (let i = 0; i < this.#currentBook.getNumberOfPages(); i++) {
+          this.#showPageInViewer(i,getElem(`page${i + 1}`)); //TODO: add Promise.all()
         }
       }
     }  
-  }
-
-  /** @private */
-  updatePageMeter_() {
-    const pageNum = this.currentPageNum_;
-    const numPages = this.currentBook_.getNumberOfPages();
-    getElem('page').innerHTML = (pageNum + 1) + '/' + numPages;
-    getElem('pagemeter').setAttribute('width',
-      100 * (numPages == 0 ? 0 : ((pageNum + this.numPagesInViewer_) / numPages)) + '%');
-  }
-
-  /** @private */
-  updateProgressBackgroundPosition_() {
-    const totalWidth = getElem('border').width.baseVal.value;
-    const progressBkgnd = getElem('progress_bkgnd');
-    const progressBkgndWidth = progressBkgnd.width.baseVal.value;
-    progressBkgnd.setAttribute('x', totalWidth - progressBkgndWidth);
   }
 
   /**
    * @param {Book} book
    */
   setCurrentBook(book) {
-    if (book && this.currentBook_ !== book) {
+    if (book && this.#currentBook !== book) {
       this.closeBook();
-      this.killThrobbing_();
+      this.#killThrobbing();
 
-      this.currentBook_ = book;
+      this.#currentBook = book;
 
       book.addEventListener(BookEventType.PROGRESS, this);
       book.addEventListener(BookEventType.PAGE_EXTRACTED, this);
@@ -624,7 +584,7 @@ export class BookViewer {
       this.throbberTimerId_ = setInterval(() => {
         this.throbbingTime_ += THROBBER_TIMER_MS;
         if (this.throbbingTime_ > MAX_THROBBING_TIME_MS) {
-          this.killThrobbing_();
+          this.#killThrobbing();
         }
 
         // Animate throbbers until first byte loads.
@@ -651,7 +611,7 @@ export class BookViewer {
         }
       }, THROBBER_TIMER_MS);
 
-      this.currentPageNum_ = 0;
+      this.#currentPageNum = 0;
       this.updateProgressMeter();
       this.updateLayout();
     }
@@ -661,9 +621,9 @@ export class BookViewer {
    * Close the current book.
    */
   closeBook() {
-    if (this.currentBook_) {
-      this.currentBook_ = null;
-      this.currentPageNum_ = -1;
+    if (this.#currentBook) {
+      this.#currentBook = null;
+      this.#currentPageNum = -1;
     }
 
     getElem('loadmeter').setAttribute('width', '0%');
@@ -676,45 +636,38 @@ export class BookViewer {
     this.updateLayout();
   }
 
-  /** @return {boolean} If the next page was shown. */
+  /** @returns {boolean} If the next page was shown. */
   showPrevPage() {
-    if (!this.currentBook_ || this.currentPageNum_ == 0) {
+    if (!this.#currentBook || this.#currentPageNum == 0) {
       return false;
     }
 
-    this.currentPageNum_--;
+    this.#currentPageNum--;
     this.updateLayout();
     return true;
   }
 
-  /** @return {boolean} If the next page was shown. */
+  /** @returns {boolean} If the next page was shown. */
   showNextPage() {
     // If there is no current book, or the viewer is showing the last pages of the book, just return.
-    if (!this.currentBook_ ||
-      (this.currentPageNum_ >= this.currentBook_.getNumberOfPages() - this.numPagesInViewer_)) {
+    if (!this.#currentBook ||
+      (this.#currentPageNum >= this.#currentBook.getNumberOfPages() - this.#numPagesInViewer)) {
       return false;
     }
 
-    this.currentPageNum_++;
+    this.#currentPageNum++;
     this.updateLayout();
     return true;
   }
 
+  /** @param {number} n */
   showPage(n) {
-    if (!this.currentBook_ ||
-      (n < 0 || n >= this.currentBook_.getNumberOfPages() || n == this.currentPageNum_)) {
+    if (!this.#currentBook ||
+      (n < 0 || n >= this.#currentBook.getNumberOfPages() || n === this.#currentPageNum)) {
       return;
     }
-    this.currentPageNum_ = n;
+    this.#currentPageNum = n;
     this.updateLayout();
-  }
-
-  /**
-   * @param {number} pct
-   * @param {string} meterId
-   */
-  animateMeterTo_(pct, meterId) {
-    getElem(meterId).setAttribute('width', pct + '%');
   }
 
   /**
@@ -722,26 +675,26 @@ export class BookViewer {
    * @param {string} label
    */
   updateProgressMeter(label = undefined) {
-    if (!this.currentBook_) {
+    if (!this.#currentBook) {
       return;
     }
 
     // TODO: Test this.
-    let loadingPct = this.currentBook_.getLoadingPercentage();
-    let unzippingPct = this.currentBook_.getUnarchivingPercentage();
-    let layingOutPct = this.currentBook_.getLayoutPercentage();
-    let totalPages = this.currentBook_.getNumberOfPages();
+    let loadingPct = this.#currentBook.getLoadingPercentage();
+    let unzippingPct = this.#currentBook.getUnarchivingPercentage();
+    let layingOutPct = this.#currentBook.getLayoutPercentage();
+    let totalPages = this.#currentBook.getNumberOfPages();
     loadingPct = Math.max(0, Math.min(100 * loadingPct, 100));
     unzippingPct = Math.max(0, Math.min(100 * unzippingPct, 100));
     layingOutPct = Math.max(0, Math.min(100 * layingOutPct, 100));
 
-    this.animateMeterTo_(loadingPct, 'loadmeter');
-    this.animateMeterTo_(unzippingPct, 'zipmeter');
-    this.animateMeterTo_(layingOutPct, 'layoutmeter');
+    this.#animateMeterTo(loadingPct, 'loadmeter');
+    this.#animateMeterTo(unzippingPct, 'zipmeter');
+    this.#animateMeterTo(layingOutPct, 'layoutmeter');
 
     let bkgndWidth = Math.ceil(Math.log10(totalPages + 1)) * 2 + 1;
     getElem('page_bkgnd').setAttribute('width', `${bkgndWidth * 10}`);
-    getElem('page').innerHTML = (this.currentPageNum_ + 1) + '/' + totalPages;
+    getElem('page').innerHTML = (this.#currentPageNum + 1) + '/' + totalPages;
 
     let title = getElem('progress_title');
     while (title.firstChild) title.removeChild(title.firstChild);
@@ -768,10 +721,10 @@ export class BookViewer {
 
     const progressBkgndWidth = (labelText.length + 4) * 10;
     getElem('progress_bkgnd').setAttribute('width', `${progressBkgndWidth}`);
-    this.updateProgressBackgroundPosition_();
+    this.#updateProgressBackgroundPosition();
 
     // Update some a11y attributes of the progress meter.
-    if (this.currentBook_) {
+    if (this.#currentBook) {
       const totalPct = (loadingPct + unzippingPct + layingOutPct) / 3;
       const totalPctStr = totalPct.toFixed(2) + '%';
       const bvElem = getElem(BOOK_VIEWER_ELEM_ID);
@@ -791,13 +744,19 @@ export class BookViewer {
         progressElem.removeAttribute('aria-valuemax');
       }
     }
-    this.updatePageMeter_();
+    this.#updatePageMeter();
   }
 
   /**
-   * Wipes out the contents of all book viewer elements.
+   * @param {number} pct
+   * @param {string} meterId
    */
-  clearPageContents_() {
+   #animateMeterTo(pct, meterId) {
+    getElem(meterId).setAttribute('width', pct + '%');
+  }
+
+  /** Wipes out the contents of all book viewer elements. */
+  #clearPageContents() {
     const imageElems = [getElem('page1Image'), getElem('page2Image')];
     const objElems = [getElem('page1Html'), getElem('page2Html')];
     for(let i = 2; i < getElem('page').childElementCount; i++) {
@@ -826,18 +785,42 @@ export class BookViewer {
     }
   }
 
+  #initProgressMeter() {
+    const pdiv = getElem('progress');
+    const svg = getElem('svgprogress');
+    svg.addEventListener('click', (evt) => {
+      let l = 0;
+      const docEl = document.documentElement;
+      for (let el = pdiv; el != docEl; el = el.parentNode) {
+        l += el.offsetLeft;
+      }
+      const totalPages = this.#currentBook.getNumberOfPages();
+      const page = Math.max(1, Math.ceil(((evt.clientX - l) / pdiv.offsetWidth) * totalPages)) - 1;
+      this.#currentPageNum = page;
+      this.updateLayout();
+    });
+  }
+
+  #killThrobbing() {
+    if (this.throbberTimerId_) {
+      clearInterval(this.throbberTimerId_);
+      this.throbberTimerId_ = null;
+      this.throbbers_.forEach(el => el.style.visibility = 'hidden');
+      this.throbbingTime_ = 0;
+    }
+  }
+
   /**
    * Renders contents of page number pageNum in the page viewer element.
    * @param {Number} pageNum The page number to render into the div.
    * @param {Element} pageViewerEl The <g> for the page viewer.
-   * @private
    */
-  showPageInViewer_(pageNum, pageViewerEl) {
-    assert(this.currentBook_, 'Current book not defined in setPageContents_()');
-    assert(this.currentBook_.getNumberOfPages() > pageNum,
+  #showPageInViewer(pageNum, pageViewerEl) {
+    assert(this.#currentBook, 'Current book not defined in setPageContents_()');
+    assert(this.#currentBook.getNumberOfPages() > pageNum,
       'Book does not have enough pages in setPageContents_()');
 
-    const thePage = this.currentBook_.getPage(pageNum);
+    const thePage = this.#currentBook.getPage(pageNum);
     // It's possible we are in a 2-page viewer, but the page is not in the book yet.
     if (!thePage) {
       return;
@@ -847,5 +830,22 @@ export class BookViewer {
     const imageEl = pageViewerEl.querySelector('image');
     const objEl = pageViewerEl.querySelector('foreignObject');
     thePage.renderIntoViewer(imageEl, objEl);
+  }
+
+  /** @private */
+  #updatePageMeter() {
+    const pageNum = this.#currentPageNum;
+    const numPages = this.#currentBook.getNumberOfPages();
+    getElem('page').innerHTML = (pageNum + 1) + '/' + numPages;
+    getElem('pagemeter').setAttribute('width',
+      100 * (numPages == 0 ? 0 : ((pageNum + this.#numPagesInViewer) / numPages)) + '%');
+  }
+
+  /** @private */
+  #updateProgressBackgroundPosition() {
+    const totalWidth = getElem('border').width.baseVal.value;
+    const progressBkgnd = getElem('progress_bkgnd');
+    const progressBkgndWidth = progressBkgnd.width.baseVal.value;
+    progressBkgnd.setAttribute('x', totalWidth - progressBkgndWidth);
   }
 }
