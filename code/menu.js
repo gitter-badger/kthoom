@@ -6,7 +6,7 @@
  * Copyright(c) 2019 Google Inc.
  */
 
-import { assert, getElem, Key } from './common/helpers.js';
+import { assert, getElem, Key, Params } from './common/helpers.js';
 
 const MENU_OPEN_STYLE = 'position:absolute;opacity:0.875;text-align:left;'
 const MENU_CLOSED_STYLE = 'display:none;' + MENU_OPEN_STYLE;
@@ -291,12 +291,18 @@ export class Menu extends EventTarget {
 
     switch (code) {
       case Key.UP:
-        evt.preventDefault();
+        // TODO
+        if (Params.longStripView) {
+          evt.preventDefault();
+        }
         evt.stopPropagation();
         this.focusMenuItem_(-1);
         return true;
       case Key.DOWN:
-        evt.preventDefault();
+        // TODO
+        if (Params.longStripView) {
+          evt.preventDefault();
+        }
         evt.stopPropagation();
         this.focusMenuItem_(1);
         return true;

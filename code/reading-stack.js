@@ -5,7 +5,7 @@
  *
  * Copyright(c) 2018 Google Inc.
  */
-import { getElem } from './common/helpers.js';
+import { getElem, Params } from './common/helpers.js';
 import { Book, BookContainer } from './book.js';
 import { BookEventType } from './book-events.js';
 
@@ -363,7 +363,10 @@ export class ReadingStack {
         });
         bookDiv.addEventListener('dragover', evt => {
           evt.stopPropagation();
-          evt.preventDefault();
+          // TODO
+          if (!Params.longStripView) {
+            evt.preventDefault();
+          }
         });
         bookDiv.addEventListener('drop', evt => {
           evt.stopPropagation();

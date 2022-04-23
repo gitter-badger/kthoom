@@ -9,6 +9,7 @@
 import { convertWebPtoJPG } from './bitjs/image/webp-shim/webp-shim.js';
 import { findMimeType } from './bitjs/file/sniffer.js';
 
+// This is from Googling, I've seen different numbers.
 const DEFAULT_ASPECT_RATIO = 6.625 / 10.25;
 
 /**
@@ -82,7 +83,9 @@ export class Page {
 }
 
 /**
- * A page that holds a single image.
+ * A page that holds a single image. ImagePages are different than other types of pages because
+ * the aspect ratio is fully driven by the contents (the image) and can change with each page
+ * in a book.
  */
 export class ImagePage extends Page {
   /**

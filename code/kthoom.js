@@ -9,7 +9,8 @@
 
 import { Book, BookContainer } from './book.js';
 import { BookEventType } from './book-events.js';
-import { BookViewer, FitMode } from './book-viewer.js';
+import { BookViewer } from './book-viewer.js';
+import { FitMode } from './book-viewer-types.js';
 import { Menu, MenuEventType } from './menu.js';
 import { ReadingStack } from './reading-stack.js';
 import { Key, Params, assert, getElem, serializeParamsToBrowser } from './common/helpers.js';
@@ -178,6 +179,12 @@ export class KthoomApp {
     this.viewMenu_ = new Menu(getElem(MENU.VIEW));
     this.viewerContextMenu_ = new Menu(getElem(MENU.VIEWER_CONTEXT));
 
+    // Un-hide the Long Strip View mode if ?longStripView=true.
+    if (Params.longStripView) {
+      const buttonEl = getElem('menu-view-long-strip');
+      buttonEl.parentElement.style.display = '';
+    }
+
     this.mainMenu_.addSubMenu('menu-open', this.openMenu_);
     this.mainMenu_.addSubMenu('menu-view', this.viewMenu_);
     const closeMainMenu = () => {
@@ -213,6 +220,7 @@ export class KthoomApp {
           this.bookViewer_.setNumPagesInViewer(1);
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
           this.saveSettings_();
           closeMainMenu();
           break;
@@ -220,13 +228,22 @@ export class KthoomApp {
           this.bookViewer_.setNumPagesInViewer(2);
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+          this.saveSettings_();
+          closeMainMenu();
+          break;
+        case 'menu-view-long-strip':
+          this.bookViewer_.setNumPagesInViewer(3);
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', true);
           this.saveSettings_();
           closeMainMenu();
           break;
         case HIDE_PANEL_BUTTONS_MENU_ITEM:
           this.#togglePanelButtons();
           closeMainMenu();
-          break;          
+          break;
         case 'menu-view-fit-best':
         case 'menu-view-fit-height':
         case 'menu-view-fit-width':
@@ -387,7 +404,10 @@ export class KthoomApp {
         }
         target = target.parentElement;
       }
-      evt.preventDefault();
+      // TODO
+      if (!Params.longStripView) {
+        evt.preventDefault();
+      }
     }, true);
   }
 
@@ -466,9 +486,17 @@ export class KthoomApp {
         if (s['numPagesInViewer'] === 1) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
-        } else {
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip',false);
+
+        } else if(s['numPagesInViewer'] === 2) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip',false);
+        }
+        else if(s['numPagesInViewer'] === 3) {
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip',true);
         }
       }
 
@@ -610,12 +638,18 @@ export class KthoomApp {
         }
         break;
       case Key.UP:
-        evt.preventDefault();
+        // TODO
+        if (!Params.longStripView) {
+          evt.preventDefault();
+        }
         evt.stopPropagation();
         window.scrollBy(0, -5);
         break;
       case Key.DOWN:
-        evt.preventDefault();
+        // TODO
+        if (!Params.longStripView) {
+          evt.preventDefault();
+        }
         evt.stopPropagation();
         window.scrollBy(0, 5);
         break;
@@ -644,15 +678,25 @@ export class KthoomApp {
         this.viewMenu_.setMenuItemSelected('menu-view-fit-width', fitMode === FitMode.Width);
         this.saveSettings_();
         break;
-      case Key.NUM_1: case Key.NUM_2:
+      case Key.NUM_1: case Key.NUM_2: case Key.NUM_3:
+        // Unless ?longStripView=true, the '3' key does nothing.
+        if (code === Key.NUM_3 && !Params.longStripView) {
+          break;
+        }
         const numPages = code - Key.NUM_1 + 1;
         this.bookViewer_.setNumPagesInViewer(numPages);
         if (numPages === 1) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
-        } else {
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+        } else if (numPages === 2) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+        } else {
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', true);
         }
         this.saveSettings_();
         break;
@@ -669,7 +713,10 @@ export class KthoomApp {
   onContextMenu_(evt) {
     if (!this.currentBook_) { return; }
 
-    evt.preventDefault();
+    // TODO
+    if (!Params.longStripView) {
+      evt.preventDefault();
+    }
     const pageNum = parseInt(evt.target.parentElement.dataset.pagenum, 10);
     const thisPage = this.currentBook_.getPage(pageNum);
     const mimeType = thisPage.getMimeType();
