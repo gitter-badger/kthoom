@@ -9,6 +9,7 @@
 import { Book } from './book.js';
 import { BookEvent, BookEventType } from './book-events.js';
 import { FitMode } from './book-viewer-types.js';
+import { LongStripPageSetter } from './pages/long-strip-page-setter.js';
 import { OnePageSetter } from './pages/one-page-setter.js';
 import { TwoPageSetter } from './pages/two-page-setter.js';
 import { assert, getElem } from './common/helpers.js';
@@ -37,11 +38,14 @@ const pageTemplate = svgTop.querySelector('#pageTemplate');
 
 /**
  * The BookViewer is responsible for letting the user view the current book, navigate its pages,
- * update the orientation, page-mode and fit-mode of the viewer.
+ * update the orientation, page-mode and fit-mode of the viewer. It delegates to PageSetters to
+ * layout the pages.
  */
 export class BookViewer {
+  // All PageSetters.
   #onePageSetter = new OnePageSetter();
   #twoPageSetter = new TwoPageSetter();
+  #longStripPageSetter = new LongStripPageSetter();
 
   constructor() {
     this.currentBook_ = null;
@@ -240,7 +244,7 @@ export class BookViewer {
   }
 
   /**
-   * Sets the number of pages in the viewer (1-,2-page, or 3-Long Strip viewer are supported).
+   * Sets the number of pages in the viewer (1-page, 2-page, or Long Strip (3) are supported).
    * @param {Number} numPages Can be 1,2, or 3.
    */
   setNumPagesInViewer(numPages) {

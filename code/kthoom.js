@@ -179,6 +179,12 @@ export class KthoomApp {
     this.viewMenu_ = new Menu(getElem(MENU.VIEW));
     this.viewerContextMenu_ = new Menu(getElem(MENU.VIEWER_CONTEXT));
 
+    // Un-hide the Long Strip View mode if ?longStripView=true.
+    if (Params.longStripView) {
+      const buttonEl = getElem('menu-view-long-strip');
+      buttonEl.parentElement.style.display = '';
+    }
+
     this.mainMenu_.addSubMenu('menu-open', this.openMenu_);
     this.mainMenu_.addSubMenu('menu-view', this.viewMenu_);
     const closeMainMenu = () => {
@@ -664,6 +670,10 @@ export class KthoomApp {
         this.saveSettings_();
         break;
       case Key.NUM_1: case Key.NUM_2: case Key.NUM_3:
+        // Unless ?longStripView=true, the '3' key does nothing.
+        if (!Params.longStripView) {
+          break;
+        }
         const numPages = code - Key.NUM_1 + 1;
         this.bookViewer_.setNumPagesInViewer(numPages);
         if (numPages === 1) {

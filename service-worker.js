@@ -25,6 +25,7 @@ let urlsToCache = [
   'code/pages/page-setter.js',
   'code/pages/one-page-setter.js',
   'code/pages/two-page-setter.js',
+  'code/pages/long-strip-page-setter.js',
   'code/book-binder.js',
   'code/book-events.js',
   'code/book-pump.js',

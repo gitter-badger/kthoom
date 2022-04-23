@@ -11,7 +11,6 @@ import { PageSetter } from './page-setter.js';
 export class OnePageSetter extends PageSetter {
   /**
    * @param {PageLayoutParams} layoutParams
-   * @param {Box} bv The BookViewer bounding box.
    * @returns {PageSetting} A set of Page bounding boxes.
    */
   updateLayout(layoutParams) {
@@ -105,6 +104,6 @@ export class OnePageSetter extends PageSetter {
         { left: pl, top: pt, width: pw, height: ph },
       ],
       bv,
-    }
+    };
   }
 }
