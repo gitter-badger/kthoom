@@ -9,6 +9,7 @@
 import { convertWebPtoJPG } from './bitjs/image/webp-shim/webp-shim.js';
 import { findMimeType } from './bitjs/file/sniffer.js';
 
+// This is from Googling, I've seen different numbers.
 const DEFAULT_ASPECT_RATIO = 6.625 / 10.25;
 
 /**

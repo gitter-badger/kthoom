@@ -9,7 +9,8 @@
 
 import { Book, BookContainer } from './book.js';
 import { BookEventType } from './book-events.js';
-import { BookViewer, FitMode } from './book-viewer.js';
+import { BookViewer } from './book-viewer.js';
+import { FitMode } from './book-viewer-types.js';
 import { Menu, MenuEventType } from './menu.js';
 import { ReadingStack } from './reading-stack.js';
 import { Key, Params, assert, getElem, serializeParamsToBrowser } from './common/helpers.js';
