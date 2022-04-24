@@ -253,7 +253,7 @@ export class Menu extends EventTarget {
 
   /**
    * @param {KeyboardEvent} evt
-   * @return {boolean} True if the event was handled.
+   * @returns {boolean} True if the event was handled.
    */
   handleKeyEvent(evt) {
     if (!this.isOpen()) {
@@ -326,7 +326,7 @@ export class Menu extends EventTarget {
     return false;
   }
 
-  /** @return {boolean} */
+  /** @returns {boolean} */
   isOpen() {
     return !(this.dom_.style.display === 'none');
   }
@@ -366,7 +366,7 @@ export class Menu extends EventTarget {
    * Gets the selected state on a menu item.  Assumes the menu item has a span with the
    * menuCheckmark class.
    * @param {string} itemId 
-   * @return {boolean} True if the menu item is selected
+   * @returns {boolean} True if the menu item is selected
    */
   getMenuItemSelected(itemId) {
     const menuEl = this.dom_.firstElementChild;

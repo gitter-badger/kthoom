@@ -77,7 +77,7 @@ export class MetadataViewer {
 
   /**
    * @param {KeyboardEvent} evt
-   * @return {boolean} True if the event was handled.
+   * @returns {boolean} True if the event was handled.
    */
   handleKeyEvent(evt) {
     if (!this.isOpen()) {

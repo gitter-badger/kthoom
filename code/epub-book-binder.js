@@ -108,7 +108,7 @@ export class EPUBBookBinder extends BookBinder {
   /**
    * @param {string} href
    * @param {string} rootDir
-   * @return {FileRef}
+   * @returns {FileRef}
    * @private
    */
   getManifestFileRef_(href, rootDir) {

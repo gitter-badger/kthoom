@@ -419,7 +419,7 @@ export class KthoomApp {
   }
 
   /**
-   * @return {boolean}
+   * @returns {boolean}
    * @private
    */
   isHelpOpened_() {
@@ -910,7 +910,7 @@ export class KthoomApp {
    * Finds a more readable display name for a book from a JSON Reading List.
    * TODO: Move this to a separate module for processing JSON Reading Lists?
    * @param {Object} item An item object from the JSON Reading List format.
-   * @return {string}
+   * @returns {string}
    */
   getNameForBook_(item) {
     return item.name || item.uri.split('/').pop() || item.uri;
@@ -1116,7 +1116,7 @@ export class KthoomApp {
    * @param {number} expectedSize Unarchived size in bytes.  If -1, then the
    *     data from the XHR progress events is used.
    * @param {Object<string, string>} headerMap A map of request header keys and values.
-   * @return {Promise<Book>}
+   * @returns {Promise<Book>}
    */
   loadSingleBookFromXHR(name, uri, expectedSize, headerMap = {}) {
     const book = new Book(name, uri);
@@ -1130,7 +1130,7 @@ export class KthoomApp {
    * @param {string} uri The resource to fetch.
    * @param {number} expectedSize Unarchived size in bytes.
    * @param {Object} init An object to initialize the Fetch API.
-   * @return {Promise<Book>}
+   * @returns {Promise<Book>}
    */
   loadSingleBookFromFetch(name, uri, expectedSize, init) {
     if (!window['fetch'] || !window['Response'] || !window['ReadableStream']) {
@@ -1147,7 +1147,7 @@ export class KthoomApp {
    * @param {string} name
    * @param {string} bookUri
    * @param {ArrayBuffer} ab
-   * @return {Promise<Book>}
+   * @returns {Promise<Book>}
    */
   loadSingleBookFromArrayBuffer(name, bookUri, ab) {
     const book = new Book(name);
@@ -1160,7 +1160,7 @@ export class KthoomApp {
    * @param {string} name
    * @param {string} bookUri
    * @param {BookPump} bookPump
-   * @return {Promise<Book>}
+   * @returns {Promise<Book>}
    */
   loadSingleBookFromBookPump(name, bookUri, bookPump) {
     const book = new Book(name);
@@ -1183,7 +1183,7 @@ export class KthoomApp {
    * TODO: Move this to a separate module for processing JSON Reading Lists?
    * @param {Blob|File} jsonBlob The JSON blob/file.
    * @param {string=} readingListUri Optional URI of the reading list file.
-   * @return {Promise<Array<Object>>} Returns a Promise that will resolve with an array of item
+   * @returns {Promise<Array<Object>>} Returns a Promise that will resolve with an array of item
    *     objects (see format above), or rejects with an error string.
    * @private
    */

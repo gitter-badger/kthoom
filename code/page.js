@@ -16,7 +16,7 @@ const DEFAULT_ASPECT_RATIO = 6.625 / 10.25;
 /**
  * @param {Uint8Array} typedArray
  * @param {string} mimeType
- * @return {string} A URL representing the ArrayBuffer.
+ * @returns {string} A URL representing the ArrayBuffer.
  */
 function createURLFromArray(typedArray, mimeType) {
   if (mimeType === 'image/xml+svg') {
@@ -326,7 +326,7 @@ export class XhtmlPage extends Page {
 /**
  * TODO: Add something to bitjs.image to sniff the bytes of an image file and get its MIME type?
  * @param {string} filename
- * @return {string|undefined} The MIME type or undefined if we could not guess it.
+ * @returns {string|undefined} The MIME type or undefined if we could not guess it.
  */
 export function guessMimeType(filename) {
   const fileExtension = filename.split('.').pop().toLowerCase();
@@ -384,7 +384,7 @@ function dosDateTimeToJSDate(dosDate, dosTime) {
 /**
  * Factory method that creates a Page from a File.
  * @param {UnarchivedFile} unarchivedFile
- * @return {Promise<Page>} A Promise that resolves to a Page (like an ImagePage).
+ * @returns {Promise<Page>} A Promise that resolves to a Page (like an ImagePage).
  */
 export const createPageFromFileAsync = function (unarchivedFile) {
   return new Promise((resolve, reject) => {
