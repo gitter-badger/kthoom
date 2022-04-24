@@ -11,6 +11,7 @@ import { BookEvent, BookEventType } from './book-events.js';
 import { FitMode } from './book-viewer-types.js';
 import { LongStripPageSetter } from './pages/long-strip-page-setter.js';
 import { OnePageSetter } from './pages/one-page-setter.js';
+import { PageContainer } from './pages/page-container.js';
 import { TwoPageSetter } from './pages/two-page-setter.js';
 import { assert, getElem, Params } from './common/helpers.js';
 
@@ -19,8 +20,6 @@ import { assert, getElem, Params } from './common/helpers.js';
 /** @typedef {import('./book-viewer-types.js').PageSetting} PageSetting */
 
 const BOOK_VIEWER_ELEM_ID = 'bookViewer';
-const ID_PAGE_1 = 'page1';
-const ID_PAGE_2 = 'page2';
 const SWIPE_THRESHOLD = 50;
 
 const THROBBER_TIMER_MS = 60;
@@ -34,7 +33,6 @@ const MAX_THROBBER_X = 86;
 const bvElem = getElem(BOOK_VIEWER_ELEM_ID);
 const svgTop = getElem('pages');
 const bvViewport = getElem('bvViewport');
-const pageTemplate = svgTop.querySelector('#pageTemplate');
 
 /**
  * The BookViewer is responsible for letting the user view the current book, navigate its pages,
@@ -71,6 +69,9 @@ export class BookViewer {
    * @type {number}
    */
   #numPagesInViewer = 1;
+
+  /** @type {PageContainer[]} */
+  #pageContainers = [];
 
   constructor() {
     /**
@@ -273,27 +274,6 @@ export class BookViewer {
     assert(bv.width, 'bv.width not set');
     assert(bv.height, 'bv.height not set');
 
-    const page1 = getElem(ID_PAGE_1);
-    const page2 = getElem(ID_PAGE_2);
-    const pageN = [];
-    // Use pageTemplate to create the DOM elements for pages 3 and greater.
-    for (let i = pageN.length + 2; i < this.#currentBook.getNumberOfPages(); i++) {
-      const g = pageTemplate.cloneNode(true);
-      g.setAttribute('id', `page${i+1}`);
-      g.style.display = 'none';
-      const image = g.querySelector('image');
-      image.setAttribute('id', `page${i+1}Image`);
-      const foreignObject = g.querySelector('foreignObject');
-      foreignObject.setAttribute('id', `page${i+1}Html`);
-      if (i > bvViewport.children.length -1) {
-        bvViewport.appendChild(g);
-      }
-      pageN.push([getElem(`page${i+1}Image`),getElem(`page${i+1}Html`)]);
-    }
-
-    const page1Elems = [getElem('page1Image'), getElem('page1Html')];
-    const page2Elems = [getElem('page2Image'), getElem('page2Html')];
-
     const portraitMode = (this.#rotateTimes % 2 === 0);
     const par = page.getAspectRatio();
 
@@ -316,72 +296,37 @@ export class BookViewer {
     let pageSetting;
 
     if (this.#numPagesInViewer === 1) {
-      page1.style.display = '';
-      page2.style.display = 'none';
-      for (let i = 2; i < this.#currentBook.getNumberOfPages(); i++) {
-        getElem(`page${i+1}`).style.display = 'none';
-      }
+      this.#showPageContainers(1);
+      const page1 = this.#getPageContainer(0);
 
       pageSetting = this.#onePageSetter.updateLayout(layoutParams);
       assert(pageSetting.boxes.length === 1, `1-page setting did not have a box`);
 
       // Now size the page elements.
       const box1 = pageSetting.boxes[0];
-      for (const pageElem of page1Elems) {
-        pageElem.setAttribute('x', box1.left);
-        pageElem.setAttribute('y', box1.top);
-        pageElem.setAttribute('width', box1.width);
-        pageElem.setAttribute('height', box1.height);
-      }
-
-      this.#showPageInViewer(this.#currentPageNum, page1);
+      page1.setFrame(box1);
+      this.#renderPageInContainer(this.#currentPageNum, page1);
     }
     // 2-page view.
     else if (this.#numPagesInViewer === 2) {
-      page1.style.display = '';
-      page2.style.display = '';
-      for (let i = 2; i < this.#currentBook.getNumberOfPages(); i++) {
-        getElem(`page${i + 1}`).style.display = 'none';
-      }
+      this.#showPageContainers(2);
+      const pages = [ this.#getPageContainer(0), this.#getPageContainer(1) ];
 
       pageSetting = this.#twoPageSetter.updateLayout(layoutParams);
       assert(pageSetting.boxes.length === 2, `2-page setting did not have two boxes`);
 
-      const box1 = pageSetting.boxes[0];
-      const box2 = pageSetting.boxes[1];
-
-      // Now size the page elements.
-      for (const pageElem of page1Elems) {
-        pageElem.setAttribute('x', box1.left);
-        pageElem.setAttribute('y', box1.top);
-        pageElem.setAttribute('width', box1.width);
-        pageElem.setAttribute('height', box1.height);
-      }
-      for (const pageElem of page2Elems) {
-        pageElem.setAttribute('x', box2.left);
-        pageElem.setAttribute('y', box2.top);
-        pageElem.setAttribute('width', box2.width);
-        pageElem.setAttribute('height', box2.height);
+      for (let i = 0; i < 2; ++i) {
+        pages[i].setFrame(pageSetting.boxes[i]);
       }
 
-      this.#showPageInViewer(this.#currentPageNum, page1);
-      this.#showPageInViewer((this.#currentPageNum < this.#currentBook.getNumberOfPages() - 1) ?
-          this.#currentPageNum + 1 : 0, page2);
+      this.#renderPageInContainer(this.#currentPageNum, pages[0]);
+      this.#renderPageInContainer((this.#currentPageNum < this.#currentBook.getNumberOfPages() - 1) ?
+          this.#currentPageNum + 1 : 0, pages[1]);
     }
     // long-strip view.
     else if (this.#numPagesInViewer === 3) {
-      page1.style.display = '';
-      page2.style.display = 'none';
-      for (let i = 2; i < this.#currentBook.getNumberOfPages(); i++) {
-        getElem(`page${i+1}`).style.display = 'none';
-      }
-      if (getElem('page1Image').getBBox().height !== 0) {
-        page2.style.display = '';
-
-        for(let i = 2; i < this.#currentBook.getNumberOfPages(); i++) {
-          getElem(`page${i+1}`).style.display = '';
-        }
-      }
+      this.#showPageContainers(this.#currentBook.getNumberOfPages());
+      const pageN = this.#pageContainers;
 
       // We make a starting assumption here that all pages will have the same aspect ratio as the
       // first page. As pages load in and this function is called again, we progressively update
@@ -445,7 +390,8 @@ export class BookViewer {
        
         pageElem.setAttribute('y', getElem('page1Image').getBBox().height);
       }
-      let position = parseFloat(getElem('page2Image').getBBox().y) + parseFloat(getElem('page2Image').getBBox().height); //TODO: GetElem or from arrays
+      let position = parseFloat(getElem('page2Image').getBBox().y) +
+          parseFloat(getElem('page2Image').getBBox().height);  // TODO: GetElem or from arrays
       let q = 1;
       for (const page of pageN) {
         if (q > 1) {
@@ -554,7 +500,7 @@ export class BookViewer {
         }
 
         for (const page of pageN) {
-          for (const pageElem of page ) {
+          for (const pageElem of page) {
             pageElem.setAttribute('width', setTo);
           }
         }
@@ -757,32 +703,24 @@ export class BookViewer {
 
   /** Wipes out the contents of all book viewer elements. */
   #clearPageContents() {
-    const imageElems = [getElem('page1Image'), getElem('page2Image')];
-    const objElems = [getElem('page1Html'), getElem('page2Html')];
-    for(let i = 2; i < getElem('page').childElementCount; i++) {
-      imageElems.push(getElem(`page${i+1}Image`));
-      objElems.push(getElem(`page${i+1}Html`));
+    for (const container of this.#pageContainers) {
+      container.clear();
     }
-    getElem('pages').removeAttribute('height');
-    getElem('pages').removeAttribute('width');
-    for (const imageEl of imageElems) {
-      imageEl.removeAttribute('x');
-      imageEl.removeAttribute('y');
-      imageEl.removeAttribute('height'); 
-      imageEl.removeAttribute('width');
-      imageEl.style.display = '';
-      imageEl.setAttribute('href', '');
+  }
+
+  /**
+   * Gets the page container from the BookViewer viewport. If the ith container does not exist,
+   * this method creates enough until there are i PageContainers in the viewport.
+   * @param {number} i 
+   * @returns {PageContainer}
+   */
+  #getPageContainer(i) {
+    while (this.#pageContainers.length <= i) {
+      const container = new PageContainer();
+      this.#pageContainers.push(container);
+      bvViewport.appendChild(container.getElement());
     }
-    for (const objEl of objElems) {
-      objEl.removeAttribute('x'); 
-      objEl.removeAttribute('y');
-      objEl.removeAttribute('height'); 
-      objEl.removeAttribute('width');
-      objEl.style.display = '';
-      while (objEl.firstChild) {
-        objEl.firstChild.remove();
-      }
-    }
+    return this.#pageContainers[i];
   }
 
   #initProgressMeter() {
@@ -810,15 +748,48 @@ export class BookViewer {
     }
   }
 
+
   /**
    * Renders contents of page number pageNum in the page viewer element.
    * @param {Number} pageNum The page number to render into the div.
-   * @param {Element} pageViewerEl The <g> for the page viewer.
+   * @param {PageContainer} pageContainer The page container.
+   */
+  #renderPageInContainer(pageNum, pageContainer) {
+    assert(this.#currentBook, 'Current book not defined in #showPageInContainer()');
+    assert(this.#currentBook.getNumberOfPages() > pageNum,
+      'Book does not have enough pages in #showPageInContainer()');
+
+    const thePage = this.#currentBook.getPage(pageNum);
+    // It's possible we are in a 2-page viewer, but the page is not in the book yet.
+    if (!thePage) {
+      return;
+    }
+
+    thePage.renderIntoContainer(pageContainer, pageNum);
+  }
+
+  /**
+   * Shows n page containers and hides the rest. This may create page containers if needed.
+   * @param {number} n
+   */
+  #showPageContainers(n) {
+    assert(n > 0);
+    const N = Math.max(this.#pageContainers.length, n);
+    for (let i = 0; i < N; ++i) {
+      this.#getPageContainer(i).show(i < n);
+    }
+  }
+
+  /**
+   * Renders contents of page number pageNum in the page viewer element.
+   * TODO: Remove this method.
+   * @param {Number} pageNum The page number to render into the div.
+   * @param {SVGGElement} pageViewerEl The <g> for the page viewer.
    */
   #showPageInViewer(pageNum, pageViewerEl) {
-    assert(this.#currentBook, 'Current book not defined in setPageContents_()');
+    assert(this.#currentBook, 'Current book not defined in #showPageInViewer()');
     assert(this.#currentBook.getNumberOfPages() > pageNum,
-      'Book does not have enough pages in setPageContents_()');
+      'Book does not have enough pages in #showPageInViewer()');
 
     const thePage = this.#currentBook.getPage(pageNum);
     // It's possible we are in a 2-page viewer, but the page is not in the book yet.

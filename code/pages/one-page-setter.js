@@ -27,11 +27,11 @@ export class OnePageSetter extends PageSetter {
     let pw, ph, pl, pt;
 
     if (portraitMode) {
-      // Portrait, 1-page.
+      // Portrait.
       if (layoutParams.fitMode === FitMode.Width ||
          (layoutParams.fitMode === FitMode.Best && bvar <= par)) {
-        // fit-width, 1-page.
-        // fit-best, 1-page, width maxed.
+        // fit-width OR
+        // fit-best, width maxed.
         pw = bv.width;
         ph = pw / par;
         pl = bv.left;
@@ -44,8 +44,8 @@ export class OnePageSetter extends PageSetter {
           }
         }
       } else {
-        // fit-height, 1-page.
-        // fit-best, 1-page, height maxed.
+        // fit-height, OR
+        // fit-best, height maxed.
         ph = bv.height;
         pw = ph * par;
         pt = bv.top;
@@ -62,11 +62,11 @@ export class OnePageSetter extends PageSetter {
       if (bv.width < pw) bv.width = pw;
       if (bv.height < ph) bv.height = ph;
     } else {
-      // Landscape, 1-page.
+      // Landscape.
       if (layoutParams.fitMode === FitMode.Width ||
          (layoutParams.fitMode === FitMode.Best && par > (1 / bvar))) {
-        // fit-best, 1-page, width-maxed.
-        // fit-width, 1-page.
+        // fit-best, width-maxed OR
+        // fit-width.
         pw = bv.height;
         ph = pw / par;
         pl = rotx - pw / 2;
@@ -79,8 +79,8 @@ export class OnePageSetter extends PageSetter {
           }
         }
       } else {
-        // fit-best, 1-page, height-maxed.
-        // fit-height, 1-page.
+        // fit-best, height-maxed OR
+        // fit-height.
         ph = bv.width;
         pw = ph * par;
         pt = roty - ph / 2;
