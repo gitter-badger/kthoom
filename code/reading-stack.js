@@ -363,10 +363,7 @@ export class ReadingStack {
         });
         bookDiv.addEventListener('dragover', evt => {
           evt.stopPropagation();
-          // TODO
-          if (!Params.longStripView) {
-            evt.preventDefault();
-          }
+          evt.preventDefault();
         });
         bookDiv.addEventListener('drop', evt => {
           evt.stopPropagation();

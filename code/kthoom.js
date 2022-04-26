@@ -49,65 +49,35 @@ const enableOpenDirectory = !!window.showDirectoryPicker;
  */
 export class KthoomApp {
   constructor() {
-    /**
-     * @private
-     * @type {BookViewer}
-     */
+    /** @private {BookViewer} */
     this.bookViewer_ = new BookViewer();
-    /**
-     * @private
-     * @type {ReadingStack}
-     */
+    /** @private {ReadingStack} */
     this.readingStack_ = new ReadingStack();
-    /**
-     * @private
-     * @type {MetadataViewer}
-     */
+    /** @private {MetadataViewer} */
     this.metadataViewer_ = new MetadataViewer();
 
     this.keysHeld_ = {};
 
-    /**
-     * @private
-     * @type {Book}
-     */
+    /** @private {Book} */
     this.currentBook_ = null;
 
-    /**
-     * @private
-     * @type {Menu}
-     */
+    /** @private {Menu}  */
     this.mainMenu_ = null;
 
-    /**
-     * @private
-     * @type {Menu}
-     */
+    /** @private {Menu} */
     this.openMenu_ = null;
 
-    /**
-     * @private
-     * @type {Menu}
-     */
+    /** @private {Menu} */
     this.viewMenu_ = null;
 
-    /**
-     * @private
-     * @type {Menu}
-     */
+    /** @private {Menu} */
     this.viewerContextMenu_ = null;
 
-    /**
-     * @private
-     * @type {boolean}
-     */
+    /** @private {boolean} */
     this.hasHelpOverlay_ = getElem('helpOverlay');
 
     // TODO: Remove this once all browsers support the File System Access API.
-    /**
-     * @private
-     * @type {HTMLInputElement}
-     */
+    /** @private {HTMLInputElement} */
     this.fileInputElem_ = null;
 
     // This Promise resolves when kthoom is ready.
@@ -317,7 +287,7 @@ export class KthoomApp {
     const bookViewerElem = getElem(BOOK_VIEWER_ELEM_ID);
     bookViewerElem.addEventListener('click', (evt) => {
       if (this.readingStack_.isOpen()) {
-        this.toggleReadingStackOpen_();
+        this.#toggleReadingStackOpen();
         return;
       }
       if (this.viewerContextMenu_.isOpen()) {
@@ -583,7 +553,7 @@ export class KthoomApp {
         break;
       case Key.ESCAPE:
         if (isReadingStackOpen) {
-          this.toggleReadingStackOpen_();
+          this.#toggleReadingStackOpen();
           isReadingStackOpen = false;
         }
         break;
@@ -602,14 +572,14 @@ export class KthoomApp {
       case Key.S:
         // Only open the reading stack if the menu or metadata viewer are not open.
         if (!isMenuOpen && !isMetadataViewerOpen) {
-          this.toggleReadingStackOpen_();
+          this.#toggleReadingStackOpen();
           return;
         }
         break;
       case Key.T:
         // Only open the metadata if the menu or reading stack are not open.
         if (this.currentBook_ && !isMenuOpen && !isReadingStackOpen) {
-          this.toggleMetadataViewerOpen_();
+          this.#toggleMetadataViewerOpen();
           return;
         }
         break;
@@ -620,12 +590,12 @@ export class KthoomApp {
 
     // All other key strokes below this are only valid if the menu and trays are closed.
     if (isReadingStackOpen) {
-      this.toggleReadingStackOpen_();
+      this.#toggleReadingStackOpen();
       return;
     }
 
     if (isMetadataViewerOpen) {
-      this.toggleMetadataViewerOpen_();
+      this.#toggleMetadataViewerOpen();
       return;
     }
 
@@ -654,22 +624,6 @@ export class KthoomApp {
             this.showNextPage();
           }
         }
-        break;
-      case Key.UP:
-        // TODO
-        if (!Params.longStripView) {
-          evt.preventDefault();
-        }
-        evt.stopPropagation();
-        window.scrollBy(0, -5);
-        break;
-      case Key.DOWN:
-        // TODO
-        if (!Params.longStripView) {
-          evt.preventDefault();
-        }
-        evt.stopPropagation();
-        window.scrollBy(0, 5);
         break;
       case Key.LEFT_SQUARE_BRACKET:
         this.readingStack_.changeToPrevBook();
@@ -855,32 +809,6 @@ export class KthoomApp {
       getElem('main-menu-button').setAttribute('aria-expanded', 'false');
       this.mainMenu_.close();
     }
-  }
-
-  /** @private */
-  toggleMetadataViewerOpen_() {
-    this.metadataViewer_.toggleOpen();
-  }
-
-  /**
-   * Toggles whether panel buttons are visible and updates settings.
-   * @param {boolean=} force Use this to force panel buttons and UI into a state. This is used when
-   *     loading in settings from storage.
-   */
-  #togglePanelButtons(force) {
-    let hide = !this.viewMenu_.getMenuItemSelected(HIDE_PANEL_BUTTONS_MENU_ITEM);
-    if (force !== undefined) {
-      hide = force;
-    }
-    this.readingStack_.showButton(!hide);
-    this.metadataViewer_.showButton(!hide);
-    this.viewMenu_.setMenuItemSelected(HIDE_PANEL_BUTTONS_MENU_ITEM, hide);
-    this.saveSettings_();
-  }
-
-  /** @private */
-  toggleReadingStackOpen_() {
-    this.readingStack_.toggleOpen();
   }
 
   showPrevPage() {
@@ -1329,5 +1257,29 @@ export class KthoomApp {
 
     // Enable menu items that are relevant when a book is switched to.
     this.mainMenu_.showMenuItem('menu-close-all', true);
+  }
+
+  #toggleMetadataViewerOpen() {
+    this.metadataViewer_.toggleOpen();
+  }
+
+  /**
+   * Toggles whether panel buttons are visible and updates settings.
+   * @param {boolean=} force Use this to force panel buttons and UI into a state. This is used when
+   *     loading in settings from storage.
+   */
+   #togglePanelButtons(force) {
+    let hide = !this.viewMenu_.getMenuItemSelected(HIDE_PANEL_BUTTONS_MENU_ITEM);
+    if (force !== undefined) {
+      hide = force;
+    }
+    this.readingStack_.showButton(!hide);
+    this.metadataViewer_.showButton(!hide);
+    this.viewMenu_.setMenuItemSelected(HIDE_PANEL_BUTTONS_MENU_ITEM, hide);
+    this.saveSettings_();
+  }
+
+  #toggleReadingStackOpen() {
+    this.readingStack_.toggleOpen();
   }
 }
