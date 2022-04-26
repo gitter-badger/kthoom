@@ -315,19 +315,26 @@ export class KthoomApp {
   initClickHandlers_() {
     // TODO: Move this click handler into BookViewer?
     const bookViewerElem = getElem(BOOK_VIEWER_ELEM_ID);
-    const firstPageElem = getElem('page1');
     bookViewerElem.addEventListener('click', (evt) => {
       if (this.readingStack_.isOpen()) {
         this.toggleReadingStackOpen_();
         return;
       }
 
-      // Two-page viewer mode is simpler to figure out what the click means.
+      const numPageMode = this.bookViewer_.getNumPagesInViewer();
+      // Clicks do nothing in long-strip mode.
+      if (numPageMode === 3) {
+        return;
+      }
+
+      const bvViewport = getElem('bvViewport');
+      const firstPageElem = bvViewport.firstElementChild;
+
+      // Two-page viewer mode is simple to figure out what the click means.
       if (this.bookViewer_.getNumPagesInViewer() === 2) {
-        const targetId = evt.target.id;
-        if (targetId === 'page1Image' || targetId === 'page1Html') {
+        if (evt.target.parentElement === firstPageElem) {
           this.showPrevPage();
-        } else if (targetId === 'page2Image' || targetId === 'page2Html') {
+        } else if (evt.target.parentElement === firstPageElem.nextElementSibling) {
           this.showNextPage();
         }
         return;
