@@ -6,8 +6,6 @@ import { PageSetter } from './page-setter.js';
 /** @typedef {import('../book-viewer-types.js').PageLayoutParams} PageLayoutParams */
 /** @typedef {import('../book-viewer-types.js').PageSetting} PageSetting */
 
-// TODO: Add unit tests.
-
 export class OnePageSetter extends PageSetter {
   /**
    * @param {PageLayoutParams} layoutParams

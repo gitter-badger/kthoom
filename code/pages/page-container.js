@@ -42,6 +42,16 @@ export class PageContainer {
     return this.#g;
   }
 
+  /** @returns {number} */
+  getHeight() {
+    return parseInt(this.#image.getAttribute('height'));
+  }
+
+  /** @returns {boolean} */
+  isShown() {
+    return this.#g.style.display !== 'none';
+  }
+
   /**
    * Renders a chunk of HTML into the page container.
    * @param {HTMLElement} el The HTML element containing the contents of the page.

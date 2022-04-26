@@ -13,11 +13,12 @@ export const FitMode = {
  * @property {number} height The height.
  */
 
+// TODO: Add in a pageAspectRatios array for all the pages needing setting.
 /**
  * @typedef PageLayoutParams Configurable parameters for a page layout.
  * @property {number} rotateTimes The number of 90 degree clockwise rotations.
  * @property {FitMode} fitMode The fit mode.
- * @property {number} pageAspectRatio The aspect ratio of the first page in the layout.
+ * @property {number} pageAspectRatio The aspect ratio of the pages in the book.
  * @property {Box} bv The BookViewer bounding box.
  */
 

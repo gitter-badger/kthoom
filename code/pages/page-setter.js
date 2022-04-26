@@ -17,7 +17,7 @@ export class PageSetter {
   /**
    * The job of this function is to lay out the dimensions of all the page boxes that the
    * BookViewer needs to render. It returns an array of page container frames that the
-   * BookViewer will fill.
+   * BookViewer will fill as well as the adjusted bookViewer box.
    * @abstract
    * @param {PageLayoutParams} layoutParams
    * @param {Box} bv The BookViewer bounding box.
