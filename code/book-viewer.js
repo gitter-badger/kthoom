@@ -246,6 +246,7 @@ export class BookViewer {
    * Updates the layout based on window size, scale mode, fit mode, rotations, and page mode and
    * then sets the page contents based on the current page of the current book.  If there is no
    * current book, we clear the contents of all the page elements.
+   * This is also called every time a new page is loaded.
    */
   updateLayout() {
     if (!this.#currentBook || this.#currentPageNum === -1) {
@@ -309,7 +310,7 @@ export class BookViewer {
         break;
       case 3:
         numPages = this.#currentBook.getNumberOfPages();
-        startingPageNum = 0;
+        startingPageNum = 0; // Always render all the pages.
         pageSetter = this.#longStripPageSetter;
         pageSetter.setNumPages(numPages);
         break;
@@ -346,18 +347,38 @@ export class BookViewer {
     svgTop.setAttribute('width', topw);
     svgTop.setAttribute('height', toph);
 
-    // If the number of pages in the viewer changed (i.e. long-strip mode as the book is loading),
-    // scroll viewer to the same position they were at before. This only applies when rotated 180
-    // or 270 degrees.
-    if (prevNumPagesInViewer !== numPages) {
-      const deltaScroll = this.#getScrollPosition() - prevScrollPos; 
-      if (deltaScroll !== 0) {
-        const pxDeltaScroll = deltaScroll * pageSetting.boxes[0].height;
-        // For rotate 180 or 270 degrees, we must re-adjust the scroll pos.
-        switch (this.#rotateTimes) {
-          case 1: document.documentElement.scrollBy(pxDeltaScroll, 0); break;
-          case 2: document.documentElement.scrollBy(0, pxDeltaScroll); break;
+    // Special handling for long-strip mode.
+    if (this.getNumPagesInViewer() === 3) {
+      // If the number of pages in the viewer changed (i.e. long-strip mode as the book is loading),
+      // and loading pages would move the scroll position (i.e. in 180 or 270-deg rotation), then
+      // scroll the viewer to the same position they were at before.
+      if (prevNumPagesInViewer !== numPages) {
+        const deltaScroll = this.#getScrollPosition() - prevScrollPos; 
+        if (deltaScroll !== 0) {
+          const pxDeltaScroll = deltaScroll * pageSetting.boxes[0].height;
+          // For rotate 180 or 270 degrees, we must re-adjust the scroll pos.
+          switch (this.#rotateTimes) {
+            case 1: document.documentElement.scrollBy(pxDeltaScroll, 0); break;
+            case 2: document.documentElement.scrollBy(0, pxDeltaScroll); break;
+          }
         }
+      }
+
+      // If the user moved pages, and that page is not visible, scroll them to it.
+      const oldPageNum = Math.floor(prevScrollPos);
+      if (oldPageNum !== this.#currentPageNum) {
+        const pxPageHeight = pageSetting.boxes[0].height;
+        const pxDeltaToTopOfOldPage = -(prevScrollPos - oldPageNum) * pxPageHeight;
+        const pxTotalDelta = pxDeltaToTopOfOldPage + (this.#currentPageNum - oldPageNum) * pxPageHeight;
+        let left = 0;
+        let top = 0;
+        switch (this.#rotateTimes) {
+          case 0: top = pxTotalDelta; break;
+          case 1: left = -pxTotalDelta; break;
+          case 2: top = -pxTotalDelta; break;
+          case 3: left = pxTotalDelta; break;
+        }
+        document.documentElement.scrollBy({ left, top, behavior: 'smooth' });
       }
     }
   }
@@ -378,7 +399,7 @@ export class BookViewer {
 
       const getX = (el) => parseFloat(el.getAttribute('x'), 10);
       this.throbbers_.forEach(el => el.style.visibility = 'visible');
-      this.throbberTimerId_ = setInterval(() => {
+      this.throbberTimerId_ = setInterval(() => { 
         this.throbbingTime_ += THROBBER_TIMER_MS;
         if (this.throbbingTime_ > MAX_THROBBING_TIME_MS) {
           this.#killThrobbing();

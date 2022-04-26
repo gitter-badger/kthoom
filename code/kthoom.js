@@ -235,7 +235,7 @@ export class KthoomApp {
       switch (evt.item.id) {
         case 'menu-download': this.downloadBook_(); break;
         case 'menu-close-all': this.closeAll_(); break;
-        case 'menu-help': this.toggleHelpOpen_(); break;
+        case 'menu-help': this.#toggleHelpOpen(); break;
       }
     });
 
@@ -246,7 +246,7 @@ export class KthoomApp {
       this.fileInputElem_.addEventListener('change', (e) => this.loadLocalFiles_(e));
     }
 
-    getElem('main-menu-button').addEventListener('click', (e) => this.toggleMenuOpen_());
+    getElem('main-menu-button').addEventListener('click', (e) => this.#toggleMenuOpen());
 
     this.viewerContextMenu_.addEventListener(MenuEventType.ITEM_SELECTED, evt => {
       const pageNum = evt.item.dataset.pagenum;
@@ -338,7 +338,7 @@ export class KthoomApp {
         this.showNextPage();
       }
     });
-    getElem('helpOverlay').addEventListener('click', () => this.toggleHelpOpen_());
+    getElem('helpOverlay').addEventListener('click', () => this.#toggleHelpOpen());
   }
 
   /** @private */
@@ -506,7 +506,7 @@ export class KthoomApp {
 
     // If the overlay is shown, the only keystroke we handle is closing it.
     if (this.isHelpOpened_()) {
-      this.toggleHelpOpen_();
+      this.#toggleHelpOpen();
       return;
     }
 
@@ -543,7 +543,7 @@ export class KthoomApp {
       case Key.I: kthoom.ipfs.ipfsHashWindow(); break;
       case Key.QUESTION_MARK:
         if (this.hasHelpOverlay_) {
-          this.toggleHelpOpen_();
+          this.#toggleHelpOpen();
         }
         break;
       case Key.M:
@@ -603,26 +603,23 @@ export class KthoomApp {
 
     if (getComputedStyle(getElem('progress')).display == 'none') return;
 
-    let canKeyNext = ((document.body.offsetWidth + document.body.scrollLeft) / document.body.scrollWidth) >= 1;
-    let canKeyPrev = (window.scrollX <= 0);
-
     switch (code) {
       case Key.LEFT:
-        if (canKeyPrev) {
-          if (evt.shiftKey) {
-            this.bookViewer_.showPage(0);
-          } else {
-            this.showPrevPage();
-          }
+        evt.preventDefault();
+        evt.stopPropagation();
+        if (evt.shiftKey) {
+          this.bookViewer_.showPage(0);
+        } else {
+          this.showPrevPage();
         }
         break;
       case Key.RIGHT:
-        if (canKeyNext) {
-          if (evt.shiftKey) {
-            this.bookViewer_.showPage(this.currentBook_.getNumberOfPages() - 1);
-          } else {
-            this.showNextPage();
-          }
+        evt.preventDefault();
+        evt.stopPropagation();
+        if (evt.shiftKey) {
+          this.bookViewer_.showPage(this.currentBook_.getNumberOfPages() - 1);
+        } else {
+          this.showNextPage();
         }
         break;
       case Key.LEFT_SQUARE_BRACKET:
@@ -793,27 +790,12 @@ export class KthoomApp {
     }
   }
 
-  /** @private */
-  toggleHelpOpen_() {
-    if (this.hasHelpOverlay_) {
-      getElem('helpOverlay').classList.toggle('opened');
-    }
-  }
-
-  /** @private */
-  toggleMenuOpen_() {
-    if (!this.mainMenu_.isOpen()) {
-      getElem('main-menu-button').setAttribute('aria-expanded', 'true');
-      this.mainMenu_.open();
-    } else {
-      getElem('main-menu-button').setAttribute('aria-expanded', 'false');
-      this.mainMenu_.close();
-    }
-  }
-
   showPrevPage() {
     const turnedPage = this.bookViewer_.showPrevPage();
-    if (this.bookViewer_.getFitMode() === FitMode.Width) {
+    // TODO(long-strip): Move this into BookViewer.updateLayout() ?
+    // Only place at top if the viewer is not in long-strip mode.
+    if (this.bookViewer_.getFitMode() === FitMode.Width &&
+        this.bookViewer_.getNumPagesInViewer() < 3) {
       window.scrollTo(0, 0);
     }
     if (!turnedPage) {
@@ -829,7 +811,10 @@ export class KthoomApp {
 
   showNextPage() {
     const turnedPage = this.bookViewer_.showNextPage();
-    if (this.bookViewer_.getFitMode() === FitMode.Width) {
+    // TODO(long-strip): Move this into BookViewer.updateLayout() ?
+    // Only place at top if the viewer is not in long-strip mode.
+    if (this.bookViewer_.getFitMode() === FitMode.Width &&
+        this.bookViewer_.getNumPagesInViewer() < 3) {
       window.scrollTo(0, 0);
     }
     if (!turnedPage) {
@@ -1257,6 +1242,22 @@ export class KthoomApp {
 
     // Enable menu items that are relevant when a book is switched to.
     this.mainMenu_.showMenuItem('menu-close-all', true);
+  }
+
+  #toggleHelpOpen() {
+    if (this.hasHelpOverlay_) {
+      getElem('helpOverlay').classList.toggle('opened');
+    }
+  }
+
+  #toggleMenuOpen() {
+    if (!this.mainMenu_.isOpen()) {
+      getElem('main-menu-button').setAttribute('aria-expanded', 'true');
+      this.mainMenu_.open();
+    } else {
+      getElem('main-menu-button').setAttribute('aria-expanded', 'false');
+      this.mainMenu_.close();
+    }
   }
 
   #toggleMetadataViewerOpen() {

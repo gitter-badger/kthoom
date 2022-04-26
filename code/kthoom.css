@@ -9,17 +9,20 @@
   box-shadow: 0 0 1px rgba(255,255,255,.5);
 }
 
+
+
 /* TODO: This change introduced in long-strip-view branch. */
 * {
   min-height: 0.01px;
 }
 
 body {
+  animation: fadeIn ease 1.5s;
 	background: #444;
 	color: white;
 	font-family: sans-serif;
 	margin: 0px;
-  animation: fadeIn ease 1.5s;
+  scroll-behavior: smooth;
 }
 
 /* TODO: This change introduced in long-strip-view branch. */
