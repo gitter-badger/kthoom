@@ -320,6 +320,10 @@ export class KthoomApp {
         this.toggleReadingStackOpen_();
         return;
       }
+      if (this.viewerContextMenu_.isOpen()) {
+        this.viewerContextMenu_.close();
+        return;
+      }
 
       const numPageMode = this.bookViewer_.getNumPagesInViewer();
       // Clicks do nothing in long-strip mode.
@@ -727,10 +731,8 @@ export class KthoomApp {
   onContextMenu_(evt) {
     if (!this.currentBook_) { return; }
 
-    // TODO
-    if (!Params.longStripView) {
-      evt.preventDefault();
-    }
+    evt.preventDefault();
+
     const pageNum = parseInt(evt.target.parentElement.dataset.pagenum, 10);
     const thisPage = this.currentBook_.getPage(pageNum);
     const mimeType = thisPage.getMimeType();
