@@ -105,7 +105,17 @@ export class BookViewer {
   }
 
   handleSwipeEvent(evt) {
-    if (!this.#currentBook || this.getNumPagesInViewer() === 3) {
+    if (!this.#currentBook) {
+      return;
+    }
+
+    // If a swipe/scroll event occurs, let it happen normally, but update the page
+    // number, if required.
+    if (this.getNumPagesInViewer() === 3) {
+      const newPageNum = Math.floor(this.#getScrollPosition());
+      if (newPageNum != this.#currentPageNum) {
+        this.#currentPageNum = newPageNum;
+      }
       return;
     }
 
@@ -114,10 +124,7 @@ export class BookViewer {
       return;
     }
 
-    // TODO
-    if (!Params.longStripView) {
-      evt.preventDefault();
-    }
+    evt.preventDefault();
 
     // Keep the timer going if it has been started.
     if (this.wheelTimer_) {
@@ -643,7 +650,6 @@ export class BookViewer {
     }
   }
 
-
   /**
    * Renders contents of page number pageNum in the page viewer element.
    * @param {Number} pageNum The page number to render into the div.
@@ -675,29 +681,6 @@ export class BookViewer {
       this.#getPageContainer(i).show(i < n);
     }
     return this.#pageContainers.slice(0, n);
-  }
-
-  /**
-   * Renders contents of page number pageNum in the page viewer element.
-   * TODO: Remove this method.
-   * @param {Number} pageNum The page number to render into the div.
-   * @param {SVGGElement} pageViewerEl The <g> for the page viewer.
-   */
-  #showPageInViewer(pageNum, pageViewerEl) {
-    assert(this.#currentBook, 'Current book not defined in #showPageInViewer()');
-    assert(this.#currentBook.getNumberOfPages() > pageNum,
-      'Book does not have enough pages in #showPageInViewer()');
-
-    const thePage = this.#currentBook.getPage(pageNum);
-    // It's possible we are in a 2-page viewer, but the page is not in the book yet.
-    if (!thePage) {
-      return;
-    }
-
-    pageViewerEl.dataset.pagenum = pageNum;
-    const imageEl = pageViewerEl.querySelector('image');
-    const objEl = pageViewerEl.querySelector('foreignObject');
-    thePage.renderIntoViewer(imageEl, objEl);
   }
 
   /** @private */
