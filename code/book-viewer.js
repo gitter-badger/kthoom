@@ -124,8 +124,6 @@ export class BookViewer {
       return;
     }
 
-    evt.preventDefault();
-
     // Keep the timer going if it has been started.
     if (this.wheelTimer_) {
       clearTimeout(this.wheelTimer_);

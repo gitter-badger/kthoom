@@ -48,6 +48,9 @@ const enableOpenDirectory = !!window.showDirectoryPicker;
  * The main class for the kthoom reader.
  */
 export class KthoomApp {
+  /** @type {Menu} */
+  #viewerContextMenu = null;
+
   constructor() {
     /** @private {BookViewer} */
     this.bookViewer_ = new BookViewer();
@@ -69,9 +72,6 @@ export class KthoomApp {
 
     /** @private {Menu} */
     this.viewMenu_ = null;
-
-    /** @private {Menu} */
-    this.viewerContextMenu_ = null;
 
     /** @private {boolean} */
     this.hasHelpOverlay_ = getElem('helpOverlay');
@@ -147,13 +147,7 @@ export class KthoomApp {
     this.mainMenu_ = new Menu(getElem(MENU.MAIN));
     this.openMenu_ = new Menu(getElem(MENU.OPEN));
     this.viewMenu_ = new Menu(getElem(MENU.VIEW));
-    this.viewerContextMenu_ = new Menu(getElem(MENU.VIEWER_CONTEXT));
-
-    // Un-hide the Long Strip View mode if ?longStripView=true.
-    if (Params.longStripView) {
-      const buttonEl = getElem('menu-view-long-strip');
-      buttonEl.parentElement.style.display = '';
-    }
+    this.#viewerContextMenu = new Menu(getElem(MENU.VIEWER_CONTEXT));
 
     this.mainMenu_.addSubMenu('menu-open', this.openMenu_);
     this.mainMenu_.addSubMenu('menu-view', this.viewMenu_);
@@ -248,7 +242,7 @@ export class KthoomApp {
 
     getElem('main-menu-button').addEventListener('click', (e) => this.#toggleMenuOpen());
 
-    this.viewerContextMenu_.addEventListener(MenuEventType.ITEM_SELECTED, evt => {
+    this.#viewerContextMenu.addEventListener(MenuEventType.ITEM_SELECTED, evt => {
       const pageNum = evt.item.dataset.pagenum;
       switch (evt.item.id) {
         case 'save-page-as-png': this.savePageAs_(pageNum, PNG); break;
@@ -290,8 +284,8 @@ export class KthoomApp {
         this.#toggleReadingStackOpen();
         return;
       }
-      if (this.viewerContextMenu_.isOpen()) {
-        this.viewerContextMenu_.close();
+      if (this.#viewerContextMenu.isOpen()) {
+        this.#viewerContextMenu.close();
         return;
       }
 
@@ -351,7 +345,7 @@ export class KthoomApp {
     if (document.fullscreenEnabled) {
       const fsButton = getElem('fullScreen');
       fsButton.style.display = '';
-      fsButton.addEventListener('click', () => this.toggleFullscreen_());
+      fsButton.addEventListener('click', () => this.#toggleFullscreen());
       document.addEventListener('fullscreenchange', () => this.bookViewer_.updateLayout());
     }
   }
@@ -391,10 +385,6 @@ export class KthoomApp {
           return;
         }
         target = target.parentElement;
-      }
-      // TODO
-      if (!Params.longStripView) {
-        evt.preventDefault();
       }
     }, true);
   }
@@ -533,7 +523,7 @@ export class KthoomApp {
       case Key.O: this.openLocalFiles_(); break;
       case Key.D: this.openLocalDirectory_(); break;
       case Key.U: this.openFileViaUrl_(); break;
-      case Key.F: this.toggleFullscreen_(); break;
+      case Key.F: this.#toggleFullscreen(); break;
       case Key.G:
         const menuItem = getElem(GOOGLE_MENU_ITEM_ID);
         if (menuItem && menuItem.getAttribute('disabled') !== 'true') {
@@ -648,10 +638,6 @@ export class KthoomApp {
         this.saveSettings_();
         break;
       case Key.NUM_1: case Key.NUM_2: case Key.NUM_3:
-        // Unless ?longStripView=true, the '3' key does nothing.
-        if (code === Key.NUM_3 && !Params.longStripView) {
-          break;
-        }
         const numPages = code - Key.NUM_1 + 1;
         this.bookViewer_.setNumPagesInViewer(numPages);
         if (numPages === 1) {
@@ -687,7 +673,7 @@ export class KthoomApp {
     const pageNum = parseInt(evt.target.parentElement.dataset.pagenum, 10);
     const thisPage = this.currentBook_.getPage(pageNum);
     const mimeType = thisPage.getMimeType();
-    const menu = this.viewerContextMenu_;
+    const menu = this.#viewerContextMenu;
     menu.showMenuItem('save-page-as-png', [PNG, WEBP].includes(mimeType));
     menu.showMenuItem('save-page-as-jpg', [JPG, WEBP].includes(mimeType));
     menu.showMenuItem('save-page-as-webp', [WEBP].includes(mimeType));
@@ -773,21 +759,6 @@ export class KthoomApp {
       }
       xhr.send(null);
     });
-  }
-
-  /** @private */
-  toggleFullscreen_() {
-    if (document.fullscreenEnabled) {
-      const fsPromise = document.fullscreenElement ?
-        document.exitFullscreen() :
-        document.documentElement.requestFullscreen();
-      fsPromise
-          .then(() => this.bookViewer_.updateLayout())
-          .catch(err => {
-            debugger;
-          })
-
-    }
   }
 
   showPrevPage() {
@@ -1242,6 +1213,20 @@ export class KthoomApp {
 
     // Enable menu items that are relevant when a book is switched to.
     this.mainMenu_.showMenuItem('menu-close-all', true);
+  }
+
+  #toggleFullscreen() {
+    if (document.fullscreenEnabled) {
+      const fsPromise = document.fullscreenElement ?
+        document.exitFullscreen() :
+        document.documentElement.requestFullscreen();
+      fsPromise
+          .then(() => this.bookViewer_.updateLayout())
+          .catch(err => {
+            debugger;
+          })
+
+    }
   }
 
   #toggleHelpOpen() {
