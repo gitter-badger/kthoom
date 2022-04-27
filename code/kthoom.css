@@ -9,13 +9,6 @@
   box-shadow: 0 0 1px rgba(255,255,255,.5);
 }
 
-
-
-/* TODO: This change introduced in long-strip-view branch. */
-* {
-  min-height: 0.01px;
-}
-
 body {
   animation: fadeIn ease 1.5s;
 	background: #444;
@@ -23,54 +16,6 @@ body {
 	font-family: sans-serif;
 	margin: 0px;
   scroll-behavior: smooth;
-}
-
-/* TODO: This change introduced in long-strip-view branch. */
-img {
-  vertical-align: middle;
-  border-style: none;
-  /*max-width: 100%;
-  height: auto;*/
-  height: 100%;
-  width: 100%;
-}
-
-/* TODO: This change introduced in long-strip-view branch. */
-#bookViewer {
-  min-height: calc(100vh - 144px);
-  padding-top: 15px;
-  padding-bottom: 15px;
-}
-
-/* TODO: This change introduced in long-strip-view branch. */
-#bookViewer {
-  padding-top: 8px;
-}
-
-/* TODO: This change introduced in long-strip-view branch. */
-@media (max-width: 768px) {
-  #bookViewer {
-    padding-top: 10px;
-    padding-bottom: 10px;
-  }
-}
-
-/* TODO: This change introduced in long-strip-view branch. */
-#pages {
-  text-align: center;
-  cursor: pointer;
-  min-height: 50vh;
-}
-
-/* TODO: This change introduced in long-strip-view branch. */
-#pages img {
-  -khtml-user-select: none;
-  -o-user-select: none;
-  -moz-user-select: none;
-  -webkit-user-select: none;
-  user-select: none;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 @keyframes fadeIn {
