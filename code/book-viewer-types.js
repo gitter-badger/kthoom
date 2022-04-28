@@ -6,6 +6,12 @@ export const FitMode = {
 }
 
 /**
+ * @typedef Point Defines a pair of x/y values.
+ * @property {number} x
+ * @property {number} y
+ */
+
+/**
  * @typedef Box Defines a box/rectangle.
  * @property {number} left The left edge.
  * @property {number} top The top edge.

@@ -14,6 +14,7 @@ import { OnePageSetter } from './pages/one-page-setter.js';
 import { PageContainer } from './pages/page-container.js';
 import { PageSetter } from './pages/page-setter.js';
 import { TwoPageSetter } from './pages/two-page-setter.js';
+import { WideStripPageSetter } from './pages/wide-strip-page-setter.js';
 import { assert, getElem, Params } from './common/helpers.js';
 
 /** @typedef {import('./book-viewer-types.js').Box} Box */
@@ -44,7 +45,8 @@ export class BookViewer {
   // All PageSetters.
   #onePageSetter = new OnePageSetter();
   #twoPageSetter = new TwoPageSetter();
-  #longStripPageSetter = new LongStripPageSetter(); // Experimental.
+  #longStripPageSetter = new LongStripPageSetter();
+  #wideStripPageSetter = new WideStripPageSetter();
 
   /** @type {Book} */
   #currentBook = null;
@@ -65,8 +67,8 @@ export class BookViewer {
   #fitMode = FitMode.Best;
 
   /**
-   * The number of pages visible in the viewer at one time. Defaults to 1
-   * but can be set to 2 or 3 (long-strip mode).
+   * The number of pages visible in the viewer at one time. Defaults to 1 (one-page mode),
+   * but can also be set to 2 (two-page mode), 3 (long-strip mode).
    * @type {number}
    */
   #numPagesInViewer = 1;
@@ -75,20 +77,6 @@ export class BookViewer {
   #pageContainers = [];
 
   constructor() {
-    /**
-     * Keep track of scroll of left.
-     * TODO: Rename this to something better.
-     * @type {number}
-     */
-    this.s = 0;
-
-    /**
-     * Keep track of scroll of top.
-     * TODO: Rename this to something better.
-     * @type {number}
-     */
-    this.t = 0;
-
     this.wheelTimer_ = null;
     this.wheelTurnedPageAt_ = 0;
 
@@ -111,8 +99,16 @@ export class BookViewer {
 
     // If a swipe/scroll event occurs, let it happen normally, but update the page
     // number, if required.
-    if (this.getNumPagesInViewer() === 3) {
-      const newPageNum = Math.floor(this.#getScrollPosition());
+    if (this.getNumPagesInViewer() >= 3) {
+      const pageSetter = this.getNumPagesInViewer() === 3 ?
+          this.#longStripPageSetter :
+          this.#wideStripPageSetter;
+      const pageBoxes = this.#pageContainers.filter(c => c.isShown()).map(c => c.getBox());
+      const newPageNum = Math.floor(pageSetter.getScrollPosition(
+          document.documentElement.scrollLeft,
+          document.documentElement.scrollTop,
+          pageBoxes,
+          this.#rotateTimes));
       if (newPageNum != this.#currentPageNum) {
         this.#currentPageNum = newPageNum;
       }
@@ -239,7 +235,7 @@ export class BookViewer {
    */
   setNumPagesInViewer(numPages) {
     numPages = parseInt(numPages, 10);
-    if (numPages !== 1 && numPages !== 2 && numPages !== 3) return;
+    if (numPages < 1 || numPages > 4) return;
 
     if (this.#numPagesInViewer !== numPages) {
       this.#numPagesInViewer = numPages;
@@ -279,10 +275,6 @@ export class BookViewer {
     assert(bv.width, 'bv.width not set');
     assert(bv.height, 'bv.height not set');
 
-    // Before we redo PageSetting, remember the book viewer's scroll point.
-    const prevScrollPos = this.#getScrollPosition();
-    const prevNumPagesInViewer = this.#pageContainers.filter(c => c.isShown()).length;
-
     // This is the center of rotation, always rotating around the center of the book viewer.
     let rotx = bv.left + bv.width / 2;
     let roty = bv.top + bv.height / 2;
@@ -319,7 +311,22 @@ export class BookViewer {
         pageSetter = this.#longStripPageSetter;
         pageSetter.setNumPages(numPages);
         break;
+      case 4:
+        numPages = this.#currentBook.getNumberOfPages();
+        startingPageNum = 0; // Always render all the pages.
+        pageSetter = this.#wideStripPageSetter;
+        pageSetter.setNumPages(numPages);
+        break;
     }
+
+    // Before we redo PageSetting, remember the book viewer's scroll point and # of pages.
+    const pageBoxes = this.#pageContainers.filter(c => c.isShown()).map(c => c.getBox());
+    const prevScrollPos = pageSetter.getScrollPosition(
+        document.documentElement.scrollLeft,
+        document.documentElement.scrollTop,
+        pageBoxes,
+        this.#rotateTimes);
+    const prevNumPagesInViewer = pageBoxes.length;
 
     pageSetting = pageSetter.updateLayout(layoutParams);
 
@@ -327,8 +334,6 @@ export class BookViewer {
     const pageContainers = this.#showPageContainers(numPages);
     for (let i = 0; i < numPages; ++i) {
       pageContainers[i].setFrame(pageSetting.boxes[i]);
-      const pageNumToRender = this.#currentPageNum < this.#currentBook.getNumberOfPages() ?
-          this.#currentPageNum + 1 : 0;
       this.#renderPageInContainer(startingPageNum, pageContainers[i]);
 
       ++startingPageNum;
@@ -353,19 +358,20 @@ export class BookViewer {
     svgTop.setAttribute('height', toph);
 
     // Special handling for long-strip mode.
-    if (this.getNumPagesInViewer() === 3) {
+    if (this.getNumPagesInViewer() === 3 || this.getNumPagesInViewer() === 4) {
       // If the number of pages in the viewer changed (i.e. long-strip mode as the book is loading),
       // and loading pages would move the scroll position (i.e. in 180 or 270-deg rotation), then
       // scroll the viewer to the same position they were at before.
       if (prevNumPagesInViewer !== numPages) {
-        const deltaScroll = this.#getScrollPosition() - prevScrollPos; 
+
+        const deltaScroll = pageSetter.getScrollPosition(
+            document.documentElement.scrollLeft,
+            document.documentElement.scrollTop,
+            pageContainers.map(c => c.getBox()),
+            this.#rotateTimes) - prevScrollPos; 
         if (deltaScroll !== 0) {
-          const pxDeltaScroll = deltaScroll * pageSetting.boxes[0].height;
-          // For rotate 180 or 270 degrees, we must re-adjust the scroll pos.
-          switch (this.#rotateTimes) {
-            case 1: document.documentElement.scrollBy(pxDeltaScroll, 0); break;
-            case 2: document.documentElement.scrollBy(0, pxDeltaScroll); break;
-          }
+          const delta = pageSetter.getScrollDelta(deltaScroll, pageSetting.boxes[0], this.#rotateTimes);
+          document.documentElement.scrollBy(delta.x, delta.y);
         }
       }
 

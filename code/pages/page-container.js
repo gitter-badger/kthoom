@@ -37,6 +37,15 @@ export class PageContainer {
     }
   }
 
+  /** @returns {Box} */
+  getBox() {
+    const left = parseInt(this.#image.getAttribute('x'));
+    const top = parseInt(this.#image.getAttribute('y'));
+    const width = parseInt(this.#image.getAttribute('width'));
+    const height = parseInt(this.#image.getAttribute('height'));
+    return { left, top, width, height };
+  }
+
   /** @returns {SVGGElement} */
   getElement() {
     return this.#g;

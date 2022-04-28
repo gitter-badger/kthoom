@@ -185,6 +185,7 @@ export class KthoomApp {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-wide-strip', false);
           this.saveSettings_();
           closeMainMenu();
           break;
@@ -193,6 +194,7 @@ export class KthoomApp {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-wide-strip', false);
           this.saveSettings_();
           closeMainMenu();
           break;
@@ -201,6 +203,16 @@ export class KthoomApp {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-wide-strip', false);
+          this.saveSettings_();
+          closeMainMenu();
+          break;
+        case 'menu-view-wide-strip':
+          this.bookViewer_.setNumPagesInViewer(4);
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-wide-strip', true);
           this.saveSettings_();
           closeMainMenu();
           break;
@@ -461,20 +473,27 @@ export class KthoomApp {
       const numPagesInViewer = s['numPagesInViewer'];
       if (numPagesInViewer) {
         this.bookViewer_.setNumPagesInViewer(s['numPagesInViewer']);
-        if (s['numPagesInViewer'] === 1) {
+        const numPagesInViewer = s['numPagesInViewer'];
+        if (numPagesInViewer === 1) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
-          this.viewMenu_.setMenuItemSelected('menu-view-long-strip',false);
-
-        } else if(s['numPagesInViewer'] === 2) {
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-wide-strip', false);
+        } else if (numPagesInViewer === 2) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
-          this.viewMenu_.setMenuItemSelected('menu-view-long-strip',false);
-        }
-        else if(s['numPagesInViewer'] === 3) {
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-wide-strip', false);
+        } else if (numPagesInViewer === 3) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
-          this.viewMenu_.setMenuItemSelected('menu-view-long-strip',true);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-wide-strip', false);
+        } else if (numPagesInViewer === 4) {
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-wide-strip', true);
         }
       }
 
@@ -637,21 +656,29 @@ export class KthoomApp {
         this.viewMenu_.setMenuItemSelected('menu-view-fit-width', fitMode === FitMode.Width);
         this.saveSettings_();
         break;
-      case Key.NUM_1: case Key.NUM_2: case Key.NUM_3:
+      case Key.NUM_1: case Key.NUM_2: case Key.NUM_3: case Key.NUM_4:
         const numPages = code - Key.NUM_1 + 1;
         this.bookViewer_.setNumPagesInViewer(numPages);
         if (numPages === 1) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-wide-strip', false);
         } else if (numPages === 2) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', true);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
-        } else {
+          this.viewMenu_.setMenuItemSelected('menu-view-wide-strip', false);
+        } else if (numPages === 3) {
           this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
           this.viewMenu_.setMenuItemSelected('menu-view-long-strip', true);
+          this.viewMenu_.setMenuItemSelected('menu-view-wide-strip', false);
+        } else {
+          this.viewMenu_.setMenuItemSelected('menu-view-one-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-two-page', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-long-strip', false);
+          this.viewMenu_.setMenuItemSelected('menu-view-wide-strip', true);
         }
         this.saveSettings_();
         break;

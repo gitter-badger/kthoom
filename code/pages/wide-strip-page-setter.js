@@ -5,13 +5,12 @@ import { assert } from '../common/helpers.js';
 import { OnePageSetter } from './one-page-setter.js';
 
 /** @typedef {import('../book-viewer-types.js').Box} Box */
-/** @typedef {import('../book-viewer-types.js').Point} Point */
 /** @typedef {import('../book-viewer-types.js').PageLayoutParams} PageLayoutParams */
 /** @typedef {import('../book-viewer-types.js').PageSetting} PageSetting */
 
 // TODO: Add unit tests.
 
-export class LongStripPageSetter extends PageSetter {
+export class WideStripPageSetter extends PageSetter {
   /** @type {num} */
   #numPages = 0;
 
@@ -30,12 +29,12 @@ export class LongStripPageSetter extends PageSetter {
    * @returns {Point} The number of pixels to scroll in x,y directions.
    */
   getScrollDelta(numPages, pageContainerBox, rotateTimes) {
-    const pxDeltaScroll = numPages * pageContainerBox.height;
+    const pxDeltaScroll = numPages * pageContainerBox.width;
     switch (rotateTimes) {
       case 0: return { x: 0, y: 0 };
-      case 1: return { x: pxDeltaScroll, y: 0 };
-      case 2: return { x: 0, y: pxDeltaScroll };
-      case 3: return { x: 0, y: 0 };
+      case 1: return { x: 0, y: 0 };
+      case 2: return { x: pxDeltaScroll, y: 0 };
+      case 3: return { x: 0, y: pxDeltaScroll };
     }
     throw `Invalid rotateTimes ${rotateTimes}`;
   }
@@ -52,17 +51,17 @@ export class LongStripPageSetter extends PageSetter {
       return 0;
     }
 
-    const onePageHeight = pageBoxes[0].height;
-    const fullHeight = pageBoxes.reduce((prev, cur) => prev + cur.height, 0);
+    const onePageWidth = pageBoxes[0].width;
+    const fullWidth = pageBoxes.reduce((prev, cur) => prev + cur.width, 0);
     let scrollPosPx;
     switch (rotateTimes) {
-      case 0: scrollPosPx = docScrollTop; break;
-      case 1: scrollPosPx = fullHeight - docScrollLeft - onePageHeight; break;
-      case 2: scrollPosPx = fullHeight - docScrollTop - onePageHeight; break;
-      case 3: scrollPosPx = docScrollLeft; break;
+      case 0: scrollPosPx = docScrollLeft; break;
+      case 1: scrollPosPx = docScrollTop; break;
+      case 2: scrollPosPx = fullWidth - docScrollLeft - onePageWidth; break;
+      case 3: scrollPosPx = fullWidth - docScrollTop - onePageWidth; break;
     }
 
-    return scrollPosPx / onePageHeight;
+    return scrollPosPx / onePageWidth;
   }
 
   /** @param {number} np */
@@ -77,7 +76,7 @@ export class LongStripPageSetter extends PageSetter {
    * @returns {PageSetting} A set of Page bounding boxes.
    */
   updateLayout(layoutParams) {
-    assert(this.#numPages > 0, `LongStripPageSetter.updateLayout() has #numPages=${this.#numPages}`);
+    assert(this.#numPages > 0, `WideStripPageSetter.updateLayout() has #numPages=${this.#numPages}`);
     const portraitMode = (layoutParams.rotateTimes % 2 === 0);
 
     // Use the OnePageSetter to get the dimensions of the first page.
@@ -88,21 +87,21 @@ export class LongStripPageSetter extends PageSetter {
     for (let i = 1; i < this.#numPages; ++i) {
       const prevBox = pageSetting.boxes[i - 1];
       pageSetting.boxes.push({
-        left: prevBox.left,
-        top: prevBox.top + prevBox.height,
+        left: prevBox.left + prevBox.width,
+        top: prevBox.top,
         width: prevBox.width,
         height: prevBox.height,
       });
 
       if (portraitMode) {
-        pageSetting.bv.height += prevBox.height;
+        pageSetting.bv.width += prevBox.width;
         if (layoutParams.rotateTimes === 2) { // 180 deg.
-          pageSetting.bv.top -= prevBox.height;
+          pageSetting.bv.left -= prevBox.width;
         }
       } else {
-        pageSetting.bv.width += prevBox.height;
-        if (layoutParams.rotateTimes === 1) { // counter-clockwise.
-          pageSetting.bv.left -= prevBox.height;
+        pageSetting.bv.height += prevBox.width;
+        if (layoutParams.rotateTimes === 3) { // counter-clockwise.
+          pageSetting.bv.top -= prevBox.width;
         }
       }
     }
