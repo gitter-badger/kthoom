@@ -133,7 +133,7 @@ export class EPUBBookBinder extends BookBinder {
         const htmlDoc = new DOMParser().parseFromString(toText(data), XHTML_MIMETYPE);
         xhtmlChunks.push(htmlDoc);
       }
-      this.#layoutPercentage = (i + 1) / numSpineRefs;
+      this.layoutPercentage = (i + 1) / numSpineRefs;
       this.dispatchEvent(new BookProgressEvent(this, 1));
     }
 

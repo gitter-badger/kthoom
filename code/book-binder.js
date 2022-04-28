@@ -62,7 +62,7 @@ export class BookBinder extends EventTarget {
    * A number between 0 and 1 indicating the progress of the page layout process.
    * @type {number}
    */
-  #layoutPercentage = 0;
+  layoutPercentage = 0;
 
   /**
    * @param {string} fileNameOrUri
@@ -148,7 +148,7 @@ export class BookBinder extends EventTarget {
 
   getLoadingPercentage() { return this.#bytesLoaded / this.#totalExpectedSize; }
   getUnarchivingPercentage() { return this.#unarchivingPercentage; }
-  getLayoutPercentage() { return this.#layoutPercentage; }
+  getLayoutPercentage() { return this.layoutPercentage; }
 
   setNewExpectedSize(bytesDownloaded, newExpectedSize) {
     this.#bytesLoaded = bytesDownloaded;
