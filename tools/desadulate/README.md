@@ -35,9 +35,9 @@ To convert /old/path/to/comics/foo/bar/book.cbz into /new/path/to/comics/foo/bar
 To convert all comic books in /old/path/to/comics/ and put into /new/path/to/comics/ (assumes globstar or zsh):
 
   ```zsh
-    for F in /Volumes/data/media/incoming/dc-1960-1969/1960/**/*.cb?
+    for F in /old/path/to/comics/**/*.cb?
     do
-      B=`echo $F | cut -c43-`;
-      desadulate -i /Volumes/data/media/incoming/dc-1960-1969 -o /Users/jeffschiller/Documents/data/media/comics/dc -f "$B";
+      B=`echo $F | cut -c19-`;
+      desadulate -i /old/path/to/comics -o /new/opath/to/comics -f "$B";
     done
   ```
