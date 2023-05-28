@@ -54,7 +54,7 @@ export {
  *   just node's worker_threads ?
  */
 
-const createWorkerFn = (scriptFilename) => new Worker(scriptFilename);
+const createWorkerFn = (scriptFilename) => new Worker(scriptFilename, { type: 'module' });
 
 function warn() {
   console.warn(`Stop using archive.js and use decompress.js instead. This module will be removed.`);
