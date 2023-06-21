@@ -76,7 +76,9 @@ export class BookBinder extends EventTarget {
     if (!totalExpectedSize || totalExpectedSize < -2) {
       throw 'Must initialize a BookBinder with a valid totalExpectedSize';
     }
-    if (!ab || !(ab instanceof ArrayBuffer)) {
+    // We do not check (ab instanceof ArrayBuffer) because sometimes the ArrayBuffer is created from
+    // the JS context's ArrayBuffer prototype (like when it is sent from another Window).
+    if (!ab || (!ab.byteLength)) {
       throw 'Must initialize a BookBinder with an ArrayBuffer';
     }
     if (totalExpectedSize > 0 && ab.byteLength > totalExpectedSize) {
