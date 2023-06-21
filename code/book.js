@@ -421,7 +421,7 @@ export class Book extends EventTarget {
             switch (evt.type) {
               case BookPumpEventType.BOOKPUMP_DATA_RECEIVED:
                 this.#bookBinder.appendBytes(evt.ab);
-                this.appendBytes(value.buffer);
+                this.appendBytes(evt.ab);
                 break;
               case BookPumpEventType.BOOKPUMP_END:
                 this.#finishedLoading = true;
