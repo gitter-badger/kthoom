@@ -225,7 +225,9 @@ export class ReadingStack {
       if (currentlySelectedBookDiv) {
         currentlySelectedBookDiv.classList.remove('current');
         const newCurrentBookDiv = contents.querySelector(`div.readingStackBook[data-index="${i}"]`);
-        newCurrentBookDiv.classList.add('current');
+        if (newCurrentBookDiv) {
+          newCurrentBookDiv.classList.add('current');
+        }
       } else {
         // Else, re-render everything to update selected highlight.
         this.renderStack_();

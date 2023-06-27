@@ -426,6 +426,8 @@ export class Book extends EventTarget {
               case BookPumpEventType.BOOKPUMP_END:
                 this.#finishedLoading = true;
                 this.dispatchEvent(new BookLoadingCompleteEvent(this));
+                bookPump.removeEventListener(BookPumpEventType.BOOKPUMP_DATA_RECEIVED, handleBookPumpEvents);
+                bookPump.removeEventListener(BookPumpEventType.BOOKPUMP_END, handleBookPumpEvents);          
                 resolve(this);
                 break;
             }
@@ -469,6 +471,7 @@ export class Book extends EventTarget {
 
       this.#bookBinder.addEventListener(BookEventType.BINDING_COMPLETE, evt => {
         this.#finishedBinding = true;
+        this.#bookBinder = null;
         this.dispatchEvent(new BookBindingCompleteEvent(this));
       });
 

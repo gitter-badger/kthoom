@@ -191,7 +191,9 @@ export class BookBinder extends EventTarget {
   }
 
   /**
-   * Must be called from the implementing subclass of BookBinder.
+   * Must be called from the implementing subclass of BookBinder. Do not call this from
+   * the client.
+   * @protected
    */
   stop() {
     // Stop the Unarchiver (which will kill the worker) and then delete the unarchiver
