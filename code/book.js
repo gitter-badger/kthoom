@@ -471,7 +471,6 @@ export class Book extends EventTarget {
 
       this.#bookBinder.addEventListener(BookEventType.BINDING_COMPLETE, evt => {
         this.#finishedBinding = true;
-        this.#bookBinder = null;
         this.dispatchEvent(new BookBindingCompleteEvent(this));
       });
 
