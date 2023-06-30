@@ -227,6 +227,10 @@ export class ReadingStack {
         const newCurrentBookDiv = contents.querySelector(`div.readingStackBook[data-index="${i}"]`);
         if (newCurrentBookDiv) {
           newCurrentBookDiv.classList.add('current');
+        } else {
+          // If we did not have a div for this book, that means it was new and we should
+          // completely re-render.
+          this.renderStack_();
         }
       } else {
         // Else, re-render everything to update selected highlight.
