@@ -1036,12 +1036,15 @@ export class KthoomApp {
    * @param {number} expectedSize Unarchived size in bytes.  If -1, then the
    *     data from the XHR progress events is used.
    * @param {Object<string, string>} headerMap A map of request header keys and values.
+   * @param {boolean=} preventSwitchingToBook Set to true to avoid switching the viewer to the
+   *     new book. Default behavior is that the reading stack and viewer will switch to the book
+   *     once it is loaded.
    * @returns {Promise<Book>}
    */
-  loadSingleBookFromXHR(name, uri, expectedSize, headerMap = {}) {
+  loadSingleBookFromXHR(name, uri, expectedSize, headerMap = {}, preventSwitchingToBook = false) {
     const book = new Book(name, uri);
     const bookPromise = book.loadFromXhr(expectedSize, headerMap);
-    this.readingStack_.addBook(book, true);
+    this.readingStack_.addBook(book, !preventSwitchingToBook);
     return bookPromise;
   }
 
@@ -1050,16 +1053,19 @@ export class KthoomApp {
    * @param {string} uri The resource to fetch.
    * @param {number} expectedSize Unarchived size in bytes.
    * @param {Object} init An object to initialize the Fetch API.
+   * @param {boolean=} preventSwitchingToBook Set to true to avoid switching the viewer to the
+   *     new book. Default behavior is that the reading stack and viewer will switch to the book
+   *     once it is loaded.
    * @returns {Promise<Book>}
    */
-  loadSingleBookFromFetch(name, uri, expectedSize, init) {
+  loadSingleBookFromFetch(name, uri, expectedSize, init, preventSwitchingToBook = false) {
     if (!window['fetch'] || !window['Response'] || !window['ReadableStream']) {
       throw 'No browser support for fetch/ReadableStream';
     }
 
     const book = new Book(name, uri);
     const bookPromise = book.loadFromFetch(expectedSize, init);
-    this.readingStack_.addBook(book, true);
+    this.readingStack_.addBook(book, !preventSwitchingToBook);
     return bookPromise;
   }
 
@@ -1067,12 +1073,15 @@ export class KthoomApp {
    * @param {string} name
    * @param {string} bookUri
    * @param {ArrayBuffer} ab
+   * @param {boolean=} preventSwitchingToBook Set to true to avoid switching the viewer to the
+   *     new book. Default behavior is that the reading stack and viewer will switch to the book
+   *     once it is loaded.
    * @returns {Promise<Book>}
    */
-  loadSingleBookFromArrayBuffer(name, bookUri, ab) {
+  loadSingleBookFromArrayBuffer(name, bookUri, ab, preventSwitchingToBook = false) {
     const book = new Book(name);
     const bookPromise = book.loadFromArrayBuffer(bookUri, ab);
-    this.readingStack_.addBook(book, true);
+    this.readingStack_.addBook(book, !preventSwitchingToBook);
     return bookPromise;
   }
 
@@ -1080,12 +1089,15 @@ export class KthoomApp {
    * @param {string} name
    * @param {string} bookUri
    * @param {BookPump} bookPump
+   * @param {boolean=} preventSwitchingToBook Set to true to avoid switching the viewer to the
+   *     new book. Default behavior is that the reading stack and viewer will switch to the book
+   *     once it is loaded.
    * @returns {Promise<Book>}
    */
-  loadSingleBookFromBookPump(name, bookUri, bookPump) {
+  loadSingleBookFromBookPump(name, bookUri, bookPump, preventSwitchingToBook = false) {
     const book = new Book(name);
     const bookPromise = book.loadFromBookPump(bookUri, bookPump);
-    this.readingStack_.addBook(book, true);
+    this.readingStack_.addBook(book, !preventSwitchingToBook);
     return bookPromise;
   }
 
