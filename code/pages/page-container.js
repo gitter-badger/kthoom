@@ -72,7 +72,7 @@ export class PageContainer {
     while (this.#foreignObject.firstChild) {
       this.#foreignObject.firstChild.remove();
     }
-    this.#foreignObject.appendChild(textDiv);
+    this.#foreignObject.appendChild(el);
     this.#foreignObject.style.display = '';
   }
 
