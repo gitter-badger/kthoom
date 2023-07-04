@@ -20,7 +20,8 @@ const DEFAULT_ASPECT_RATIO = 6.625 / 10.25;
  */
 function createURLFromArray(typedArray, mimeType) {
   if (mimeType === 'image/xml+svg') {
-    return 'data:image/svg+xml;utf8,' + encodeURIComponent(new TextDecoder('utf-8').decode(ab));
+    return 'data:image/svg+xml;utf8,'
+        + encodeURIComponent(new TextDecoder('utf-8').decode(typedArray));
   }
   let blob = new Blob([typedArray], { type: mimeType });
   return URL.createObjectURL(blob);
@@ -395,7 +396,9 @@ export const createPageFromFileAsync = function (unarchivedFile) {
       resolve(new TextPage(filename, `Could not determine type of file "${filename}"`));
       return;
     }
-    if (sniffedMimeType !== mimeType) {
+
+    // The sniffed MIME type will be null for text files (like SVG).
+    if (!!sniffedMimeType && sniffedMimeType !== mimeType) {
       console.error(`mime type mismatch: ${sniffedMimeType} vs ${mimeType}`);
     }
 

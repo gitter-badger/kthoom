@@ -73,7 +73,7 @@ export class BookBinder extends EventTarget {
     super();
 
     // totalExpectedSize can be -1 in the case of an XHR where we do not know the size yet.
-    if (!totalExpectedSize || totalExpectedSize < -2) {
+    if (!totalExpectedSize || totalExpectedSize < -1) {
       throw 'Must initialize a BookBinder with a valid totalExpectedSize';
     }
     // We do not check (ab instanceof ArrayBuffer) because sometimes the ArrayBuffer is created from
