@@ -113,8 +113,10 @@ export class BookBinder extends EventTarget {
     if (!this.unarchiver) {
       throw 'Called appendBytes() without a valid Unarchiver set';
     }
+
+    // Fetch doesn't give us the full byte size, so we update upon each append.
     if (this.#bytesLoaded + ab.byteLength > this.#totalExpectedSize) {
-      throw 'Tried to add bytes larger than totalExpectedSize in appendBytes()';
+      this.#totalExpectedSize = this.#bytesLoaded + ab.byteLength;
     }
 
     this.unarchiver.update(ab);

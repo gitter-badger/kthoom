@@ -45,7 +45,9 @@ const GOOGLE_MENU_ITEM_ID = 'menu-open-google-drive';
 const enableOpenDirectory = !!window.showDirectoryPicker;
 
 /**
- * The main class for the kthoom reader.
+ * The main class for the kthoom reader. This class should be considered the official API of the
+ * kthoom app, with its public methods being the way you control kthoom "from the outside" (i.e.
+ * if you are hosting kthoom inside a larger web app).
  */
 export class KthoomApp {
   /** @type {Menu} */
@@ -431,10 +433,9 @@ export class KthoomApp {
       } else if (bookUri.indexOf('dweb:/ipfs/') === 0) {
         kthoom.ipfs.loadHash(bookUri.substr(11));
       } else {
-        // Else, we assume it is a URL that XHR can handle.
+        // Else, we assume it is a URL and use the Fetch API.
         // TODO: Support loading a reading list file here.
-        // TODO: Try fetch first?
-        this.loadSingleBookFromXHR(bookUri /* name */, bookUri /* url */, -1);
+        this.loadSingleBookFromFetch(bookUri /** name */, bookUri /** uri */);
       }
     } else {
       // TODO: Eventually get rid of this and just rely on the query params.
@@ -986,7 +987,7 @@ export class KthoomApp {
         }
       }
 
-      this.loadSingleBookFromXHR(bookUrl /* name */, bookUrl /* url */, -1);
+      this.loadSingleBookFromFetch(bookUrl /** name */, bookUrl /** uri */);
     }
   }
 
@@ -1031,45 +1032,53 @@ export class KthoomApp {
   }
 
   /**
+   * Fetches a book over the network using a XMLHttpRequest GET request.
+   * Use loadSingleBookFromFetch() instead.
    * @param {string} name The book name.
    * @param {string} uri The URI to fetch.
-   * @param {number} expectedSize Unarchived size in bytes.  If -1, then the
-   *     data from the XHR progress events is used.
+   * @param {number} expectedSize Size of book file in bytes. If -1, then the data from the XHR
+   *     progress events is used.
    * @param {Object<string, string>} headerMap A map of request header keys and values.
    * @param {boolean=} preventSwitchingToBook Set to true to avoid switching the viewer to the
    *     new book. Default behavior is that the reading stack and viewer will switch to the book
    *     once it is loaded.
    * @returns {Promise<Book>}
+   * @deprecated Use loadSingleBookFromFetch() instead.
    */
   loadSingleBookFromXHR(name, uri, expectedSize, headerMap = {}, preventSwitchingToBook = false) {
-    const book = new Book(name, uri);
-    const bookPromise = book.loadFromXhr(expectedSize, headerMap);
+    const book = new Book(name, uri, undefined /** bookContainer */, expectedSize);
+    const bookPromise = book.loadFromXhr(headerMap);
     this.readingStack_.addBook(book, !preventSwitchingToBook);
     return bookPromise;
   }
 
   /**
+   * Fetches a book over the network using the Fetch API.
    * @param {string} name The book name.
    * @param {string} uri The resource to fetch.
-   * @param {number} expectedSize Unarchived size in bytes.
-   * @param {Object} init An object to initialize the Fetch API.
+   * @param {Object} init An object to initialize the Fetch API. See options at
+   *     https://developer.mozilla.org/en-US/docs/Web/API/Request/Request.
+   * @param {number} expectedSize Size of book file in bytes. If -1, then this affects the kthoom
+   *     progress bar.
    * @param {boolean=} preventSwitchingToBook Set to true to avoid switching the viewer to the
    *     new book. Default behavior is that the reading stack and viewer will switch to the book
    *     once it is loaded.
    * @returns {Promise<Book>}
    */
-  loadSingleBookFromFetch(name, uri, expectedSize, init, preventSwitchingToBook = false) {
+  loadSingleBookFromFetch(name, uri, init = {}, expectedSize = -1, preventSwitchingToBook = false) {
     if (!window['fetch'] || !window['Response'] || !window['ReadableStream']) {
       throw 'No browser support for fetch/ReadableStream';
     }
 
-    const book = new Book(name, uri);
-    const bookPromise = book.loadFromFetch(expectedSize, init);
+    const request = new Request(uri, init);
+    const book = new Book(name, request, undefined /** bookContainer */, expectedSize);
+    const bookPromise = book.loadFromFetch();
     this.readingStack_.addBook(book, !preventSwitchingToBook);
     return bookPromise;
   }
 
   /**
+   * Loads a book from an ArrayBuffer.
    * @param {string} name
    * @param {string} bookUri
    * @param {ArrayBuffer} ab
@@ -1086,6 +1095,7 @@ export class KthoomApp {
   }
 
   /**
+   * Loads a book from a BookPump.
    * @param {string} name
    * @param {string} bookUri
    * @param {BookPump} bookPump
@@ -1101,7 +1111,8 @@ export class KthoomApp {
     return bookPromise;
   }
 
-  // TODO(kthoom): Add loadSingleBookFromReadableStream().
+  // TODO(kthoom): Add loadSingleBookFromReadableStream()?
+  // TODO(kthoom): Think about loadReadingListFromBookPump()...
 
   /**
    * Loads the Reading List from the JSON blob.  The blob must contain a JSON Reading List that

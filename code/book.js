@@ -48,7 +48,7 @@ export class BookContainer {
 
 /**
  * A Book has a name, a set of pages, and a BookBinder which handles the process of loading,
- * unarchiving, and page setting. A Book will either have a URI, a File object, or a
+ * unarchiving, and page setting. A Book will either have a URI, a Request, a File object, or a
  * FileSystemFileHandle object from which to load the data. Books may also have a container that
  * contains it.
  * @implements {BookOrBookContainer}
@@ -59,6 +59,12 @@ export class Book extends EventTarget {
    * @type {String}
    */
   #name;
+
+  /**
+   * The optional Request for fetching the book (not set for a book loaded from the file system).
+   * @type {Request}
+   */
+  #request;
 
   /**
    * The optional URI of the book (not set for a book loaded from the file system).
@@ -79,18 +85,39 @@ export class Book extends EventTarget {
   #fileHandle;
 
   /**
+   * A reference to the ArrayBuffer is kept to let the user easily download a copy.
+   * This array buffer is only valid once the book has fully loaded.
+   * @type {ArrayBuffer}
+   */
+  #arrayBuffer = null;
+
+  /**
+   * @type {BookBinder}
+   */
+  #bookBinder = null;
+
+  /**
    * @type {BookContainer}
    */
   #bookContainer;
 
-  /** @type {boolean} */
-  #needsLoading = true;
+  /** @type {BookMetadata} */
+  #bookMetadata = null;
+
+  /** @type {number} */
+  #expectedSize = undefined;
 
   /** @type {boolean} */
   #finishedBinding = false;
 
   /** @type {boolean} */
   #finishedLoading = false;
+
+  /** @type {boolean} */
+  #needsLoading = true;
+
+  /** @type {Array<Page>} */
+  #pages = [];
 
   /**
    * The total known number of pages.
@@ -99,38 +126,30 @@ export class Book extends EventTarget {
   #totalPages = 0;
 
   /**
-   * @type {BookBinder}
-   */
-  #bookBinder = null;
-
-  /** @type {Array<Page>} */
-  #pages = [];
-
-  /** @type {BookMetadata} */
-  #bookMetadata = null;
-
-  /**
-   * A reference to the ArrayBuffer is kept to let the user easily download a copy.
-   * This array buffer is only valid once the book has fully loaded.
-   * @type {ArrayBuffer}
-   */
-  #arrayBuffer = null;
-
-  /**
    * @param {string} name
-   * @param {string|File|FileSystemFileHandle} uriOrFileHandle For files loaded via URI, this param
-   *    contains the URI. For files loaded via a file input element, this contains the File object,
-   *    for files loaded via the native file system, it contains the FileSystemFileHandle.
+   * @param {string|File|FileSystemFileHandle|Request} uriRequestOrFileHandle For files loaded via
+   *    URI, this param contains the URI. For files loaded via a Request, it contains the Request.
+   *    For files loaded via a file input element, this contains the File object, for files loaded
+   *    via the native file system, it contains the FileSystemFileHandle.
    * @param {BookContainer} bookContainer An optional BookContainer that contains this Book.
+   * @param {number} expectedSize The size of the book file, in bytes. Can be -1 if unknown.
    */
-  constructor(name, uriOrFileHandle = undefined, bookContainer = undefined) {
+  constructor(name, uriRequestOrFileHandle = undefined, bookContainer = undefined,
+              expectedSize = -1) {
     super();
 
     this.#name = name;
-    this.#uri = typeof(uriOrFileHandle) === 'string' ? uriOrFileHandle : undefined;
-    this.#file = (uriOrFileHandle instanceof File) ? uriOrFileHandle : undefined;
-    this.#fileHandle = (!this.#uri && !this.#file) ? uriOrFileHandle : undefined;
+    this.#uri = typeof(uriRequestOrFileHandle) === 'string' ? uriRequestOrFileHandle : undefined;
+    this.#request = (uriRequestOrFileHandle instanceof Request) ? uriRequestOrFileHandle
+        : undefined;
+    this.#file = (uriRequestOrFileHandle instanceof File) ? uriRequestOrFileHandle : undefined;
+    this.#fileHandle = (!this.#uri && !this.#request && !this.#file) ? uriRequestOrFileHandle
+        : undefined;
+
     this.#bookContainer = bookContainer;
+    this.#expectedSize = expectedSize;
+
+    // Throw some error if none of #uri, #request, #file, #fileHandle are set?
   }
 
   /**
@@ -199,6 +218,9 @@ export class Book extends EventTarget {
 
   /** @returns {string} */
   getUri() {
+    if (this.#request) {
+      return this.#request.url;
+    }
     return this.#uri;
   }
 
@@ -220,24 +242,26 @@ export class Book extends EventTarget {
   }
 
   /**
-   * Loads the file from its source (either XHR or File).
+   * Loads the file from its source (either Fetch or File).
    * @returns {Promise<Book>}
    */
   async load() {
-    if (this.#uri) {
+    if (this.#request) {
+      return this.loadFromFetch();
+    } else if (this.#uri) {
       return this.loadFromXhr();
     } else if (this.#file || this.#fileHandle) {
       return this.loadFromFile();
     }
-    throw 'Could not load Book: no uri or File or FileHandle';
+    throw 'Could not load Book: no URI or File or FileHandle';
   }
 
   /**
-   * Starts an XHR and progressively loads in the book.
-   * TODO: Get rid of this and just use loadFromFetch() everywhere.
+   * Starts an XHR and progressively loads in the book. Use loadFromFetch() instead.
    * @param {Number} expectedSize If -1, the total field from the XHR Progress event is used.
    * @param {Object<string, string>} headerMap A map of request header keys and values.
    * @returns {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
+   * @deprecated
    */
   loadFromXhr(expectedSize = -1, headerMap = {}) {
     if (!this.#needsLoading) {
@@ -260,8 +284,8 @@ export class Book extends EventTarget {
       xhr.responseType = 'arraybuffer';
       xhr.onprogress = (evt) => {
         if (this.#bookBinder) {
-          if (expectedSize == -1 && evt.total) {
-            expectedSize = evt.total;
+          if (this.#expectedSize == -1 && evt.total) {
+            this.#expectedSize = evt.total;
             this.#bookBinder.setNewExpectedSize(evt.loaded, evt.total);
           }
           this.dispatchEvent(new BookProgressEvent(this, this.#pages.length));
@@ -269,7 +293,7 @@ export class Book extends EventTarget {
       };
       xhr.onload = (evt) => {
         const ab = evt.target.response;
-        this.#startBookBinding(this.#uri, ab, expectedSize);
+        this.#startBookBinding(this.#uri, ab, this.#expectedSize);
         this.#finishedLoading = true;
         this.dispatchEvent(new BookLoadingCompleteEvent(this));
         resolve(this);
@@ -283,29 +307,28 @@ export class Book extends EventTarget {
 
   /**
    * Starts a fetch and progressively loads in the book.
-   * @param {Number} expectedSize The total number of bytes expected.
-   * @param {Object<string, string>} init A map of request header keys and values.
+   * TODO: Consider using a HEAD request to get the Content-Length header first so we have the size.
    * @returns {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
-  loadFromFetch(expectedSize, init) {
+  loadFromFetch() {
     if (!this.#needsLoading) {
-      throw 'Cannot try to load via XHR when the Book is already loading or loaded';
+      throw 'Cannot try to load via Fetch when the Book is already loading or loaded';
     }
-    if (!this.#uri) {
-      throw 'URI for book was not set in loadFromFetch()';
+    if (!this.#request) {
+      throw 'Request for book was not set in loadFromFetch()';
     }
 
     this.#needsLoading = false;
     this.dispatchEvent(new BookLoadingStartedEvent(this));
 
-    return fetch(this.#uri, init).then(response => {
+    return fetch(this.#request).then(response => {
       const reader = response.body.getReader();
       const readAndProcessNextChunk = () => {
         reader.read().then(({ done, value }) => {
           if (!done) {
             // value is a chunk of the file as a Uint8Array.
             if (!this.#bookBinder) {
-              return this.#startBookBinding(this.#name, value.buffer, expectedSize).then(() => {
+              return this.#startBookBinding(this.#name, value.buffer, this.#expectedSize).then(() => {
                 return readAndProcessNextChunk();
               })
             }
@@ -452,7 +475,7 @@ export class Book extends EventTarget {
 
   /**
    * Creates and sets the BookBinder, subscribes to its events, and starts the book binding process.
-   * This function is called by all loadFrom... methods.
+   * This function is called by all loadFromXXX methods.
    * @param {string} fileNameOrUri
    * @param {ArrayBuffer} ab Starting buffer of bytes. May be complete or may be partial depending
    *                         on which loadFrom... method was called.
