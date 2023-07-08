@@ -10,6 +10,7 @@
 import { Book, BookContainer } from './book.js';
 import { BookEventType } from './book-events.js';
 import { BookViewer } from './book-viewer.js';
+import { EventTypes as KthoomEventTypes } from './kthoom-events.js';
 import { FitMode } from './book-viewer-types.js';
 import { Menu, MenuEventType } from './menu.js';
 import { ReadingStack } from './reading-stack.js';
@@ -84,6 +85,11 @@ export class KthoomApp {
 
     // This Promise resolves when kthoom is ready.
     this.initializedPromise_ = new Promise((resolve, reject) => {
+      // If some other window opened Kthoom, then listen for message events.
+      if (window.opener) {
+        window.addEventListener('message', (evt) => this.#handleHostEvent(evt));
+      }
+
       // This Promise resolves when the DOM is ready.
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => resolve(), false);
@@ -1112,7 +1118,6 @@ export class KthoomApp {
   }
 
   // TODO(kthoom): Add loadSingleBookFromReadableStream()?
-  // TODO(kthoom): Think about loadReadingListFromBookPump()...
 
   /**
    * Loads the Reading List from the JSON blob.  The blob must contain a JSON Reading List that
@@ -1216,6 +1221,14 @@ export class KthoomApp {
     }
   }
 
+  /**
+   * @param {Book[]} books
+   * @private
+   */
+  loadMultipleBooks_(books) {
+    this.readingStack_.addBooks(books, 0);
+  }
+
   // Handles all events subscribed to.
   handleEvent(evt) {
     switch (evt.type) {
@@ -1224,6 +1237,33 @@ export class KthoomApp {
         const book = evt.source;
         this.metadataViewer_.setBook(book);
         break;
+    }
+  }
+
+  /**
+   * If we get a message event from a host window, act on it.
+   * @param {Event} evt 
+   */
+  #handleHostEvent(evt) {
+    const message = evt.data;
+
+    // Skips invalid BookFetchSpec objects.
+    if (message.type === KthoomEventTypes.LOAD_BOOKS) {
+      const books = message.bookFetchSpecs
+          .filter(bfs => {
+            if (!bfs.url) console.error(`BookFetchSpec.url missing`);
+            if (!bfs.method) console.error(`BookFetchSpec.method missing`);
+            const validSpec = !!bfs.url && !!bfs.method;
+            if (!validSpec) {
+              console.error(JSON.stringify(bfs));
+            }
+            return validSpec;
+          })
+          .map(bfs => new Book(bfs.name, new Request(bfs.url, {
+            body: bfs.body || undefined,
+            method: bfs.method,
+          })));
+      this.loadMultipleBooks_(books);
     }
   }
 

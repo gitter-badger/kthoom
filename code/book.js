@@ -126,7 +126,8 @@ export class Book extends EventTarget {
   #totalPages = 0;
 
   /**
-   * @param {string} name
+   * Construct a book (but do not load it yet).
+   * @param {string} name The human-readable name of the book (appears in the Reading Stack).
    * @param {string|File|FileSystemFileHandle|Request} uriRequestOrFileHandle For files loaded via
    *    URI, this param contains the URI. For files loaded via a Request, it contains the Request.
    *    For files loaded via a file input element, this contains the File object, for files loaded
@@ -137,6 +138,10 @@ export class Book extends EventTarget {
   constructor(name, uriRequestOrFileHandle = undefined, bookContainer = undefined,
               expectedSize = -1) {
     super();
+
+    if (!name) {
+      throw `Book name was invalid in constructor.`;
+    }
 
     this.#name = name;
     this.#uri = typeof(uriRequestOrFileHandle) === 'string' ? uriRequestOrFileHandle : undefined;
@@ -307,7 +312,6 @@ export class Book extends EventTarget {
 
   /**
    * Starts a fetch and progressively loads in the book.
-   * TODO: Consider using a HEAD request to get the Content-Length header first so we have the size.
    * @returns {Promise<Book>} A Promise that returns this book when all bytes have been fed to it.
    */
   loadFromFetch() {
