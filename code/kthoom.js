@@ -1314,10 +1314,15 @@ export class KthoomApp {
   }
 
   /**
-   * @param {Book} book
+   * @param {Book} book If null, kthoom closes all books and resets state.
    * @private
    */
   handleCurrentBookChanged_(book) {
+    if (!book) {
+      this.closeAll_();
+      return;
+    }
+
     if (book !== this.currentBook_) {
       this.bookViewer_.closeBook();
       // Download menu option is not available until the book is fully downloaded.

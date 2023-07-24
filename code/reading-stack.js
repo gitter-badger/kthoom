@@ -135,8 +135,13 @@ export class ReadingStack {
 
   /** @param {number} i */
   removeBook(i) {
-    // Cannot remove the very last book.
-    if (this.books_.length > 1 && i < this.books_.length) {
+    // If removing the last book, signal that kthoom should close and reset state.
+    if (this.books_.length === 1) {
+      this.changeToBook_(-1);
+      return;
+    }
+
+    if (i < this.books_.length) {
       this.books_[i].removeEventListener(BookEventType.LOADING_STARTED, this);
       this.books_.splice(i, 1);
 
@@ -148,7 +153,9 @@ export class ReadingStack {
           i = this.books_.length - 1;
         }
 
+        this.currentBookNum_ = -1;
         this.changeToBook_(i);
+        this.renderStack_();
       } else {
         // Might have to update the current book number if the book removed
         // was above the current one.
@@ -195,10 +202,18 @@ export class ReadingStack {
   }
 
   /**
-   * @param {number} i
+   * @param {number} i If -1, then it signals kthoom to close all books and reset state.
    * @private
    */
   changeToBook_(i) {
+    if (i === -1) {
+      this.currentBookNum_ = i;
+      for (const callback of this.currentBookChangedCallbacks_) {
+        callback(null);
+      }
+      return;
+    }
+
     if (i >= 0 && i < this.books_.length && this.currentBookNum_ != i) {
       this.currentBookNum_ = i;
       const book = this.books_[i];
@@ -218,7 +233,7 @@ export class ReadingStack {
         }
       }
 
-      // Instead of completely re-rendering, just update the currently selectded book, if we
+      // Instead of completely re-rendering, just update the currently selected book, if we
       // already have a DOM.
       const contents = getElem('readingStackContents');
       const currentlySelectedBookDiv = contents.querySelector('div.readingStackBook.current');
