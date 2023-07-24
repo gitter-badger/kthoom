@@ -10,7 +10,7 @@
 import { Book, BookContainer } from './book.js';
 import { BookEventType } from './book-events.js';
 import { BookViewer } from './book-viewer.js';
-import { EventTypes as KthoomEventTypes } from './kthoom-events.js';
+import { MessageTypes as KthoomMessageTypes } from './kthoom-messages.js';
 import { FitMode } from './book-viewer-types.js';
 import { Menu, MenuEventType } from './menu.js';
 import { ReadingStack } from './reading-stack.js';
@@ -85,9 +85,9 @@ export class KthoomApp {
 
     // This Promise resolves when kthoom is ready.
     this.initializedPromise_ = new Promise((resolve, reject) => {
-      // If some other window opened Kthoom, then listen for message events.
+      // If some other window opened Kthoom, then listen for messages.
       if (window.opener) {
-        window.addEventListener('message', (evt) => this.#handleHostEvent(evt));
+        window.addEventListener('message', (evt) => this.#handleHostMessage(evt));
       }
 
       // This Promise resolves when the DOM is ready.
@@ -128,6 +128,7 @@ export class KthoomApp {
     this.initNav_();
     this.initDragDrop_();
     this.initClickHandlers_();
+    this.initOverlays_();
     this.initResizeHandler_();
     this.initWheelScroll_();
     this.initUnloadHandler_();
@@ -170,10 +171,17 @@ export class KthoomApp {
         case 'menu-open-local-files': this.openLocalFiles_(); closeMainMenu(); break;
         case 'menu-open-directory': this.openLocalDirectory_(); closeMainMenu(); break;
         case 'menu-open-url': this.openFileViaUrl_(); closeMainMenu(); break;
-        case GOOGLE_MENU_ITEM_ID: kthoom.google.doDrive(); closeMainMenu(); break;
-        case 'menu-open-ipfs-hash': kthoom.ipfs.ipfsHashWindow(); closeMainMenu(); break;
+        case GOOGLE_MENU_ITEM_ID: this.openFileViaGoogleDrive_(); closeMainMenu(); break;
+        case 'menu-open-ipfs-hash': this.openFileViaIPFS_(); closeMainMenu(); break;
       }
     });
+
+    // Show the Open menu unless the preventUserOpeningBooks parameter is set.
+    if (Params['preventUserOpeningBooks'] === 'true') {
+      const openMenuButtonEl = getElem('menu-open');
+      openMenuButtonEl.style.display = 'none';
+      openMenuButtonEl.setAttribute('disabled', 'true');
+    }
 
     this.viewMenu_.addEventListener(MenuEventType.ITEM_SELECTED, evt => {
       const id = evt.item.id;
@@ -356,6 +364,15 @@ export class KthoomApp {
   }
 
   /** @private */
+  initOverlays_() {
+    if (this.hasHelpOverlay_) {
+      if (Params['preventUserOpeningBooks'] === 'true') {
+        getElem('help-load-section').style.display = 'none';
+      }
+    }
+  }
+
+  /** @private */
   initNav_() {
     getElem('prevBook').addEventListener('click', () => this.readingStack_.changeToPrevBook());
     getElem('prev').addEventListener('click', () => this.showPrevPage());
@@ -435,7 +452,7 @@ export class KthoomApp {
       // eventual migration steps for IPFS addressing.  We will support two versions
       // for now, ipfs://$hash and dweb:/ipfs/$hash.
       if (bookUri.indexOf('ipfs://') === 0) {
-        kthoom.ipfs.loadHash(bookUricrtr(7));
+        kthoom.ipfs.loadHash(bookUri.substr(7));
       } else if (bookUri.indexOf('dweb:/ipfs/') === 0) {
         kthoom.ipfs.loadHash(bookUri.substr(11));
       } else {
@@ -553,10 +570,10 @@ export class KthoomApp {
       case Key.G:
         const menuItem = getElem(GOOGLE_MENU_ITEM_ID);
         if (menuItem && menuItem.getAttribute('disabled') !== 'true') {
-          kthoom.google.doDrive();
+          this.openFileViaGoogleDrive_();
         }
         break;
-      case Key.I: kthoom.ipfs.ipfsHashWindow(); break;
+      case Key.I: this.openFileViaIPFS_(); break;
       case Key.QUESTION_MARK:
         if (this.hasHelpOverlay_) {
           this.#toggleHelpOpen();
@@ -870,6 +887,10 @@ export class KthoomApp {
    * @private
    */
   async openLocalFiles_() {
+    if (Params['preventUserOpeningBooks'] === 'true') {
+      return;
+    }
+
     // Non-Chrome browsers and non-secure contexts will not have this picker.
     if (!window.showOpenFilePicker) {
       // The 'change' event handler was set up in initMenus_().
@@ -946,6 +967,9 @@ export class KthoomApp {
 
   /** Attempts to open all the files recursively? */
   async openLocalDirectory_() {
+    if (Params['preventUserOpeningBooks'] === 'true') {
+      return;
+    }
     if (!enableOpenDirectory) {
       return;
     }
@@ -981,6 +1005,10 @@ export class KthoomApp {
    * Asks the user for a URL to load and then loads it.
    */
   async openFileViaUrl_() {
+    if (Params['preventUserOpeningBooks'] === 'true') {
+      return;
+    }
+
     const bookUrl = window.prompt('Enter the URL of the book to load');
     if (bookUrl) {
       if (bookUrl.toLowerCase().endsWith('.jrl')) {
@@ -995,6 +1023,24 @@ export class KthoomApp {
 
       this.loadSingleBookFromFetch(bookUrl /** name */, bookUrl /** uri */);
     }
+  }
+
+  /** @private */
+  openFileViaGoogleDrive_() {
+    if (Params['preventUserOpeningBooks'] === 'true') {
+      return;
+    }
+
+    kthoom.google.doDrive();
+  }
+
+  /** @private */
+  openFileViaIPFS_() {
+    if (Params['preventUserOpeningBooks'] === 'true') {
+      return;
+    }
+
+    kthoom.ipfs.ipfsHashWindow();
   }
 
   /**
@@ -1241,14 +1287,14 @@ export class KthoomApp {
   }
 
   /**
-   * If we get a message event from a host window, act on it.
+   * If we get a message from the host window, act on it.
    * @param {Event} evt 
    */
-  #handleHostEvent(evt) {
+  #handleHostMessage(evt) {
     const message = evt.data;
 
     // Skips invalid BookFetchSpec objects.
-    if (message.type === KthoomEventTypes.LOAD_BOOKS) {
+    if (message.type === KthoomMessageTypes.LOAD_BOOKS) {
       const books = message.bookFetchSpecs
           .filter(bfs => {
             if (!bfs.url) console.error(`BookFetchSpec.url missing`);

@@ -4,7 +4,7 @@
  */
 
 /** @enum */
-export const EventTypes = {
+export const MessageTypes = {
   LOAD_BOOKS: 'KthoomLoadBooks',
 }
 
@@ -17,7 +17,7 @@ export const EventTypes = {
  */
 
 /**
- * @typedef LoadBooksEvent The Kthoom app interface.
- * @property {string} type Must be set to EventTypes.LOAD_BOOKS.
+ * @typedef LoadBooksMessage Message sent from host to kthoom to load books.
+ * @property {string} type Must be set to MessageTypes.LOAD_BOOKS.
  * @property {Array<BookFetchSpec>} bookFetchSpecs
  */

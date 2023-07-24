@@ -75,5 +75,7 @@ more.
     of reading)
   * bookUri=&lt;url&gt;: Tells kthoom to open the given book (cbz/cbr file).
   * doNotPromptOnClose=true: Tells kthoom not to ask the user if they are sure they want to close.
+  * preventUserOpeningBooks=true: Prevents users from opening files in kthoom (useful for hosting
+    kthoom from a web app).
   * readingListUri=&lt;url&gt;: Tells kthoom to load the given JSON Reading List (jrl) file and open
     the first file in that list.

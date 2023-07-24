@@ -41,6 +41,7 @@ let urlsToCache = [
   'code/epub-whitelists.js',
   'code/kthoom-google.js',
   'code/kthoom-ipfs.js',
+  'code/kthoom-messages.js',
   'code/kthoom.css',
   'code/kthoom.js',
   'code/main.js',
