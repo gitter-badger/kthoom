@@ -21,7 +21,7 @@ import { UnarchiveEventType } from './bitjs/archive/decompress.js';
 import { BookBinder, BookType } from './book-binder.js';
 import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
 import { NodeType, walkDom } from './common/dom-walker.js';
-import { ATTRIBUTE_WHITELIST, BLOB_URL_ATTRIBUTES, ELEMENT_WHITELIST } from './epub-whitelists.js';
+import { XHTML_ATTRIBUTE_ALLOWLIST, BLOB_URL_ATTRIBUTES, XHTML_ELEMENT_ALLOWLIST } from './epub-allowlists.js';
 import { FileRef } from './file-ref.js';
 import { XhtmlPage } from './page.js';
 import { assert } from './common/helpers.js';
@@ -166,7 +166,9 @@ export class EPUBBookBinder extends BookBinder {
         // Special handling for text nodes.
         if (nodeName === '#text') {
           outEl.appendChild(curNode.cloneNode());
-        } else if (ELEMENT_WHITELIST.includes(nodeName)) {
+        }
+        // TODO: Allow SVG elements too.
+        else if (XHTML_ELEMENT_ALLOWLIST.includes(nodeName)) {
           let newEl;
           // Special handling for the iframe's head and body elements which are created for us.
           if (nodeName === 'head') {
@@ -174,19 +176,19 @@ export class EPUBBookBinder extends BookBinder {
           } else if (nodeName === 'body') {
             newEl = htmlDoc.body;
           } else {
-            // Make a safe copy of the current node, if it is in our whitelist.
+            // Make a safe copy of the current node, if it is in our allowlist.
             newEl = contentWindow.document.createElement(nodeName);
           }
           // Update map of serialized XHTML nodes to iframe'd sanitized nodes.
           nodeCopyMap[curNode] = newEl;
 
-          // Copy over all whitelisted attributes.
+          // Copy over all allowlisted attributes.
           if (curNode.nodeType === NodeType.ELEMENT && curNode.hasAttributes()) {
             const attrs = curNode.attributes;
             for (let i = 0; i < attrs.length; ++i) {
               const attr = attrs.item(i);
-              if (ATTRIBUTE_WHITELIST[nodeName] &&
-                ATTRIBUTE_WHITELIST[nodeName].includes(attr.name)) {
+              if (XHTML_ATTRIBUTE_ALLOWLIST[nodeName] &&
+                XHTML_ATTRIBUTE_ALLOWLIST[nodeName].includes(attr.name)) {
                 newEl.setAttribute(attr.name, attr.value);
               }
               if (BLOB_URL_ATTRIBUTES[nodeName] &&

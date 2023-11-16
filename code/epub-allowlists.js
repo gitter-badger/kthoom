@@ -1,12 +1,12 @@
 /**
- * epub-whitelists.js
+ * epub-allowlists.js
  *
  * Licensed under the MIT License
  *
  * Copyright(c) 2019 Google Inc.
  */
 
-export const ELEMENT_WHITELIST = [
+export const XHTML_ELEMENT_ALLOWLIST = [
   'a', 'body', 'br', 'div',
   'head', 'h1', 'h2', 'h3',
   'h4', 'h5', 'h6', 'hr',
@@ -14,7 +14,7 @@ export const ELEMENT_WHITELIST = [
   'style', 'title',
 ];
 
-export const ATTRIBUTE_WHITELIST = {
+export const XHTML_ATTRIBUTE_ALLOWLIST = {
   'a': ['class', 'id', 'title'],
   'body': ['class', 'id'],
   'br': ['class', 'id'],
@@ -33,7 +33,7 @@ export const ATTRIBUTE_WHITELIST = {
 };
 
 export const BLOB_URL_ATTRIBUTES = {
-  // TODO: Properly strip off anchor hash of the URL before whitelisting hyperlink href.
+  // TODO: Properly strip off anchor hash of the URL before allowlisting hyperlink href.
 //  'a': ['href'],
   'img': ['src'],
   'link': ['href'],
