@@ -68,7 +68,7 @@ export function serializeParamsToBrowser() {
 /**
  * If ?debug=true, then throws a JavaScript error, otherwise prints a console.error(). If
  * optContextObj is set, also console.dirs it.
- * @param {boolaen} cond
+ * @param {boolean} cond
  * @param {string=} str
  * @param {Object=} optContextObj
  */
