@@ -956,11 +956,13 @@ export class KthoomApp {
       // Else, assume the file is a single book and try to load the first one.
       const handleOrFile = evt.handles ? evt.handles[fileNum] : theFile;
       const singleBook = new Book(theFile.name, handleOrFile);
+      // If we have no books open, then always switch to the first one.
       if (this.readingStack_.getNumberOfBooks() === 0) {
         this.loadBooksFromPromises_([singleBook.load()]);
         this.readingStack_.addBook(singleBook, true);
       } else {
-        this.readingStack_.addBook(singleBook, false);
+        // If it was only one book, then switch to it, even if the reading stack is populated.
+        this.readingStack_.addBook(singleBook, filelist.length === 1);
       }
     }
   }
