@@ -17,15 +17,15 @@
  *   - Parse CSS and see if any rules reference a url() and do Blob URLs at render time.
  */
 
-import { UnarchiveEventType } from './bitjs/archive/decompress.js';
-import { BookBinder, BookType } from './book-binder.js';
-import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
-import { NodeType, walkDom } from './common/dom-walker.js';
+import { UnarchiveEventType } from '../bitjs/archive/decompress.js';
+import { BookBinder, BookType } from '../book-binder.js';
+import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from '../book-events.js';
+import { NodeType, walkDom } from '../common/dom-walker.js';
 import { HTML_NAMESPACE, XMLNS_NAMESPACE, REVERSE_NS,
          isAllowedElement, isAllowedAttr, isAllowedBlobAttr } from './epub-allowlists.js';
-import { FileRef } from './file-ref.js';
-import { XhtmlPage } from './page.js';
-import { assert } from './common/helpers.js';
+import { FileRef } from '../file-ref.js';
+import { XhtmlPage } from '../page.js';
+import { assert } from '../common/helpers.js';
 
 const ATTR_KTHOOM_URL = 'data-kthoom-url';
 const CONTAINER_FILE = 'META-INF/container.xml';

@@ -6,13 +6,13 @@
  * Copyright(c) 2019 Google Inc.
  */
 
-import { UnarchiveEventType } from './bitjs/archive/decompress.js';
-import { BookBinder, BookType } from './book-binder.js';
-import { BookBindingCompleteEvent, BookMetadataXmlExtractedEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
-import { createPageFromFileAsync, guessMimeType } from './page.js';
+import { UnarchiveEventType } from '../bitjs/archive/decompress.js';
+import { BookBinder, BookType } from '../book-binder.js';
+import { BookBindingCompleteEvent, BookMetadataXmlExtractedEvent, BookPageExtractedEvent, BookProgressEvent } from '../book-events.js';
+import { createPageFromFileAsync, guessMimeType } from '../page.js';
 import { sortPages } from './comic-book-page-sorter.js';
-import { Params } from './common/helpers.js';
-import { createMetadataFromComicBookXml } from './metadata/book-metadata.js';
+import { Params } from '../common/helpers.js';
+import { createMetadataFromComicBookXml } from '../metadata/book-metadata.js';
 
 const STREAM_OPTIMIZED_NS = 'http://www.codedread.com/sop';
 

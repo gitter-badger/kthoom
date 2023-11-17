@@ -1,7 +1,8 @@
 import 'mocha';
 import { expect } from 'chai';
 import { JSDOM } from 'jsdom';
-import { SVG_NAMESPACE, XLINK_NAMESPACE, isAllowedAttr, isAllowedElement } from '../code/epub-allowlists.js';
+import { EPUB_NAMESPACE, SVG_NAMESPACE, XLINK_NAMESPACE,
+         isAllowedAttr, isAllowedElement } from '../../code/epub/epub-allowlists.js';
 
 describe('EPUB Allowlists tests', () => {
   let doc;
@@ -39,8 +40,8 @@ describe('EPUB Allowlists tests', () => {
 
     it('returns true for allowed XML namespaced attributes', () => {
       const image = doc.createElementNS(SVG_NAMESPACE, 'image');
-      const attr = doc.createAttributeNS(XLINK_NAMESPACE, 'href');
-      expect(isAllowedAttr(image, attr)).equals(true);
+      expect(isAllowedAttr(image, doc.createAttributeNS(XLINK_NAMESPACE, 'href'))).equals(true);
+      expect(isAllowedAttr(image, doc.createAttributeNS(EPUB_NAMESPACE, 'type'))).equals(true);
     });
   });
 
@@ -64,6 +65,8 @@ describe('EPUB Allowlists tests', () => {
       expect(isAllowedElement(doc.createElement('img'))).equals(true);
       expect(isAllowedElement(doc.createElement('head'))).equals(true);
       expect(isAllowedElement(doc.createElement('body'))).equals(true);
+      expect(isAllowedElement(doc.createElementNS(SVG_NAMESPACE, 'image'))).equals(true);
+      expect(isAllowedElement(doc.createElementNS(SVG_NAMESPACE, 'svg'))).equals(true);
     });
   });
 });

@@ -6,8 +6,9 @@
  * Copyright(c) 2019 Google Inc.
  */
 
-import { NodeType } from './common/dom-walker.js';
+import { NodeType } from '../common/dom-walker.js';
 
+export const EPUB_NAMESPACE = 'http://www.idpf.org/2007/ops';
 export const HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
 export const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 export const XLINK_NAMESPACE = 'http://www.w3.org/1999/xlink';
@@ -19,6 +20,7 @@ export const XMLNS_NAMESPACE = 'http://www.w3.org/2000/xmlns/';
  * @type {Object<string, string>}
  */
 export const NS = {
+  'epub': EPUB_NAMESPACE,
   'html': HTML_NAMESPACE,
   'svg': SVG_NAMESPACE,
   'xlink': XLINK_NAMESPACE,
@@ -32,6 +34,9 @@ export const NS = {
  */
 export const REVERSE_NS = Object.fromEntries(Object.entries(NS).map(([pre, url]) => [url, pre]));
 
+/**
+ * Common attributes used in any namespace.
+ */
 const COMMON_ATTRS = [
   'id',
 ];
@@ -40,7 +45,7 @@ const STYLED_ATTRS = [
   ...COMMON_ATTRS,
   'class',
   'style',
-]
+];
 
 /**
  * A map of XML namespace URLs to allowed Element maps.
@@ -60,21 +65,25 @@ const FULL_ALLOWLIST = {
         ...STYLED_ATTRS,
         'title',
       ],
+      [NS.epub]: [ 'type' ],
     },
     'body': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
+      [NS.epub]: [ 'type' ],
     },
     'br': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
+      [NS.epub]: [ 'type' ],
     },
     'div': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
+      [NS.epub]: [ 'type' ],
     },
     'head': {
       [NS.html]: [
@@ -85,36 +94,43 @@ const FULL_ALLOWLIST = {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
+      [NS.epub]: [ 'type' ],
     },
     'h2': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
+      [NS.epub]: [ 'type' ],
     },
     'h3': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
+      [NS.epub]: [ 'type' ],
     },
     'h4': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
+      [NS.epub]: [ 'type' ],
     },
     'h5': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
+      [NS.epub]: [ 'type' ],
     },
     'h6': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
+      [NS.epub]: [ 'type' ],
     },
     'hr': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
+      [NS.epub]: [ 'type' ],
     },
     'img': {
       [NS.html]: [
@@ -122,6 +138,7 @@ const FULL_ALLOWLIST = {
         'alt',
         'src',
       ],
+      [NS.epub]: [ 'type' ],
     },
     'link': {
       [NS.html]: [
@@ -135,11 +152,13 @@ const FULL_ALLOWLIST = {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
+      [NS.epub]: [ 'type' ],
     },
     'span': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
+      [NS.epub]: [ 'type' ],
     },
     'style': {
       [NS.html]: [
@@ -163,6 +182,7 @@ const FULL_ALLOWLIST = {
         'width',
       ],
       [NS.xlink]: [ 'href' ],
+      [NS.epub]: [ 'type' ],
     },
     // <svg> element.
     'svg': {
@@ -174,6 +194,7 @@ const FULL_ALLOWLIST = {
         'viewBox',
         'width',
       ],
+      [NS.epub]: [ 'type' ],
     }
   },
 };

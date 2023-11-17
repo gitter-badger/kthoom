@@ -216,11 +216,11 @@ export class BookBinder extends EventTarget {
  */
 export function createBookBinderAsync(fileNameOrUri, ab, totalExpectedSize) {
   if (fileNameOrUri.toLowerCase().endsWith('.epub')) {
-    return import('./epub-book-binder.js').then(module => {
+    return import('./epub/epub-book-binder.js').then(module => {
       return new module.EPUBBookBinder(fileNameOrUri, ab, totalExpectedSize);
     });
   }
-  return import('./comic-book-binder.js').then(module => {
+  return import('./comics/comic-book-binder.js').then(module => {
     return new module.ComicBookBinder(fileNameOrUri, ab, totalExpectedSize);
   });
 }
