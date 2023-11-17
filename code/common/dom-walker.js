@@ -8,6 +8,7 @@
 
 export const NodeType = {
   ELEMENT: 1,
+  ATTR: 2,
   TEXT: 3,
 };
 

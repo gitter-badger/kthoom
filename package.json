@@ -35,6 +35,7 @@
   "homepage": "https://github.com/codedread/kthoom#readme",
   "devDependencies": {
     "chai": "^4.3.4",
+    "jsdom": "^22.1.0",
     "mocha": "^9.2.2"
   }
 }

@@ -21,17 +21,17 @@ import { UnarchiveEventType } from './bitjs/archive/decompress.js';
 import { BookBinder, BookType } from './book-binder.js';
 import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
 import { NodeType, walkDom } from './common/dom-walker.js';
-import { XHTML_ATTRIBUTE_ALLOWLIST, BLOB_URL_ATTRIBUTES, XHTML_ELEMENT_ALLOWLIST } from './epub-allowlists.js';
+import { HTML_NAMESPACE, XMLNS_NAMESPACE, REVERSE_NS,
+         isAllowedElement, isAllowedAttr, isAllowedBlobAttr } from './epub-allowlists.js';
 import { FileRef } from './file-ref.js';
 import { XhtmlPage } from './page.js';
 import { assert } from './common/helpers.js';
 
-const ATTR_PREFIX = 'data-kthoom-';
+const ATTR_KTHOOM_URL = 'data-kthoom-url';
 const CONTAINER_FILE = 'META-INF/container.xml';
 const CONTAINER_NAMESPACE = 'urn:oasis:names:tc:opendocument:xmlns:container';
 const EPUB_MIMETYPE = 'application/epub+zip';
 const OPF_NAMESPACE = 'http://www.idpf.org/2007/opf';
-const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 const XHTML_MIMETYPE = 'application/xhtml+xml';
 
 const textDecoder = new TextDecoder();
@@ -154,61 +154,94 @@ export class EPUBBookBinder extends BookBinder {
       let outEl = pageEl;
       const nodeCopyMap = {};
 
-      let curNode = xhtmlChunk.documentElement;
-      nodeCopyMap[curNode] = pageEl;
-      walkDom(curNode, curNode => {
+      /** @type {Element} */
+      let docEl = xhtmlChunk.documentElement;
+      nodeCopyMap[docEl] = pageEl;
+
+      /**
+       * Walk the DOM of the XHTML doc and create sanitized copies of allowlisted elements and
+       * attributes for use inside an iframe. For any attribute that references a file inside the
+       * EPUB file (like a CSS or image file) should be remembered and a Blob URL should be
+       * substituted.
+       */
+      walkDom(docEl, (/** @type {Element} */ curNode) => {
         // Ensure that we are in the current place in the copy tree to insert the new element.
         if (nodeCopyMap[curNode.parentElement]) {
           outEl = nodeCopyMap[curNode.parentElement];
         }
 
-        let nodeName = curNode.nodeName;
+        let localName = curNode.localName;
         // Special handling for text nodes.
-        if (nodeName === '#text') {
+        if (curNode.nodeType === NodeType.TEXT) {
           outEl.appendChild(curNode.cloneNode());
         }
-        // TODO: Allow SVG elements too.
-        else if (XHTML_ELEMENT_ALLOWLIST.includes(nodeName)) {
+        // If it is an allowed XHTML or SVG element, make a sanitized copy.
+        else if (curNode.nodeType === NodeType.ELEMENT && isAllowedElement(curNode)) {
+          const elNS = curNode.namespaceURI;
           let newEl;
           // Special handling for the iframe's head and body elements which are created for us.
-          if (nodeName === 'head') {
+          if (elNS === HTML_NAMESPACE && localName === 'head') {
             newEl = htmlDoc.head;
-          } else if (nodeName === 'body') {
+          } else if (elNS === HTML_NAMESPACE && localName === 'body') {
             newEl = htmlDoc.body;
           } else {
-            // Make a safe copy of the current node, if it is in our allowlist.
-            newEl = contentWindow.document.createElement(nodeName);
+            // Make a safe copy of the current node, allowed node.
+            newEl = contentWindow.document.createElementNS(elNS, localName);
           }
-          // Update map of serialized XHTML nodes to iframe'd sanitized nodes.
+          // Update map of serialized XHTML/SVG nodes to iframe'd sanitized nodes.
           nodeCopyMap[curNode] = newEl;
 
           // Copy over all allowlisted attributes.
-          if (curNode.nodeType === NodeType.ELEMENT && curNode.hasAttributes()) {
-            const attrs = curNode.attributes;
-            for (let i = 0; i < attrs.length; ++i) {
-              const attr = attrs.item(i);
-              if (XHTML_ATTRIBUTE_ALLOWLIST[nodeName] &&
-                XHTML_ATTRIBUTE_ALLOWLIST[nodeName].includes(attr.name)) {
-                newEl.setAttribute(attr.name, attr.value);
+          const attrs = curNode.attributes;
+          for (let i = 0; i < attrs.length; ++i) {
+            const attr = attrs.item(i);
+            // Handle xmlns and xmlns:* attributes, 
+            if (attr.namespaceURI === XMLNS_NAMESPACE) {
+              const nsUrl = attr.value;
+              const nsPrefix = REVERSE_NS[nsUrl];
+              if (nsPrefix) {
+                let attrName = attr.localName === 'xmlns' ? 'xmlns' : `xmlns:${nsPrefix}`;
+                newEl.setAttributeNS(XMLNS_NAMESPACE, attrName, nsUrl);
               }
-              if (BLOB_URL_ATTRIBUTES[nodeName] &&
-                BLOB_URL_ATTRIBUTES[nodeName].includes(attr.name)) {
-                const ref = this.getManifestFileRef_(attr.value, this.spineRefs_[0].rootDir);
-                if (!ref) {
-                  throw `Could not find a referenced file: ${attr.value}`;
-                }
-                newEl.setAttribute(ATTR_PREFIX + attr.name, attr.value);
-                newEl.setAttribute(attr.name, ref.getBlobURL(contentWindow));
+            }
+            // Handle all other allowed attributes.
+            else if (isAllowedAttr(curNode, attr)) {
+              const attrNS = attr.namespaceURI;
+              if (!attrNS || attrNS === elNS) {
+                newEl.setAttribute(attr.localName, attr.value);
+              } else {
+                const prefixedAttrName = `${REVERSE_NS[attrNS]}:${attr.localName}`;
+                newEl.setAttributeNS(attrNS, prefixedAttrName, attr.value);
+              }
+            }
+
+            if (isAllowedBlobAttr(curNode, attr)) {
+              const ref = this.getManifestFileRef_(attr.value, this.spineRefs_[0].rootDir);
+              if (!ref) {
+                throw `Could not find a referenced file: ${attr.value}`;
+              }
+
+              // Remember the url in the default namespace.
+              newEl.setAttribute(ATTR_KTHOOM_URL, attr.value);
+
+              const attrNS = attr.namespaceURI;
+              if (!attrNS || attrNS === elNS) {
+                newEl.setAttribute(attr.localName, ref.getBlobURL(contentWindow));
+              } else {
+                newEl.setAttributeNS(attrNS, attr.localName, ref.getBlobURL(contentWindow));
               }
             }
           }
+
           outEl.appendChild(newEl);
         }
-      });
+      }); // Finished walking XHTML DOM.
 
-      // TODO: This has a problem in that the serialized doc has blob URLs in it that will no
-      //     longer be valid.  We really need a method that will take a DOM node and make a
-      //     sanitized copy of it with new Blob URLs.
+      /**
+       * Now create a XhtmlPage of the XHTML document inside the iframe, including an "inflater"
+       * function that will walk the DOM of the page, and update any Blob URLs that are no longer
+       * valid in the new HTML context (window inside the iframe).
+       */
       const curHead = htmlDoc.head;
       const curBody = htmlDoc.body;
       const nextPage = new XhtmlPage('htmlpage', iframeEl, () => {
@@ -219,22 +252,29 @@ export class EPUBBookBinder extends BookBinder {
 
         walkDom(cdoc.documentElement, curNode => {
           if (curNode.nodeType === NodeType.ELEMENT && curNode.hasAttributes()) {
-            const nodeName = curNode.nodeName.toLowerCase();
+            const elNS = curNode.namespaceURI;
             const attrs = curNode.attributes;
             for (let i = 0; i < attrs.length; ++i) {
               const attr = attrs.item(i);
-              if (BLOB_URL_ATTRIBUTES[nodeName] &&
-                BLOB_URL_ATTRIBUTES[nodeName].includes(attr.name)) {
-                const attrValue = curNode.getAttribute(ATTR_PREFIX + attr.name);
+              if (isAllowedBlobAttr(curNode, attr)) {
+                const attrValue = curNode.getAttribute(ATTR_KTHOOM_URL);
                 const ref = this.getManifestFileRef_(attrValue, this.spineRefs_[0].rootDir);
                 if (!ref) {
-                  throw `Could not find a referenced file: ${attr.name}`;
+                  throw `Could not find a referenced file: ${attr.value}`;
                 }
-                curNode.setAttribute(attr.name, ref.getBlobURL(cwin));
+
+                let newBlobUrl = ref.getBlobURL(cwin);
+                const attrNS = attr.namespaceURI;
+                if (!attrNS || attrNS === elNS) {
+                  curNode.setAttribute(attr.localName, newBlobUrl);
+                } else {
+                  curNode.setAttributeNS(attrNS, attr.localName, newBlobUrl);
+                }
               }
             }
           }
         });
+
         // TODO: Decide where this style should go.
         iframeEl.setAttribute('style', 'width:100%;height:100%;border:0;background-color:#999');
       });
@@ -242,7 +282,7 @@ export class EPUBBookBinder extends BookBinder {
       allPages.push(nextPage);
       this.dispatchEvent(new BookProgressEvent(this, allPages.length));
       this.dispatchEvent(new BookPageExtractedEvent(this, nextPage, allPages.length));
-    }
+    } // for each XHTML chunk.
 
     this.dispatchEvent(new BookBindingCompleteEvent(this));
   }
@@ -261,7 +301,7 @@ export class EPUBBookBinder extends BookBinder {
       `The root element in the container was not in the correct namespace:
            ${doc.documentElement.namespaceURI}`,
       doc.documentElement);
-    assert(doc.documentElement.nodeName === 'container',
+    assert(doc.documentElement.localName === 'container',
       `The root element was not a 'container' element.`,
       doc.documentElement);
 
@@ -291,7 +331,7 @@ export class EPUBBookBinder extends BookBinder {
     assert(!!doc, 'OPF file did not parse as XML');
     assert(doc.documentElement.namespaceURI === OPF_NAMESPACE,
       `OPF document was not in the correct namespace: ${doc.documentElement.namespaceURI}`);
-    assert(doc.documentElement.nodeName === 'package',
+    assert(doc.documentElement.localName === 'package',
       `The root element was not a 'package' element.`,
       doc.documentElement);
     assert(doc.documentElement.hasAttribute('unique-identifier'),
