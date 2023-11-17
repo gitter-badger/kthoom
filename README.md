@@ -19,7 +19,7 @@ building, compiling, packing) straight from the browser. Try it here:
 You can also specify a comic book to load via the ?bookUri parameter.  Some examples:
 
   * https://codedread.github.io/kthoom/index.html?bookUri=examples/codedread.cbz
-  * https://codedread.github.io/kthoom/index.html?bookUri=examples/wizard-of-oz.epub
+  * https://codedread.github.io/kthoom/index.html?bookUri=examples/alice-in-wonderland.epub
 
 Or a [comic book reading list](https://github.com/codedread/kthoom/tree/master/reading-lists) via
 the ?readingListUri parameter.
