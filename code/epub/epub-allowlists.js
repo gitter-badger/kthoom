@@ -7,6 +7,7 @@
  */
 
 import { NodeType } from '../common/dom-walker.js';
+import { Params } from '../common/helpers.js';
 
 export const EPUB_NAMESPACE = 'http://www.idpf.org/2007/ops';
 export const HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
@@ -44,7 +45,9 @@ const COMMON_ATTRS = [
 const STYLED_ATTRS = [
   ...COMMON_ATTRS,
   'class',
+  'lang',
   'style',
+  'title',
 ];
 
 /**
@@ -63,7 +66,19 @@ const FULL_ALLOWLIST = {
     'a': {
       [NS.html]: [
         ...STYLED_ATTRS,
-        'title',
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'b': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'blockquote': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+        'cite',
       ],
       [NS.epub]: [ 'type' ],
     },
@@ -132,11 +147,23 @@ const FULL_ALLOWLIST = {
       ],
       [NS.epub]: [ 'type' ],
     },
+    'i': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
     'img': {
       [NS.html]: [
         ...STYLED_ATTRS,
         'alt',
         'src',
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'li': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
       ],
       [NS.epub]: [ 'type' ],
     },
@@ -148,7 +175,28 @@ const FULL_ALLOWLIST = {
         'type',
       ],
     },
+    'meta': {
+      [NS.html]: [
+        ...COMMON_ATTRS,
+        'charset',
+        'content',
+        'name',
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'ol': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
     'p': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'section': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
@@ -160,15 +208,72 @@ const FULL_ALLOWLIST = {
       ],
       [NS.epub]: [ 'type' ],
     },
+    'strong': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
     'style': {
       [NS.html]: [
         ...COMMON_ATTRS,
       ],
     },
+    'table': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'tbody': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'td': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+        'colspan',
+        'headers',
+        'rowspan',
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'tfoot': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'th': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'thead': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
     'title': {
       [NS.html]: [
         ...COMMON_ATTRS,
       ],
+    },
+    'tr': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'ul': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
     },
   },
 
@@ -237,7 +342,13 @@ export function isAllowedAttr(el, attr) {
   const elNS = el.namespaceURI;
   const attrNS = attr.namespaceURI || elNS;
   const attrList = FULL_ALLOWLIST[elNS][el.localName][attrNS];
-  return !!(attrList && attrList.includes(attr.localName));
+  const isAllowed = !!(attrList && attrList.includes(attr.localName));
+  if (Params.debug === 'true' && !isAllowed) {
+    console.warn(`'${attr.localName}' (namespace '${attr.namespaceURI}') not allowed on `
+        + `<${el.localName}> (namespace '${el.namespaceURI}'). Please file a bug at`
+        + `https://github.com/codedread/kthoom/issues if you think this is an error.`);
+  }
+  return isAllowed;
 }
 
 export function isAllowedBlobAttr(el, attr) {
@@ -264,5 +375,11 @@ export function isAllowedBlobAttr(el, attr) {
 export function isAllowedElement(el) {
   if (el?.nodeType !== NodeType.ELEMENT) throw `el was not an Element in isAllowedElement()`;
   const ns = el.namespaceURI;
-  return !!(FULL_ALLOWLIST[ns] && FULL_ALLOWLIST[ns][el.localName]);
+  const isAllowed = !!(FULL_ALLOWLIST[ns] && FULL_ALLOWLIST[ns][el.localName]);
+  if (Params.debug === 'true' & !isAllowed) {
+    console.warn(`<${el.localName}> (namespace '${el.namespaceURI}') was not on the allowlist. `
+        + `Please file a bug at https://github.com/codedread/kthoom/issues if you think this ` 
+        + `is an error.`);
+  }
+  return isAllowed;
 }
