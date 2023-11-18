@@ -5,14 +5,14 @@
 
 ![kthoom logo](images/logo.svg)
 
-kthoom is a comic book / ebook reader that runs in the browser using modern client-side open web
-technologies such as JavaScript, HTML5, the
-[File System Access API](https://wicg.github.io/file-system-access/), Web Workers, Typed Arrays,
-and more.  It can open files and directories from your local file system, the network, or Google
-Drive.
+kthoom is a comic book / ebook reader that runs in the browser using modern web technologies such as
+JavaScript, HTML5, the [File System Access API](https://wicg.github.io/file-system-access/), ES
+Modules, Web Workers, Typed Arrays, and more.  It can open files and directories from your local
+file system, the network, or Google Drive. It can be embedded in larger web apps.
 
-It is built using pure JavaScript with no external dependencies and can run out of the box (no
-building, compiling, packing) straight from the browser. Try it here:
+It is built using pure JavaScript with no external dependencies and no JS frameworks. It can run
+out of the box without any build / compile / transpile / pack step, straight from the browser.
+Try it here:
 
 [OPEN KTHOOM COMIC BOOK READER](https://codedread.com/kthoom/index.html).
 
@@ -31,8 +31,8 @@ the ?readingListUri parameter.
   * .cbz (zip)
   * .cbr ([rar](https://codedread.github.io/bitjs/docs/unrar.html))
   * .cbt (tar)
-  * .epub (primitive support, a work-in-progress, see
-    [issue #16](https://github.com/codedread/kthoom/issues/16))
+  * .epub (Alpha-level support, a work-in-progress, see
+    [issue list](https://github.com/codedread/kthoom/labels/epub))
 
 ### Keyboard Shortcuts
   * O / D / U: Open books by choosing files/directories from computer or by URL.
