@@ -152,11 +152,17 @@ export class EPUBBookBinder extends BookBinder {
       const pageEl = htmlDoc.documentElement;
 
       let outEl = pageEl;
-      const nodeCopyMap = {};
+
+      /**
+       * A map of a parallel, sanitized DOM tree. The keys are the source elements and the values
+       * are the copied and sanitized node.
+       * @type {Map<Element, Element>}
+       */
+      const nodeCopyMap = new Map();
 
       /** @type {Element} */
       let docEl = xhtmlChunk.documentElement;
-      nodeCopyMap[docEl] = pageEl;
+      nodeCopyMap.set(docEl, pageEl);
 
       /**
        * Walk the DOM of the XHTML doc and create sanitized copies of allowlisted elements and
@@ -166,8 +172,8 @@ export class EPUBBookBinder extends BookBinder {
        */
       walkDom(docEl, (/** @type {Element} */ curNode) => {
         // Ensure that we are in the current place in the copy tree to insert the new element.
-        if (nodeCopyMap[curNode.parentElement]) {
-          outEl = nodeCopyMap[curNode.parentElement];
+        if (nodeCopyMap.has(curNode.parentElement)) {
+          outEl = nodeCopyMap.get(curNode.parentElement);
         }
 
         let localName = curNode.localName;
@@ -188,8 +194,9 @@ export class EPUBBookBinder extends BookBinder {
             // Make a safe copy of the current node, allowed node.
             newEl = contentWindow.document.createElementNS(elNS, localName);
           }
+
           // Update map of serialized XHTML/SVG nodes to iframe'd sanitized nodes.
-          nodeCopyMap[curNode] = newEl;
+          nodeCopyMap.set(curNode, newEl);
 
           // Copy over all allowlisted attributes.
           const attrs = curNode.attributes;
