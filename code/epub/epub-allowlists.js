@@ -44,8 +44,10 @@ const COMMON_ATTRS = [
 
 const STYLED_ATTRS = [
   ...COMMON_ATTRS,
+  'aria-labelledby',
   'class',
   'lang',
+  'role',
   'style',
   'title',
 ];
@@ -94,7 +96,25 @@ const FULL_ALLOWLIST = {
       ],
       [NS.epub]: [ 'type' ],
     },
+    'dd': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
     'div': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'dl': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'dt': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
@@ -249,6 +269,12 @@ const FULL_ALLOWLIST = {
       ],
       [NS.epub]: [ 'type' ],
     },
+    'sup': {
+      [NS.html]: [
+        ...COMMON_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
     'table': {
       [NS.html]: [
         ...STYLED_ATTRS,
@@ -279,6 +305,10 @@ const FULL_ALLOWLIST = {
     'th': {
       [NS.html]: [
         ...STYLED_ATTRS,
+        'colspan',
+        'headers',
+        'rowspan',
+        'scope',
       ],
       [NS.epub]: [ 'type' ],
     },
