@@ -100,6 +100,12 @@ const FULL_ALLOWLIST = {
       ],
       [NS.epub]: [ 'type' ],
     },
+    'em': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
     'head': {
       [NS.html]: [
         ...COMMON_ATTRS,
@@ -161,6 +167,12 @@ const FULL_ALLOWLIST = {
       ],
       [NS.epub]: [ 'type' ],
     },
+    'ins': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
     'li': {
       [NS.html]: [
         ...STYLED_ATTRS,
@@ -196,7 +208,19 @@ const FULL_ALLOWLIST = {
       ],
       [NS.epub]: [ 'type' ],
     },
+    'pre': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
     'section': {
+      [NS.html]: [
+        ...STYLED_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
+    },
+    'small': {
       [NS.html]: [
         ...STYLED_ATTRS,
       ],
@@ -218,6 +242,12 @@ const FULL_ALLOWLIST = {
       [NS.html]: [
         ...COMMON_ATTRS,
       ],
+    },
+    'sub': {
+      [NS.html]: [
+        ...COMMON_ATTRS,
+      ],
+      [NS.epub]: [ 'type' ],
     },
     'table': {
       [NS.html]: [
