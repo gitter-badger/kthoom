@@ -150,8 +150,11 @@ export class BookBinder extends EventTarget {
     throw 'Cannot call getMIMEType() in abstract BookBinder';
   }
 
+  /** Returns a number between 0 and 1 indicating how much of the bytes have been loaded. */
   getLoadingPercentage() { return this.#bytesLoaded / this.#totalExpectedSize; }
+  /** Returns a number between 0 and 1 indicating how much of the book has been decompressed. */
   getUnarchivingPercentage() { return this.#unarchivingPercentage; }
+  /** Returns a number between 0 and 1 indicating how much of the pages have been layed out. */
   getLayoutPercentage() { return this.layoutPercentage; }
 
   setNewExpectedSize(bytesDownloaded, newExpectedSize) {
