@@ -82,15 +82,6 @@ export class Page {
   renderIntoContainer(pageContainer, pageNum) {
     throw 'Cannot render an abstract Page object into a Pagecontainer, use a subclass.';
   }
-
-  /**
-   * Renders this page into the page viewer.
-   * @param {SVGImageElement} imageEl
-   * @param {SVGForeignObjectElement} objEl
-   */
-  renderIntoViewer(imageEl, objEl) {
-    throw 'Cannot render an abstract Page object, use a subclass.';
-  }
 }
 
 /**
@@ -127,18 +118,6 @@ export class ImagePage extends Page {
    */
   renderIntoContainer(pageContainer, pageNum) {
     pageContainer.renderRasterImage(this.getURI(), pageNum);
-  }
-
-  /**
-   * Renders this page into the page viewer.
-   * TODO: Remove this.
-   * @param {SVGImageElement} imgEl
-   * @param {SVGForeignObjectElement} objEl
-   */
-  renderIntoViewer(imageEl, objEl) {
-    imageEl.style.display = '';
-    objEl.style.display = 'none';
-    imageEl.setAttribute('href', this.getURI());
   }
 }
 
@@ -207,28 +186,6 @@ export class WebPShimImagePage extends Page {
 
     pageContainer.renderRasterImage(this.dataURI_, pageNum);
   }
-
-  /**
-   * Renders this page into the page viewer.
-   * TODO: Remove this.
-   * @param {SVGImageElement} imgEl
-   * @param {SVGForeignObjectElement} objEl
-   */
-  renderIntoViewer(imageEl, objEl) {
-    if (!this.isInflated()) {
-      this.inflate().then(dataURI => {
-        this.dataURI_ = dataURI;
-        this.inflatingPromise_ = null;
-        this.renderIntoViewer(imageEl, objEl);
-      });
-      return;
-    }
-
-    imageEl.style.display = '';
-    objEl.style.display = 'none';
-    imageEl.setAttribute('href', this.dataURI_);
-    // TODO: Set aspect ratio properly from here?
-  }
 }
 
 /**
@@ -256,23 +213,6 @@ export class TextPage extends Page {
     const textDiv = document.createElement('div');
     textDiv.innerHTML = `<pre>${this.rawText_}</pre>`;
     pageContainer.renderHtml(textDiv, pageNum);
-  }
-
-  /**
-   * Renders this page into the page viewer.
-   * TODO: Remove this.
-   * @param {SVGImageElement} imageEl
-   * @param {SVGForeignObjectElement} objEl
-   */
-  renderIntoViewer(imageEl, objEl) {
-    imageEl.style.display = 'none';
-    while (objEl.firstChild) {
-      objEl.firstChild.remove();
-    }
-    const textDiv = document.createElement('div');
-    textDiv.innerHTML = `<pre>${this.rawText_}</pre>`;
-    objEl.appendChild(textDiv);
-    objEl.style.display = '';
   }
 }
 
@@ -305,22 +245,6 @@ export class XhtmlPage extends Page {
   renderIntoContainer(pageContainer) {
     pageContainer.renderHtml(this.iframeEl_);
     this.inflaterFn_(this.iframeEl_);
-  }
-
-  /**
-   * Renders this page into the page viewer.
-   * TODO: Remove this.
-   * @param {SVGImageElement} imageEl
-   * @param {SVGForeignObjectElement} objEl
-   */
-  renderIntoViewer(imageEl, objEl) {
-    imageEl.style.display = 'none';
-    while (objEl.firstChild) {
-      objEl.firstChild.remove();
-    }
-    objEl.appendChild(this.iframeEl_);
-    this.inflaterFn_(this.iframeEl_);
-    objEl.style.display = '';
   }
 }
 
