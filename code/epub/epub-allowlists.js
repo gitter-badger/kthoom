@@ -404,7 +404,7 @@ export function isAllowedAttr(el, attr) {
   const attrList = FULL_ALLOWLIST[elNS][el.localName][attrNS];
   const isAllowed = !!(attrList && attrList.includes(attr.localName));
   if (Params.debug === 'true' && !isAllowed) {
-    console.warn(`'${attr.localName}' (namespace '${attr.namespaceURI}') not allowed on `
+    console.warn(`Attr '${attr.localName}' (namespace '${attr.namespaceURI}') not allowed on `
         + `<${el.localName}> (namespace '${el.namespaceURI}'). Please file a bug at`
         + `https://github.com/codedread/kthoom/issues if you think this is an error.`);
   }
@@ -437,7 +437,7 @@ export function isAllowedElement(el) {
   const ns = el.namespaceURI;
   const isAllowed = !!(FULL_ALLOWLIST[ns] && FULL_ALLOWLIST[ns][el.localName]);
   if (Params.debug === 'true' & !isAllowed) {
-    console.warn(`<${el.localName}> (namespace '${el.namespaceURI}') was not on the allowlist. `
+    console.warn(`Element <${el.localName}> (namespace '${el.namespaceURI}') was not on the allowlist. `
         + `Please file a bug at https://github.com/codedread/kthoom/issues if you think this ` 
         + `is an error.`);
   }
