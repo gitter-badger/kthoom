@@ -19,7 +19,7 @@
 
 import { UnarchiveEventType } from '../bitjs/archive/decompress.js';
 import { BookBinder, BookType } from '../book-binder.js';
-import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from '../book-events.js';
+import { BookBindingCompleteEvent, BookLoadingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from '../book-events.js';
 import { NodeType, walkDom } from '../common/dom-walker.js';
 import { HTML_NAMESPACE, XMLNS_NAMESPACE, REVERSE_NS,
          isAllowedElement, isAllowedAttr, isAllowedBlobAttr } from './epub-allowlists.js';
@@ -88,20 +88,18 @@ export class EPUBBookBinder extends BookBinder {
     });
     this.unarchiver.addEventListener(UnarchiveEventType.FINISH, evt => {
       this.setUnarchiveComplete();
-
+      this.dispatchEvent(new BookProgressEvent(this));
       this.parseContainer_();
       this.parseOPF_();
 
       // All files have been archived and spine elements have been cross-referenced.
-      this.inflateSpine_();
+      this.inflateSpine_();  
     });
   }
 
   getBookType() { return BookType.EPUB; }
 
-  getMIMEType() {
-    return EPUB_MIMETYPE;
-  }
+  getMIMEType() { return EPUB_MIMETYPE; }
 
   // TODO: Proper error handling throughout.
 
@@ -133,14 +131,15 @@ export class EPUBBookBinder extends BookBinder {
         const htmlDoc = new DOMParser().parseFromString(toText(data), XHTML_MIMETYPE);
         xhtmlChunks.push(htmlDoc);
       }
-      this.layoutPercentage = (i + 1) / numSpineRefs;
-      this.dispatchEvent(new BookProgressEvent(this, 1));
     }
 
     const allPages = [];
 
     // Process all serialized nodes of XHTML and make sanitized copies in the new DOM context.
-    for (const xhtmlChunk of xhtmlChunks) {
+    this.layoutPercentage = 0;
+    for (let i = 0; i < xhtmlChunks.length; ++i) {
+      const xhtmlChunk = xhtmlChunks[i];
+
       // Create an iframe element and add it to our document so that the contentWindow is available.
       // We need the contentWindow to ensure the elements and Blob URLs are created in the right
       // HTML context.
@@ -181,8 +180,10 @@ export class EPUBBookBinder extends BookBinder {
         if (curNode.nodeType === NodeType.TEXT) {
           outEl.appendChild(curNode.cloneNode());
         }
-        // If it is an allowed XHTML or SVG element, make a sanitized copy.
-        else if (curNode.nodeType === NodeType.ELEMENT && isAllowedElement(curNode)) {
+        // If it is an allowed XHTML or SVG element, make a sanitized copy, but skip the top of the
+        // DOM tree.
+        else if (curNode.nodeType === NodeType.ELEMENT && docEl !== curNode
+            && isAllowedElement(curNode)) {
           const elNS = curNode.namespaceURI;
           let newEl;
           // Special handling for the iframe's head and body elements which are created for us.
@@ -244,6 +245,10 @@ export class EPUBBookBinder extends BookBinder {
         }
       }); // Finished walking XHTML DOM.
 
+      // TODO: The book viewer is still stuck at the unzipping stage...
+      this.layoutPercentage = (i + 1) / xhtmlChunks.length;
+      this.dispatchEvent(new BookProgressEvent(this, allPages.length));
+
       /**
        * Now create a XhtmlPage of the XHTML document inside the iframe, including an "inflater"
        * function that will walk the DOM of the page, and update any Blob URLs that are no longer
@@ -287,8 +292,7 @@ export class EPUBBookBinder extends BookBinder {
       });
 
       allPages.push(nextPage);
-      this.dispatchEvent(new BookProgressEvent(this, allPages.length));
-      this.dispatchEvent(new BookPageExtractedEvent(this, nextPage, allPages.length));
+      this.dispatchEvent(new BookPageExtractedEvent(this, nextPage, allPages.length));        
     } // for each XHTML chunk.
 
     this.dispatchEvent(new BookBindingCompleteEvent(this));
