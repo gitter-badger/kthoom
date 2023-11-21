@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "description": "kthoom is a comic book / ebook reader that runs in the browser using client-side open web technologies such as JavaScript, HTML5, the File API, Web Workers, and Typed Arrays.  It can open files from your local hard drive, the network, or Google Drive.",
   "type": "module",
-  "scripts": {
-    "test": "./node_modules/.bin/mocha tests --recursive"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/codedread/kthoom.git"
@@ -34,8 +31,13 @@
   },
   "homepage": "https://github.com/codedread/kthoom#readme",
   "devDependencies": {
-    "chai": "^4.3.4",
+    "c8": "^8.0.1",
+    "chai": "^4.3.10",
     "jsdom": "^22.1.0",
-    "mocha": "^9.2.2"
+    "mocha": "^10.2.0"
+  },
+  "scripts": {
+    "coverage": "c8 npm run test",
+    "test": "./node_modules/.bin/mocha tests --recursive"
   }
 }

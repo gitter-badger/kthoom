@@ -18,7 +18,7 @@ export const NodeType = {
  * @param {Function(Element)} callbackFn
  */
 export function walkDom(topNode, callbackFn) {
-  if (topNode.parentElement) {
+  if (!topNode || topNode.parentElement) {
     throw 'Top node in walkDom() must not have a parentElement';
   }
 
