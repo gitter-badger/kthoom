@@ -9,6 +9,8 @@
  * Copyright(c) 2011 antimatter15
  */
 
+// TODO: Allow big-endian and little-endian, with consistent naming.
+
 /**
  * A write-only Byte buffer which uses a Uint8 Typed Array as a backing store.
  */
@@ -114,7 +116,7 @@ export class ByteBuffer {
   writeASCIIString(str) {
     for (let i = 0; i < str.length; ++i) {
       const curByte = str.charCodeAt(i);
-      if (curByte < 0 || curByte > 255) {
+      if (curByte < 0 || curByte > 127) {
         throw 'Trying to write a non-ASCII string!';
       }
       this.insertByte(curByte);

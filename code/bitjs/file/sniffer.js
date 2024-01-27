@@ -8,7 +8,9 @@
  */
 
 // https://mimesniff.spec.whatwg.org/ is a good resource.
-// https://github.com/h2non/filetype is an easy target for reverse-engineering.
+// Easy targets for reverse-engineering:
+// - https://github.com/h2non/filetype
+// - https://github.com/gabriel-vasile/mimetype (particularly internal/magic/ftyp.go)
 
 //  NOTE: Because the ICO format also starts with a couple zero bytes, this tree will rely on the
 //        File Type box never going beyond 255 bytes in length which, seems unlikely according to
@@ -24,6 +26,7 @@ const fileSignatures = {
   'application/pdf': [[0x25, 0x50, 0x44, 0x46, 0x2d]], // '%PDF-'
 
   // Archive formats:
+  'application/gzip': [[0x1F, 0x8B, 0x08]],
   'application/x-tar': [ // 'ustar'
     [0x75, 0x73, 0x74, 0x61, 0x72, 0x00, 0x30, 0x30],
     [0x75, 0x73, 0x74, 0x61, 0x72, 0x20, 0x20, 0x00],

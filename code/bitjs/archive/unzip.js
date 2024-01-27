@@ -12,10 +12,12 @@
  * DEFLATE format: http://tools.ietf.org/html/rfc1951
  */
 
-// This file expects to be invoked as a Worker (see onmessage below).
 import { BitStream } from '../io/bitstream.js';
 import { ByteBuffer } from '../io/bytebuffer.js';
 import { ByteStream } from '../io/bytestream.js';
+import { ARCHIVE_EXTRA_DATA_SIG, CENTRAL_FILE_HEADER_SIG, CRC32_MAGIC_NUMBER,
+  DATA_DESCRIPTOR_SIG, DIGITAL_SIGNATURE_SIG, END_OF_CENTRAL_DIR_SIG,
+  LOCAL_FILE_HEADER_SIG } from './common.js';
 
 const UnarchiveState = {
   NOT_STARTED: 0,
@@ -24,8 +26,12 @@ const UnarchiveState = {
   FINISHED: 3,
 };
 
+/** @type {MessagePort} */
+let hostPort;
+
 // State - consider putting these into a class.
 let unarchiveState = UnarchiveState.NOT_STARTED;
+/** @type {ByteStream} */
 let bytestream = null;
 let allLocalFiles = null;
 let logToConsole = false;
@@ -40,13 +46,13 @@ let totalFilesInArchive = 0;
 
 // Helper functions.
 const info = function (str) {
-  postMessage({ type: 'info', msg: str });
+  hostPort.postMessage({ type: 'info', msg: str });
 };
 const err = function (str) {
-  postMessage({ type: 'error', msg: str });
+  hostPort.postMessage({ type: 'error', msg: str });
 };
 const postProgress = function () {
-  postMessage({
+  hostPort.postMessage({
     type: 'progress',
     currentFilename,
     currentFileNumber,
@@ -58,14 +64,6 @@ const postProgress = function () {
   });
 };
 
-const zLocalFileHeaderSignature = 0x04034b50;
-const zArchiveExtraDataSignature = 0x08064b50;
-const zCentralFileHeaderSignature = 0x02014b50;
-const zDigitalSignatureSignature = 0x05054b50;
-const zEndOfCentralDirSignature = 0x06054b50;
-const zEndOfCentralDirLocatorSignature = 0x07064b50;
-const zDataDescriptorSignature = 0x08074b50;
-
 // mask for getting the Nth bit (zero-based)
 const BIT = [0x01, 0x02, 0x04, 0x08,
   0x10, 0x20, 0x40, 0x80,
@@ -73,9 +71,7 @@ const BIT = [0x01, 0x02, 0x04, 0x08,
   0x1000, 0x2000, 0x4000, 0x8000];
 
 class ZipLocalFile {
-  /**
-   * @param {ByteStream} bstream 
-   */
+  /** @param {ByteStream} bstream */
   constructor(bstream) {
     if (typeof bstream != typeof {} || !bstream.readNumber || typeof bstream.readNumber != typeof function () { }) {
       return null;
@@ -123,9 +119,9 @@ class ZipLocalFile {
       let foundDataDescriptor = false;
       let numBytesSeeked = 0;
       while (!foundDataDescriptor) {
-        while (bstream.peekNumber(4) !== zLocalFileHeaderSignature &&
-          bstream.peekNumber(4) !== zArchiveExtraDataSignature &&
-          bstream.peekNumber(4) !== zCentralFileHeaderSignature) {
+        while (bstream.peekNumber(4) !== LOCAL_FILE_HEADER_SIG &&
+          bstream.peekNumber(4) !== ARCHIVE_EXTRA_DATA_SIG &&
+          bstream.peekNumber(4) !== CENTRAL_FILE_HEADER_SIG) {
           numBytesSeeked++;
           bstream.readBytes(1);
         }
@@ -141,7 +137,7 @@ class ZipLocalFile {
 
         // From the PKZIP App Note: "The signature value 0x08074b50 is also used by some ZIP
         // implementations as a marker for the Data Descriptor record".
-        if (maybeDescriptorSig === zDataDescriptorSignature) {
+        if (maybeDescriptorSig === DATA_DESCRIPTOR_SIG) {
           if (maybeCompressedSize === (numBytesSeeked - 16)) {
             foundDataDescriptor = true;
             descriptorSize = 16;
@@ -182,7 +178,7 @@ class ZipLocalFile {
   }
 
   // determine what kind of compressed data we have and decompress
-  unzip() {
+  async unzip() {
     if (!this.fileData) {
       err('unzip() called on a file with out compressed file data');
     }
@@ -200,7 +196,7 @@ class ZipLocalFile {
       if (logToConsole) {
         info(`ZIP v2.0, DEFLATE: ${this.filename} (${this.compressedSize} bytes)`);
       }
-      this.fileData = inflate(this.fileData, this.uncompressedSize);
+      this.fileData = await inflate(this.fileData, this.uncompressedSize);
     }
     else {
       err(`UNSUPPORTED VERSION/FORMAT: ZIP v${this.version}, ` +
@@ -487,9 +483,18 @@ function inflateBlockData(bstream, hcLiteralTable, hcDistanceTable, buffer) {
  * Compression method 8. Deflate: http://tools.ietf.org/html/rfc1951
  * @param {Uint8Array} compressedData A Uint8Array of the compressed file data.
  * @param {number} numDecompressedBytes
- * @returns {Uint8Array} The decompressed array.
+ * @returns {Promise<Uint8Array>} The decompressed array.
  */
-function inflate(compressedData, numDecompressedBytes) {
+async function inflate(compressedData, numDecompressedBytes) {
+  // Try to use native implementation of DEFLATE if it exists.
+  try {
+    const blob = new Blob([compressedData.buffer]);
+    const decompressedStream = blob.stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Uint8Array(await new Response(decompressedStream).arrayBuffer());
+  } catch (err) {
+    // Fall through to non-native implementation of DEFLATE.
+  }
+  
   // Bit stream representing the compressed data.
   /** @type {BitStream} */
   const bstream = new BitStream(compressedData.buffer,
@@ -600,11 +605,11 @@ function inflate(compressedData, numDecompressedBytes) {
   return buffer.data;
 }
 
-function archiveUnzip() {
+async function archiveUnzip() {
   let bstream = bytestream.tee();
 
   // loop until we don't see any more local files or we find a data descriptor.
-  while (bstream.peekNumber(4) == zLocalFileHeaderSignature) {
+  while (bstream.peekNumber(4) == LOCAL_FILE_HEADER_SIG) {
     // Note that this could throw an error if the bstream overflows, which is caught in the
     // message handler.
     const oneLocalFile = new ZipLocalFile(bstream);
@@ -623,10 +628,10 @@ function archiveUnzip() {
       currentBytesUnarchivedInFile = 0;
 
       // Actually do the unzipping.
-      oneLocalFile.unzip();
+      await oneLocalFile.unzip();
 
       if (oneLocalFile.fileData != null) {
-        postMessage({ type: 'extract', unarchivedFile: oneLocalFile }, [oneLocalFile.fileData.buffer]);
+        hostPort.postMessage({ type: 'extract', unarchivedFile: oneLocalFile }, [oneLocalFile.fileData.buffer]);
         postProgress();
       }
     }
@@ -634,7 +639,7 @@ function archiveUnzip() {
   totalFilesInArchive = allLocalFiles.length;
 
   // archive extra data record
-  if (bstream.peekNumber(4) == zArchiveExtraDataSignature) {
+  if (bstream.peekNumber(4) == ARCHIVE_EXTRA_DATA_SIG) {
     if (logToConsole) {
       info(' Found an Archive Extra Data Signature');
     }
@@ -647,13 +652,13 @@ function archiveUnzip() {
 
   // central directory structure
   // TODO: handle the rest of the structures (Zip64 stuff)
-  if (bstream.peekNumber(4) == zCentralFileHeaderSignature) {
+  if (bstream.peekNumber(4) == CENTRAL_FILE_HEADER_SIG) {
     if (logToConsole) {
       info(' Found a Central File Header');
     }
 
     // read all file headers
-    while (bstream.peekNumber(4) == zCentralFileHeaderSignature) {
+    while (bstream.peekNumber(4) == CENTRAL_FILE_HEADER_SIG) {
       bstream.readNumber(4); // signature
       const cdfh = {
         versionMadeBy: bstream.readNumber(2),
@@ -686,7 +691,7 @@ function archiveUnzip() {
   }
 
   // digital signature
-  if (bstream.peekNumber(4) == zDigitalSignatureSignature) {
+  if (bstream.peekNumber(4) == DIGITAL_SIGNATURE_SIG) {
     if (logToConsole) {
       info(' Found a Digital Signature');
     }
@@ -697,7 +702,7 @@ function archiveUnzip() {
   }
 
   let metadata = {};
-  if (bstream.peekNumber(4) == zEndOfCentralDirSignature) {
+  if (bstream.peekNumber(4) == END_OF_CENTRAL_DIR_SIG) {
     bstream.readNumber(4); // signature
     const eocds = {
       numberOfThisDisk: bstream.readNumber(2),
@@ -723,12 +728,12 @@ function archiveUnzip() {
   bytestream = bstream.tee();
 
   unarchiveState = UnarchiveState.FINISHED;
-  postMessage({ type: 'finish', metadata });
+  hostPort.postMessage({ type: 'finish', metadata });
 }
 
 // event.data.file has the first ArrayBuffer.
 // event.data.bytes has all subsequent ArrayBuffers.
-onmessage = function (event) {
+const onmessage = async function (event) {
   const bytes = event.data.file || event.data.bytes;
   logToConsole = !!event.data.logToConsole;
 
@@ -749,7 +754,7 @@ onmessage = function (event) {
     currentBytesUnarchived = 0;
     allLocalFiles = [];
 
-    postMessage({ type: 'start' });
+    hostPort.postMessage({ type: 'start' });
 
     unarchiveState = UnarchiveState.UNARCHIVING;
 
@@ -759,7 +764,7 @@ onmessage = function (event) {
   if (unarchiveState === UnarchiveState.UNARCHIVING ||
     unarchiveState === UnarchiveState.WAITING) {
     try {
-      archiveUnzip();
+      await archiveUnzip();
     } catch (e) {
       if (typeof e === 'string' && e.startsWith('Error!  Overflowed')) {
         // Overrun the buffer.
@@ -772,3 +777,37 @@ onmessage = function (event) {
     }
   }
 };
+
+/**
+ * Connect the host to the unzip implementation with the given MessagePort.
+ * @param {MessagePort} port
+ */
+export function connect(port) {
+  if (hostPort) {
+    throw `hostPort already connected in unzip.js`;
+  }
+
+  hostPort = port;
+  port.onmessage = onmessage;
+}
+
+export function disconnect() {
+  if (!hostPort) {
+    throw `hostPort was not connected in unzip.js`;
+  }
+
+  hostPort = null;
+
+  unarchiveState = UnarchiveState.NOT_STARTED;
+  bytestream = null;
+  allLocalFiles = null;
+  logToConsole = false;
+  
+  // Progress variables.
+  currentFilename = '';
+  currentFileNumber = 0;
+  currentBytesUnarchivedInFile = 0;
+  currentBytesUnarchived = 0;
+  totalUncompressedBytesInArchive = 0;
+  totalFilesInArchive = 0;  
+}

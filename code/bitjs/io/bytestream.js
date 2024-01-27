@@ -1,7 +1,7 @@
 /*
  * bytestream.js
  *
- * Provides readers for byte streams.
+ * A pull stream for bytes.
  *
  * Licensed under the MIT License
  *
@@ -13,6 +13,8 @@
  * This object allows you to peek and consume bytes as numbers and strings out
  * of a stream.  More bytes can be pushed into the back of the stream via the
  * push() method.
+ * By default, the stream is Little Endian (that is the least significant byte
+ * is first). To change to Big Endian, use setBigEndian().
  */
 export class ByteStream {
   /**
@@ -22,7 +24,7 @@ export class ByteStream {
    */
   constructor(ab, opt_offset, opt_length) {
     if (!(ab instanceof ArrayBuffer)) {
-      throw 'Error! BitArray constructed with an invalid ArrayBuffer object';
+      throw 'Error! ByteStream constructed with an invalid ArrayBuffer object';
     }
 
     const offset = opt_offset || 0;
@@ -55,10 +57,39 @@ export class ByteStream {
      * @private
      */
     this.bytesRead_ = 0;
+
+    /**
+     * Whether the stream is little-endian (true) or big-endian (false).
+     * @type {boolean}
+     * @private
+     */
+    this.littleEndian_ = true;
+  }
+
+  /** @returns {boolean} Whether the stream is little-endian. */
+  isLittleEndian() {
+    return this.littleEndian_;
   }
 
   /**
-   * Returns how many bytes have been read in the stream since the beginning of time.
+   * Big-Endian is sometimes called Motorola-style.
+   * @param {boolean=} val The value to set. If not present, the stream is set to big-endian.
+   */
+  setBigEndian(val = true) {
+    this.littleEndian_ = !val;
+  }
+
+  /**
+   * Little-Endian is sometimes called Intel-style.
+   * @param {boolean=} val The value to set. If not present, the stream is set to little-endian.
+   */
+  setLittleEndian(val = true) {
+    this.littleEndian_ = val;
+  }
+
+  /**
+   * Returns how many bytes have been consumed (read or skipped) since the beginning of time.
+   * @returns {number}
    */
   getNumBytesRead() {
     return this.bytesRead_;
@@ -66,6 +97,7 @@ export class ByteStream {
 
   /**
    * Returns how many bytes are currently in the stream left to be read.
+   * @returns {number}
    */
   getNumBytesLeft() {
     const bytesInCurrentPage = (this.bytes.byteLength - this.ptr);
@@ -117,7 +149,8 @@ export class ByteStream {
     let pageIndex = 0;
     let ptr = this.ptr;
     for (let i = 0; i < num; ++i) {
-      result |= (curPage[ptr++] << (i * 8));
+      const exp = (this.littleEndian_ ? i : (num - 1 - i)) * 8;
+      result |= (curPage[ptr++] << exp);
 
       if (ptr >= curPage.length) {
         curPage = this.pages_[pageIndex++];
@@ -275,6 +308,29 @@ export class ByteStream {
   }
 
   /**
+   * Skips n bytes in the stream.
+   * @param {number} n The number of bytes to skip. Must be a positive integer.
+   * @returns {ByteStream} Returns this ByteStream for chaining.
+   */
+  skip(n) {
+    const num = parseInt(n, 10);
+    if (n !== num || num < 0) {
+      throw 'Error!  Called skip() with a non-positive integer';
+    } else if (num === 0) {
+      return this;
+    }
+
+    const totalBytesLeft = this.getNumBytesLeft();
+    if (num > totalBytesLeft) {
+      throw 'Error!  Overflowed the byte stream while skip()! n=' + num +
+      ', ptr=' + this.ptr + ', bytes.length=' + this.getNumBytesLeft();
+    }
+
+    this.movePointer_(n);
+    return this;
+  }
+
+  /**
    * Feeds more bytes into the back of the stream.
    * @param {ArrayBuffer} ab
    */
@@ -291,6 +347,10 @@ export class ByteStream {
 
   /**
    * Creates a new ByteStream from this ByteStream that can be read / peeked.
+   * Note that the teed stream is a disconnected copy. If you push more bytes to the original
+   * stream, the copy does not get them.
+   * TODO: Assess whether the above causes more bugs than it avoids. (It would feel weird to me if
+   *       the teed stream shared some state with the original stream.)
    * @returns {ByteStream} A clone of this ByteStream.
    */
   tee() {
@@ -299,6 +359,7 @@ export class ByteStream {
     clone.ptr = this.ptr;
     clone.pages_ = this.pages_.slice();
     clone.bytesRead_ = this.bytesRead_;
+    clone.littleEndian_ = this.littleEndian_;
     return clone;
   }
 }

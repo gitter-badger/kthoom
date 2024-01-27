@@ -11,7 +11,6 @@
 // of a BitStream so that it throws properly when not enough bytes are
 // present.
 
-// This file expects to be invoked as a Worker (see onmessage below).
 import { BitStream } from '../io/bitstream.js';
 import { ByteStream } from '../io/bytestream.js';
 import { ByteBuffer } from '../io/bytebuffer.js';
@@ -24,8 +23,12 @@ const UnarchiveState = {
   FINISHED: 3,
 };
 
+/** @type {MessagePort} */
+let hostPort;
+
 // State - consider putting these into a class.
 let unarchiveState = UnarchiveState.NOT_STARTED;
+/** @type {ByteStream} */
 let bytestream = null;
 let allLocalFiles = null;
 let logToConsole = false;
@@ -40,13 +43,13 @@ let totalFilesInArchive = 0;
 
 // Helper functions.
 const info = function (str) {
-  postMessage({ type: 'info', msg: str });
+  hostPort.postMessage({ type: 'info', msg: str });
 };
 const err = function (str) {
-  postMessage({ type: 'error', msg: str });
+  hostPort.postMessage({ type: 'error', msg: str });
 };
 const postProgress = function () {
-  postMessage({
+  hostPort.postMessage({
     type: 'progress',
     currentFilename,
     currentFileNumber,
@@ -1378,7 +1381,7 @@ function unrar() {
       localFile.unrar();
 
       if (localFile.isValid) {
-        postMessage({ type: 'extract', unarchivedFile: localFile }, [localFile.fileData.buffer]);
+        hostPort.postMessage({ type: 'extract', unarchivedFile: localFile }, [localFile.fileData.buffer]);
         postProgress();
       }
     } else if (localFile.header.packSize == 0 && localFile.header.unpackedSize == 0) {
@@ -1396,7 +1399,7 @@ function unrar() {
 
 // event.data.file has the first ArrayBuffer.
 // event.data.bytes has all subsequent ArrayBuffers.
-onmessage = function (event) {
+const onmessage = function (event) {
   const bytes = event.data.file || event.data.bytes;
   logToConsole = !!event.data.logToConsole;
 
@@ -1411,7 +1414,7 @@ onmessage = function (event) {
     totalUncompressedBytesInArchive = 0;
     totalFilesInArchive = 0;
     allLocalFiles = [];
-    postMessage({ type: 'start' });
+    hostPort.postMessage({ type: 'start' });
   } else {
     bytestream.push(bytes);
   }
@@ -1441,7 +1444,7 @@ onmessage = function (event) {
     try {
       unrar();
       unarchiveState = UnarchiveState.FINISHED;
-      postMessage({ type: 'finish', metadata: {} });
+      hostPort.postMessage({ type: 'finish', metadata: {} });
     } catch (e) {
       if (typeof e === 'string' && e.startsWith('Error!  Overflowed')) {
         if (logToConsole) {
@@ -1457,3 +1460,35 @@ onmessage = function (event) {
     }
   }
 };
+
+/**
+ * Connect the host to the unrar implementation with the given MessagePort.
+ * @param {MessagePort} port
+ */
+export function connect(port) {
+  if (hostPort) {
+    throw `hostPort already connected in unrar.js`;
+  }
+  hostPort = port;
+  port.onmessage = onmessage;
+}
+
+export function disconnect() {
+  if (!hostPort) {
+    throw `hostPort was not connected in unzip.js`;
+  }
+
+  hostPort = null;
+
+  unarchiveState = UnarchiveState.NOT_STARTED;
+  bytestream = null;
+  allLocalFiles = null;
+  logToConsole = false;
+  
+  currentFilename = '';
+  currentFileNumber = 0;
+  currentBytesUnarchivedInFile = 0;
+  currentBytesUnarchived = 0;
+  totalUncompressedBytesInArchive = 0;
+  totalFilesInArchive = 0;  
+}

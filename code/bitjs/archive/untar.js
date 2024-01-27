@@ -10,7 +10,6 @@
  * TAR format: http://www.gnu.org/software/automake/manual/tar/Standard.html
  */
 
-// This file expects to be invoked as a Worker (see onmessage below).
 import { ByteStream } from '../io/bytestream.js';
 
 const UnarchiveState = {
@@ -20,14 +19,18 @@ const UnarchiveState = {
   FINISHED: 3,
 };
 
+/** @type {MessagePort} */
+let hostPort;
+
 // State - consider putting these into a class.
 let unarchiveState = UnarchiveState.NOT_STARTED;
+/** @type {ByteStream} */
 let bytestream = null;
 let allLocalFiles = null;
 let logToConsole = false;
 
 // Progress variables.
-let currentFilename = "";
+let currentFilename = '';
 let currentFileNumber = 0;
 let currentBytesUnarchivedInFile = 0;
 let currentBytesUnarchived = 0;
@@ -36,13 +39,13 @@ let totalFilesInArchive = 0;
 
 // Helper functions.
 const info = function (str) {
-  postMessage({ type: 'info', msg: str });
+  hostPort.postMessage({ type: 'info', msg: str });
 };
 const err = function (str) {
-  postMessage({ type: 'error', msg: str });
+  hostPort.postMessage({ type: 'error', msg: str });
 };
 const postProgress = function () {
-  postMessage({
+  hostPort.postMessage({
     type: 'progress',
     currentFilename,
     currentFileNumber,
@@ -80,7 +83,7 @@ class TarLocalFile {
     this.linkname = readCleanString(bstream, 100);
     this.maybeMagic = readCleanString(bstream, 6);
 
-    if (this.maybeMagic == "ustar") {
+    if (this.maybeMagic == 'ustar') {
       this.version = readCleanString(bstream, 2);
       this.uname = readCleanString(bstream, 32);
       this.gname = readCleanString(bstream, 32);
@@ -88,8 +91,15 @@ class TarLocalFile {
       this.devminor = readCleanString(bstream, 8);
       this.prefix = readCleanString(bstream, 155);
 
+      // From https://linux.die.net/man/1/ustar:
+      // "The name field (100 chars) an inserted slash ('/') and the prefix field (155 chars)
+      //  produce the pathname of the file. When recreating the original filename, name and prefix
+      //  are concatenated, using a slash character in the middle. If a pathname does not fit in the
+      //  space provided or may not be split at a slash character so that the parts will fit into
+      //  100 + 155 chars, the file may not be archived. Linknames longer than 100 chars may not be
+      //  archived too."
       if (this.prefix.length) {
-        this.name = this.prefix + this.name;
+        this.name = `${this.prefix}/${this.name}`;
       }
       bstream.readBytes(12); // 512 - 500
     } else {
@@ -103,13 +113,13 @@ class TarLocalFile {
     /** @type {Uint8Array} */
     this.fileData = null;
 
-    info("Untarring file '" + this.filename + "'");
-    info("  size = " + this.size);
-    info("  typeflag = " + this.typeflag);
+    info(`Untarring file '${this.filename}'`);
+    info(`  size = ${this.size}`);
+    info(`  typeflag = ${this.typeflag}`);
 
     // A regular file.
     if (this.typeflag == 0) {
-      info("  This is a regular file.");
+      info('  This is a regular file.');
       const sizeInBytes = parseInt(this.size);
       this.fileData = new Uint8Array(bstream.readBytes(sizeInBytes));
       bytesRead += sizeInBytes;
@@ -123,7 +133,7 @@ class TarLocalFile {
         bstream.readBytes(remaining);
       }
     } else if (this.typeflag == 5) {
-      info("  This is a directory.")
+      info('  This is a directory.')
     }
   }
 }
@@ -147,7 +157,7 @@ const untar = function () {
       currentFileNumber = totalFilesInArchive++;
       currentBytesUnarchivedInFile = oneLocalFile.size;
       currentBytesUnarchived += oneLocalFile.size;
-      postMessage({ type: 'extract', unarchivedFile: oneLocalFile }, [oneLocalFile.fileData.buffer]);
+      hostPort.postMessage({ type: 'extract', unarchivedFile: oneLocalFile }, [oneLocalFile.fileData.buffer]);
       postProgress();
     }
   }
@@ -160,7 +170,7 @@ const untar = function () {
 
 // event.data.file has the first ArrayBuffer.
 // event.data.bytes has all subsequent ArrayBuffers.
-onmessage = function (event) {
+const onmessage = function (event) {
   const bytes = event.data.file || event.data.bytes;
   logToConsole = !!event.data.logToConsole;
 
@@ -172,7 +182,7 @@ onmessage = function (event) {
   }
 
   if (unarchiveState === UnarchiveState.NOT_STARTED) {
-    currentFilename = "";
+    currentFilename = '';
     currentFileNumber = 0;
     currentBytesUnarchivedInFile = 0;
     currentBytesUnarchived = 0;
@@ -180,7 +190,7 @@ onmessage = function (event) {
     totalFilesInArchive = 0;
     allLocalFiles = [];
 
-    postMessage({ type: 'start' });
+    hostPort.postMessage({ type: 'start' });
 
     unarchiveState = UnarchiveState.UNARCHIVING;
 
@@ -192,7 +202,7 @@ onmessage = function (event) {
     try {
       untar();
       unarchiveState = UnarchiveState.FINISHED;
-      postMessage({ type: 'finish', metadata: {} });
+      hostPort.postMessage({ type: 'finish', metadata: {} });
     } catch (e) {
       if (typeof e === 'string' && e.startsWith('Error!  Overflowed')) {
         // Overrun the buffer.
@@ -205,3 +215,35 @@ onmessage = function (event) {
     }
   }
 };
+
+/**
+ * Connect the host to the untar implementation with the given MessagePort.
+ * @param {MessagePort} port
+ */
+export function connect(port) {
+  if (hostPort) {
+    throw `hostPort already connected in untar.js`;
+  }
+  hostPort = port;
+  port.onmessage = onmessage;
+}
+
+export function disconnect() {
+  if (!hostPort) {
+    throw `hostPort was not connected in unzip.js`;
+  }
+
+  hostPort = null;
+
+  unarchiveState = UnarchiveState.NOT_STARTED;
+  bytestream = null;
+  allLocalFiles = null;
+  logToConsole = false;
+  
+  currentFilename = '';
+  currentFileNumber = 0;
+  currentBytesUnarchivedInFile = 0;
+  currentBytesUnarchived = 0;
+  totalUncompressedBytesInArchive = 0;
+  totalFilesInArchive = 0;
+}

@@ -1,42 +1,36 @@
+/**
+ * compress.js
+ *
+ * Provides base functionality for compressing.
+ *
+ * Licensed under the MIT License
+ *
+ * Copyright(c) 2023 Google Inc.
+ */
 
-// NOTE: THIS IS A VERY HACKY WORK-IN-PROGRESS! THE API IS NOT FROZEN! USE AT YOUR OWN RISK!
+import { ZipCompressionMethod, getConnectedPort } from './common.js';
+
+// TODO(2.0): Remove this comment.
+// NOTE: THIS IS A WORK-IN-PROGRESS! THE API IS NOT FROZEN! USE AT YOUR OWN RISK!
 
 /**
- * @typedef FileInfo An object that is sent to the worker to represent a file to zip.
+ * @typedef FileInfo An object that is sent to the implementation to represent a file to zip.
  * @property {string} fileName The name of the file. TODO: Includes the path?
  * @property {number} lastModTime The number of ms since the Unix epoch (1970-01-01 at midnight).
- * @property {ArrayBuffer} fileData The bytes of the file.
+ * @property {Uint8Array} fileData The bytes of the file.
  */
-
-/**
- * @readonly
- * @enum {number}
- */
-export const ZipCompressionMethod = {
-  STORE: 0, // Default.
-  // DEFLATE: 8,
-};
-
-// export const DeflateCompressionMethod = {
-//   NO_COMPRESSION: 0,
-//   COMPRESSION_FIXED_HUFFMAN: 1,
-//   COMPRESSION_DYNAMIC_HUFFMAN: 2,
-// }
 
 /**
  * Data elements are packed into bytes in order of increasing bit number within the byte,
-   i.e., starting with the least-significant bit of the byte.
+ * i.e., starting with the least-significant bit of the byte.
  * Data elements other than Huffman codes are packed starting with the least-significant bit of the
-   data element.
+ * data element.
  * Huffman codes are packed starting with the most-significant bit of the code.
  */
 
 /**
  * @typedef CompressorOptions
- * @property {string} pathToBitJS A string indicating where the BitJS files are located.
  * @property {ZipCompressionMethod} zipCompressionMethod
- * @property {DeflateCompressionMethod=} deflateCompressionMethod Only present if
- *     zipCompressionMethod is set to DEFLATE.
  */
 
 /**
@@ -51,35 +45,54 @@ export const CompressStatus = {
   ERROR: 'error',
 };
 
+// TODO: Extend EventTarget and introduce subscribe methods (onProgress, onInsert, onFinish, etc).
+// TODO: I think appendFiles() is still a good idea so that all files do not have to live in memory
+//     at once, but the API is wonky here... re-think it. Maybe something more like a builder?
+
 /**
  * A thing that zips files.
- * NOTE: THIS IS A VERY HACKY WORK-IN-PROGRESS! THE API IS NOT FROZEN! USE AT YOUR OWN RISK!
- * TODO: Make a streaming / event-driven API.
+ * NOTE: THIS IS A WORK-IN-PROGRESS! THE API IS NOT FROZEN! USE AT YOUR OWN RISK!
+ * TODO(2.0): Add semantic onXXX methods for an event-driven API. 
  */
 export class Zipper {
+  /**
+   * The client-side port that sends messages to, and receives messages from the
+   * decompressor implementation.
+   * @type {MessagePort}
+   * @private
+   */
+  port_;
+
+  /**
+   * A function to call to disconnect the implementation from the host.
+   * @type {Function}
+   * @private
+   */
+  disconnectFn_;
+
   /**
    * @param {CompressorOptions} options
    */
   constructor(options) {
     /**
-     * The path to the BitJS files.
-     * @type {string}
+     * @type {CompressorOptions}
      * @private
      */
-    this.pathToBitJS = options.pathToBitJS || '/';
-
-    /**
-     * @type {ZipCompressionMethod}
-     * @private
-     */
+    this.zipOptions = options;
     this.zipCompressionMethod = options.zipCompressionMethod || ZipCompressionMethod.STORE;
+    if (!Object.values(ZipCompressionMethod).includes(this.zipCompressionMethod)) {
+      throw `Compression method ${this.zipCompressionMethod} not supported`;
+    }
 
-    /**
-     * Private web worker initialized during start().
-     * @type {Worker}
-     * @private
-     */
-    this.worker_ = null;
+    if (this.zipCompressionMethod === ZipCompressionMethod.DEFLATE) {
+      // As per https://developer.mozilla.org/en-US/docs/Web/API/CompressionStream, NodeJS only
+      // supports deflate-raw from 21.2.0+ (Nov 2023). https://nodejs.org/en/blog/release/v21.2.0.
+      try {
+        new CompressionStream('deflate-raw');
+      } catch (err) {
+        throw `CompressionStream with deflate-raw not supported by JS runtime: ${err}`;
+      }
+    }
 
     /**
      * @type {CompressStatus}
@@ -100,14 +113,14 @@ export class Zipper {
    * @param {boolean} isLastFile 
    */
   appendFiles(files, isLastFile) {
-    if (!this.worker_) {
-      throw `Worker not initialized. Did you forget to call start() ?`;
+    if (!this.port_) {
+      throw `Port not initialized. Did you forget to call start() ?`;
     }
     if (![CompressStatus.READY, CompressStatus.WORKING].includes(this.compressState)) {
       throw `Zipper not in the right state: ${this.compressState}`;
     }
 
-    this.worker_.postMessage({ files, isLastFile });
+    this.port_.postMessage({ files, isLastFile });
   }
 
   /**
@@ -119,16 +132,19 @@ export class Zipper {
    * @returns {Promise<Uint8Array>} A Promise that will contain the entire zipped archive as an array
    *     of bytes.
    */
-  start(files, isLastFile) {
+  async start(files, isLastFile) {
+    const impl = await getConnectedPort('./zip.js');
+    this.port_ = impl.hostPort;
+    this.disconnectFn_ = impl.disconnectFn;
     return new Promise((resolve, reject) => {
-      this.worker_ = new Worker(this.pathToBitJS + `archive/zip.js`);
-      this.worker_.onerror = (evt) => {
-        console.log('Worker error: message = ' + evt.message);
-        throw evt.message;
+      this.port_.onerror = (evt) => {
+        console.log('Impl error: message = ' + evt.message);
+        reject(evt.message);
       };
-      this.worker_.onmessage = (evt) => {
+
+      this.port_.onmessage = (evt) => {
         if (typeof evt.data == 'string') {
-          // Just log any strings the worker pumps our way.
+          // Just log any strings the implementation pumps our way.
           console.log(evt.data);
         } else {
           switch (evt.data.type) {
@@ -137,6 +153,10 @@ export class Zipper {
               break;
             case 'finish':
               this.compressState = CompressStatus.COMPLETE;
+              this.port_.close();
+              this.disconnectFn_();
+              this.port_ = null;
+              this.disconnectFn_ = null;
               resolve(this.byteArray);
               break;
             case 'compress':
@@ -147,7 +167,7 @@ export class Zipper {
       };
 
       this.compressState = CompressStatus.READY;
-      this.appendFiles(files, isLastFile);
+      this.port_.postMessage({ files, isLastFile, compressionMethod: this.zipCompressionMethod});
     });
   }
 

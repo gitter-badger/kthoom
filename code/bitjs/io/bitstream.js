@@ -1,7 +1,7 @@
 /*
  * bitstream.js
  *
- * Provides readers for bitstreams.
+ * A pull stream for binary bits.
  *
  * Licensed under the MIT License
  *
@@ -42,7 +42,7 @@ const BITMASK = [0, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF];
  */
 export class BitStream {
   /**
-   * @param {ArrayBuffer} ab An ArrayBuffer object or a Uint8Array.
+   * @param {ArrayBuffer} ab An ArrayBuffer object.
    * @param {boolean} mtl Whether the stream reads bits from the byte starting with the
    *     most-significant-bit (bit 7) to least-significant (bit 0). False means the direction is
    *     from least-significant-bit (bit 0) to most-significant (bit 7).
@@ -51,7 +51,7 @@ export class BitStream {
    */
   constructor(ab, mtl, opt_offset, opt_length) {
     if (!(ab instanceof ArrayBuffer)) {
-      throw 'Error! BitArray constructed with an invalid ArrayBuffer object';
+      throw 'Error! BitStream constructed with an invalid ArrayBuffer object';
     }
 
     const offset = opt_offset || 0;
@@ -89,7 +89,7 @@ export class BitStream {
   }
 
   /**
-   * Returns how many bites have been read in the stream since the beginning of time.
+   * Returns how many bits have been read in the stream since the beginning of time.
    * @returns {number}
    */
   getNumBitsRead() {
@@ -118,6 +118,8 @@ export class BitStream {
   peekBits_ltm(n, opt_movePointers) {
     const NUM = parseInt(n, 10);
     let num = NUM;
+
+    // TODO: Handle this consistently between ByteStream and BitStream. ByteStream throws an error.
     if (n !== num || num <= 0) {
       return 0;
     }
@@ -176,6 +178,8 @@ export class BitStream {
   peekBits_mtl(n, opt_movePointers) {
     const NUM = parseInt(n, 10);
     let num = NUM;
+
+    // TODO: Handle this consistently between ByteStream and BitStream. ByteStream throws an error.
     if (n !== num || num <= 0) {
       return 0;
     }
@@ -304,5 +308,31 @@ export class BitStream {
    */
   readBytes(n) {
     return this.peekBytes(n, true);
+  }
+
+  /**
+   * Skips n bits in the stream. Will throw an error if n is < 0 or greater than the number of
+   * bits left in the stream.
+   * @param {number} n The number of bits to skip. Must be a positive integer.
+   * @returns {BitStream} Returns this BitStream for chaining.
+   */
+  skip(n) {
+    const num = parseInt(n, 10);
+    if (n !== num || num < 0) throw `Error! Called skip(${n})`;
+    else if (num === 0) return this;
+
+    const totalBitsLeft = this.getNumBitsLeft();
+    if (n > totalBitsLeft) {
+      throw `Error! Overflowed the bit stream for skip(${n}), ptrs=${this.bytePtr}/${this.bitPtr}`;
+    }
+
+    this.bitsRead_ += num;
+    this.bitPtr += num;
+    if (this.bitPtr >= 8) {
+      this.bytePtr += Math.floor(this.bitPtr / 8);
+      this.bitPtr %= 8;
+    }
+
+    return this;
   }
 }

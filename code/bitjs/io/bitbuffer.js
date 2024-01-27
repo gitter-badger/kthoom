@@ -32,7 +32,7 @@ export class BitBuffer {
    */
   constructor(numBytes, mtl = false) {
     if (typeof numBytes != typeof 1 || numBytes <= 0) {
-      throw "Error! ByteBuffer initialized with '" + numBytes + "'";
+      throw "Error! BitBuffer initialized with '" + numBytes + "'";
     }
 
     /**
@@ -65,6 +65,8 @@ export class BitBuffer {
     this.bitPtr = this.mtl ? 7 : 0;
   }
 
+  // TODO: Be consistent with naming across classes (big-endian and little-endian).
+
   /** @returns {boolean} */
   getPackingDirection() {
     return this.mtl;
@@ -84,13 +86,13 @@ export class BitBuffer {
         if (this.bytePtr >= this.data.byteLength) {
           throw `No more bytes left when switching packing direction`;
         }
-        this.bitPtr = 7;
+        this.bitPtr = 0;
       } else if (!this.mtl && this.bitPtr !== 0) {
         this.bytePtr++;
         if (this.bytePtr >= this.data.byteLength) {
           throw `No more bytes left when switching packing direction`;
         }
-        this.bitPtr = 0;
+        this.bitPtr = 7;
       }
     }
 

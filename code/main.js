@@ -10,7 +10,7 @@ import { config } from './config.js';
 import { KthoomApp } from './kthoom.js';
 
 config
-  .set('PATH_TO_BITJS', 'code/bitjs/')
+  .set('PATH_TO_BITJS', './code/bitjs/')
   .lock();
 
 const theApp = new KthoomApp();
