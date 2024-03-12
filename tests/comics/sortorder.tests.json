@@ -1,0 +1,17 @@
+[
+  {
+    "desc": "basic case",
+    "input": ["bat2.jpg", "bat3.jpg", "bat1.jpg"],
+    "expected": ["bat1.jpg", "bat2.jpg", "bat3.jpg"]
+  },
+  {
+    "desc": "case-insensitive",
+    "input": ["BAT3.jpg", "bat1.jpg", "Bat2.jpg"],
+    "expected": ["bat1.jpg", "Bat2.jpg", "BAT3.jpg"]
+  },
+  {
+    "desc": "forgot leading zeros",
+    "input": ["bat10.jpg", "bat9.jpg", "bat8.jpg"],
+    "expected": ["bat8.jpg", "bat9.jpg", "bat10.jpg"]
+  }
+]
