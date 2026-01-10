@@ -1,0 +1,6 @@
+.DS_Store
+code/bitjs/.DS_Store
+coverage
+gkey.json
+node_modules
+tools/desadulate
